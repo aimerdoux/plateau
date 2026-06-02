@@ -17,6 +17,12 @@ full-history — a **66.6× lower** context-growth slope). **Both arms reached P
 (full-history 32/32 tests, Plateau 36/36): completion parity. Sealed write-once, recompute PASS.
 [verdict](demo/verdict6b.json) · [readout](demo/demo6b_readout.md) · all numbers in [`RESULTS.md`](RESULTS.md).
 
+**Cheaper on time too, not just tokens.** The thing that keeps a bounded context honest — re-grounding
+every carried fact each step — is sub-millisecond for the shipped gate: a `file_hash` re-ground costs
+**~13 µs/fact** (marginal **0.0114 ms/fact**, linear), so re-grounding a 50-fact signal takes **0.59 ms
+per step** (gatebench, sealed; classification GATE-CHEAP). The validation overhead is negligible next to
+the token savings.
+
 That is the whole claim: **cheaper, not smarter.** Read the next section before believing more.
 
 ## What Plateau does NOT do (read this first — it's the credibility)
@@ -85,6 +91,13 @@ commands in [`RESULTS.md`](RESULTS.md)):
   across the gap), **not cadence** (gap duration): a vertical boundary, HIGH-correspondence mean
   corr **0.975** vs BROKEN **0.048**, flat across gap size, with the carried signal shown load-bearing
   (`perf_gap 1.0`). Clean run of record is `c9b`, sealed at `reports/continuum/c9b/raw/verdict.json` (parent tree).
+- **C7 — NULL (relational direction alive but unproven).** Tested whether an agent can faithfully
+  traverse an *opaque* symbolic index. Both arms proposed **0/48** non-existent edges (rejection 0.0) —
+  *perfect* faithful traversal, including the opaque-symbol arm, with the scramble control confirming it
+  genuinely dereferenced the real symbols. NULL is a **tie at the faithful ceiling** (the challenger
+  can't beat a perfect text incumbent), **not** confabulation. Faithful traversal of relational
+  structure *is* achievable here; a sharper test needs a regime where text itself confabulates. Sealed at
+  `reports/continuum/c7/raw/verdict.json`; details in [`RESULTS.md`](RESULTS.md).
 
 > Naming note: the theory preprint labels the reload-correspondence experiment **C11** and reserves
 > **C9** for a different (unrun) rate–distortion-knee sweep. The repo ran it under the label "C9". See
@@ -144,6 +157,10 @@ pip install git+https://github.com/aimerdoux/plateau.git    # the core, so the h
 Use the **full HTTPS URL** — the `owner/repo` shorthand defaults to SSH and fails without a GitHub SSH
 key. The hook calls bare `python3`, so install the core into that interpreter — **Python 3.9+ works**,
 including macOS's system `/usr/bin/python3`, so the plain `pip install` above is enough.
+
+> `[VERIFY: install path tested on a clean machine]` — these are the commands that worked in the live
+> demo (HTTPS, not the SSH shorthand), but the exact invocation is not captured in a sealed artifact;
+> re-run them on a fresh machine before relying on this section verbatim.
 
 ## Layout
 

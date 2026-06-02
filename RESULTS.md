@@ -46,11 +46,13 @@ verdict. demo6b verified this session: **PASS, 38 sealed files**. demo4: **PASS,
 | **C4** (run2) | independent replication | **WIN** | continuum PR 2.6502 vs cold 4.7163 (diff 2.0661); path 11.9477 | `reports/continuum/c4/run2/verdict.json` | `python -m experiments.recompute` (integrity) |
 | **C9** (c9b, clean) | correspondence vs cadence (gap × correspondence) | **CORRESPONDENCE-DOMINATES** (vertical) | high_mean_corr 0.975 ≥ 0.55 > broken 0.048; corr_axis_effect 1.0, gap_axis_effect 0.0; perf_gap 1.0 | `reports/continuum/c9b/raw/verdict.json` | `python -m experiments.continuum.c9b_run recompute` (verdict) |
 | C9 (c9, leaky) | same, **superseded** | CORRESPONDENCE-DOMINATES | high 0.936 > broken 0.092 | `reports/continuum/c9/raw/verdict.json` | `python -m experiments.continuum.c9_run recompute` (verdict) |
+| **C7** | symbolic-index faithfulness (relational traversal) | **NULL** (ceiling-tie — see below) | incumbent rejection **0.0** = challenger **0.0** (both **0/48** edges faithful); scrambled **1.0** (genuine deref, not surface-form); MI **0.0** (opaque); depth 4 | `reports/continuum/c7/raw/verdict.json` | `python -m experiments.continuum.c7_run recompute` (verdict) |
 
 **Re-verify legend.** "verdict" = re-derives the verdict from sealed raw in a fresh process (demo4/6/6b,
-C9b/C9). "integrity" = the global recompute hash-verifies the sealed C3/C4 files are unaltered (it does
-not re-run the C3/C4 scorer). Global recompute currently: **PASS over 115 sealed files across 7
-manifests** (the continuum + task-bank manifests under `reports/`); bank hash `sha256:9e10c7a6…` unchanged.
+C9b/C9/C7). "integrity" = the global recompute hash-verifies the sealed C3/C4 files are unaltered (it does
+not re-run the C3/C4 scorer). Global recompute currently: **PASS over 121 sealed files across 9
+manifests** (continuum cycles + gatebench + task-bank manifests under `reports/`); bank hash
+`sha256:9e10c7a6…` unchanged.
 
 ## C9 specifically (the latest sealed cycle)
 
@@ -73,6 +75,47 @@ subagent never sees; the verdict reproduced **more cleanly** (BROKEN corr 0.092 
 > Naming note: the theory preprint labels this reload-correspondence experiment **C11** and reserves
 > **C9** for a different (unrun) rate–distortion-knee sweep. The repo ran it under the label "C9". See
 > [`RECONCILE.md`](RECONCILE.md) (FLAG C9-1) — the operator decides the final labeling.
+
+## C7 — symbolic-index faithfulness (state it correctly: a ceiling-tie, NOT confabulation)
+
+C7 asks whether an agent can faithfully traverse an **opaque** symbolic index — measured by an
+**external gate's rejection rate** on proposed multi-hop traversals — or whether it confabulates
+edges faster than the gate can ground them. Two arms over the same graph: a readable-label
+incumbent and an opaque-symbol challenger; a permuted-binding **scramble control**.
+
+> **NULL** — but read the numbers, not the scorer's stock prose. Both arms proposed **0/48
+> non-existent edges** (rejection **0.0** each): *perfect faithful traversal*, including the
+> opaque-symbol arm. The scramble control collapsed the challenger to **1.0** rejection, which
+> **confirms it genuinely dereferenced the real symbols** (not surface-form tracking → not
+> FALSIFIED). Symbols were opaque (MI **0.0** bits ≤ 0.20) and traversals were depth 4 (≥ 3).
+
+The verdict is NULL **by the locked rule, without override** — but because the challenger could not
+score *below* a **perfect incumbent**, i.e. a **tie at the faithful ceiling**, *not* the
+pre-registered "confabulation outruns grounding" mechanism (which **did not occur**). The honest
+bounding finding: **faithful traversal of an opaque symbolic index IS achievable** at depth 4 with
+the adjacency visible; the comparative design simply had **no headroom** against a perfect
+incumbent. The relational-structure direction is **alive but unproven** — the real test needs a
+regime where text itself confabulates (deeper graphs, no visible adjacency, or memory pressure).
+*(The locked scorer attaches a templated NULL reason that says "confabulates…"; that prose does not
+fit this run — see [`RECONCILE.md`](RECONCILE.md), flagged for the next scorer version, not edited.)*
+
+## Gate cost & disk footprint (gatebench — the second axis, sealed)
+
+Every other result measured **tokens**; gatebench measures **wall-clock** and **disk**, so "efficient"
+is shown on both axes. Source: `reports/continuum/gatebench/raw/{results,disk}.json` (sealed;
+`python -m experiments.continuum.gatebench recompute` → PASS).
+
+- **The shipped gate is cheap.** Re-grounding a carried fact via `file_hash` (the only live
+  re-grounding the core implements) costs **~13 µs/fact** (per-fact median 0.0133 ms; marginal slope
+  **0.0114 ms/fact**), **linear** in fact count — re-grounding a 50-fact signal takes **0.59 ms/step**.
+  Classification **GATE-CHEAP**. So bounded context is cheaper on **time** as well as tokens.
+- **Subprocess-backed grounding would be costly — but is NOT in the core.** A modeled `command_output`
+  grounding (cheapest possible subprocess) costs **1.93 ms/fact** (~**145×** file_hash), **GATE-COSTLY**.
+  The shipped core implements **only** `file_hash`; other kinds **fail closed without spawning** (see
+  [`RECONCILE.md`](RECONCILE.md), the command_output gap).
+- **Disk: three opposite-direction numbers.** Carried signal **~220 B/fact, O(facts)** (bounded);
+  sealed integrity trail **1.03 MB / 339 files** and **grows** with every cycle (the audit cost);
+  avoided full-history transcript **~149 KB** for one short real-code demo (the disk you didn't keep).
 
 ## Figures (generated from sealed data)
 

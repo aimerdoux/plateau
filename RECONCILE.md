@@ -123,6 +123,33 @@ line, but **none has a formal reference entry**, so none currently "resolves" as
 **not** invent arXiv IDs or bibliographic entries — the operator/author must supply and verify them.
 (All nine are recognizable real lines of work; the gap is keying, not existence.)
 
+## Shipped core vs documented behaviour (gatebench + C7 findings)
+
+→ **FLAG GB-1 (the `command_output` gap — docs are aspirational).** Any doc, diagram, or example that
+presents **`command_output`** (or `test_result` / `exit_code` / `oracle_score`) as a *working* grounding
+kind is **aspirational, not shipped**. The gatebench audit (sealed `gatebench/raw/disk.json` + the core
+read) confirms the locked core's `Measurement.reverify()` implements **only `file_hash`** as a live
+re-read; **every other kind fails closed (returns False) without spawning anything** — there is no
+`subprocess` in `plateau/` or `adapters/`. So:
+- **[doc/diagram implies command_output re-verifies live / spawns a check / X]** ↔ **[sealed: only
+  file_hash re-reads; command_output and the rest fail closed, no subprocess]**.
+- The gatebench `command_output` timing (**1.93 ms/fact, ~145× file_hash**) is a *model* of what such a
+  grounding *would* cost if added — explicitly labeled, not the shipped gate. Flag every place a doc
+  treats command-backed grounding as functional today; either implement it or mark it "planned".
+
+→ **FLAG C7-1 (locked scorer's NULL reason-string is wrong-mechanism — fix in the NEXT version, not
+now).** `c7_symbolic.py` (sha `680f91c5`, locked) attaches a **templated** NULL reason — *"it
+confabulates plausible edges faster than the gate can ground them"* — to **every** NULL. But NULL fires
+whenever the challenger does not beat the incumbent, which includes a **ceiling-tie** (both arms
+faithful). The actual C7 run **was** a ceiling-tie: challenger rejection **0.0** = incumbent **0.0**
+(sealed `c7/raw/verdict.json`), **zero confabulation**. So the prose **contradicts the data** it ships
+with.
+- **[scorer says: NULL = "confabulates plausible edges faster than the gate can ground them"]** ↔
+  **[sealed: rejection 0.0/0.0 — a tie at the faithful ceiling, not confabulation]**.
+- **Do NOT edit the locked scorer now** (it is pinned and was used for the sealed verdict). Flag for the
+  **next scorer version**: make the NULL reason data-driven — distinguish "ceiling-tie (both faithful)"
+  from "both-confabulate (rejection high)" before emitting prose.
+
 ## Figures (repo ↔ paper)
 
 | paper figure | kind | repo asset | status |
@@ -134,10 +161,13 @@ line, but **none has a formal reference entry**, so none currently "resolves" as
 
 ## Status / what the operator does
 
-- This file **flags**; it does not edit the paper. Paste corrections C3-1, C6-1, C6-2 and resolve
-  FLAG C9-1 / FLAG REF-1 into the paper **source** (not in this repo — only the PDF is here).
+- This file **flags**; it does not edit the paper or the locked scorer. Open flags for the operator:
+  **C3-1, C6-1, C6-2** (paper numbers), **C9-1** (C9/C11 labeling), **REF-1** (unkeyed §9 citations),
+  **GB-1** (command_output is aspirational, not shipped), **C7-1** (scorer NULL reason-string is
+  wrong-mechanism — fix in the next scorer version, not now).
 - All non-placeholder, non-flagged claims are verified against the cited sealed artifacts and are
-  recompute-verifiable (`make recompute`).
+  recompute-verifiable (`python -m experiments.recompute` from the parent root, or the per-result
+  re-verify commands in [`RESULTS.md`](RESULTS.md)).
 
 ---
-— [D-014] · paper-vs-sealed diff, flag-only (data **GROUNDED**, paper **UNCHANGED**) · **LOCAL** · /halt
+— [D-014] · paper-vs-sealed diff, flag-only (data **GROUNDED**, paper + locked scorer **UNCHANGED**) · **LOCAL** · /halt
