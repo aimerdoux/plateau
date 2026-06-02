@@ -12,6 +12,16 @@ full-history answers 15/18 while carrying a transcript that climbs to ~2,138 tok
 Honest verdict below — the head-to-head recall comparison came out **UNSCORABLE**, and we
 say why rather than dress it up.*
 
+## The paper
+
+The mechanism is formalized in **[*The Integrator: A Free-Energy Filtering Account of
+Compressed-State Continuity in Long-Running Agents*](paper/the-integrator-2026-06-02.pdf)** — a
+theory-and-methods preprint that casts the loop as a recursive Bayesian filter (predict =
+reasoning, update = the gate) plus a compression projection Π, with the demos below as its prior
+results (C3/C4/C6) and a pre-registered forward program. It is a **draft**: every figure is
+reconciled to the sealed artifacts in [`PAPER_RECONCILIATION.md`](PAPER_RECONCILIATION.md). The
+account is functional and **silent on phenomenality** by construction.
+
 ## The idea
 
 A long-running agent's scarcest resource is its context window. The naive loop carries the
@@ -41,17 +51,20 @@ python examples/bare_loop.py        # the whole loop in plain Python, no agent f
 
 ## What we can and cannot claim (read this)
 
-We ran three pre-registered demos, sealed every result write-once before scoring, and
-report the verdict our own locked rules give us — including where they deny us a win.
+Every demo is pre-registered, sealed write-once before scoring, and scored by a locked rule —
+including where it denies us a win. Full per-demo breakdown: [`demo/FINDINGS.md`](demo/FINDINGS.md).
 
-**Proven, decisive — bounded context.** In every demo the full-history arm's context climbs
-toward the ceiling (to ~2,138 tokens here, ~115 tok/step) while Plateau stays flat (~120
-tokens). That is the engineering benefit and it is unambiguous.
+**Proven, decisive — bounded context on real code (C6).** On a strictly serial ≥5-layer feature
+built on this repo, the full-history arm's context climbed **365 → 37,405 tokens** over six
+dependent steps (slope ~6,860), while Plateau stayed bounded **508 → 1,075** (slope ~103, **≈1.5%**
+of full-history) — and **both arms reached PASS** (32 / 36 tests, zero rework): completion parity.
+Sealed write-once, recompute PASS. [verdict](demo/verdict6b.json) · [readout](demo/demo6b_readout.md).
+The same bound shows on every demo: full-history climbs toward the ceiling while Plateau stays flat
+(~120 vs ~2,138 tokens on the recall task below).
 
 **Strong — no recall penalty.** On the clean recall task (random values, shuffled layout),
-Plateau answered **18/18 correctly at every distance** (demo3). Bounding the context cost
-you nothing in recall here; Plateau matched-or-beat full-history (100% vs 83%) on ~18× less
-context.
+Plateau answered **18/18 correctly at every distance** (demo3) on ~18× less context —
+matched-or-beat full-history (100% vs 83%).
 
 **Honest negative — we did NOT prove a recall *advantage* over full-history.** That was the
 result we went looking for, and we did not get it:
@@ -114,9 +127,10 @@ does not abolish the need for context.
 ```
 plateau/        core: signal (gate), continuum (emit/inflate/ground), metrics, integrity
 examples/       bare_loop.py (host-free proof) + the continuum story
-demo/           three pre-registered demos, sealed raw, verdicts, charts
+demo/           pre-registered demos (recall + real-code C6), sealed raw, verdicts, FINDINGS.md
 adapters/       claude_code/ — installable Claude Code plugin (plugin.json, skill, hooks, commands)
-tests/          26 tests, core has zero third-party deps
+paper/          The Integrator — theory-and-methods preprint (draft)
+tests/          28 tests (26 core + 2 adapter), core has zero third-party deps
 ```
 
 ## License
