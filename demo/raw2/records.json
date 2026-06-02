@@ -1,0 +1,245 @@
+{
+  "task": "recall-only (pure memory, no arithmetic)",
+  "n_queries": 14,
+  "rows": [
+    {
+      "reg": "T0",
+      "distance": 2,
+      "gold": "19",
+      "control": {
+        "answer_raw": "19",
+        "answer": "19",
+        "correct": true,
+        "prompt_tokens_est": 95
+      },
+      "plateau": {
+        "answer_raw": "19",
+        "answer": "19",
+        "correct": true,
+        "prompt_tokens_est": 68
+      }
+    },
+    {
+      "reg": "T1",
+      "distance": 3,
+      "gold": "21",
+      "control": {
+        "answer_raw": "21",
+        "answer": "21",
+        "correct": true,
+        "prompt_tokens_est": 109
+      },
+      "plateau": {
+        "answer_raw": "22",
+        "answer": "22",
+        "correct": false,
+        "prompt_tokens_est": 71
+      }
+    },
+    {
+      "reg": "T2",
+      "distance": 4,
+      "gold": "24",
+      "control": {
+        "answer_raw": "24",
+        "answer": "24",
+        "correct": true,
+        "prompt_tokens_est": 128
+      },
+      "plateau": {
+        "answer_raw": "24",
+        "answer": "24",
+        "correct": true,
+        "prompt_tokens_est": 73
+      }
+    },
+    {
+      "reg": "T3",
+      "distance": 5,
+      "gold": "28",
+      "control": {
+        "answer_raw": "28",
+        "answer": "28",
+        "correct": true,
+        "prompt_tokens_est": 152
+      },
+      "plateau": {
+        "answer_raw": "28",
+        "answer": "28",
+        "correct": true,
+        "prompt_tokens_est": 76
+      }
+    },
+    {
+      "reg": "T4",
+      "distance": 7,
+      "gold": "33",
+      "control": {
+        "answer_raw": "33",
+        "answer": "33",
+        "correct": true,
+        "prompt_tokens_est": 185
+      },
+      "plateau": {
+        "answer_raw": "33",
+        "answer": "33",
+        "correct": true,
+        "prompt_tokens_est": 78
+      }
+    },
+    {
+      "reg": "T5",
+      "distance": 9,
+      "gold": "40",
+      "control": {
+        "answer_raw": "40",
+        "answer": "40",
+        "correct": true,
+        "prompt_tokens_est": 228
+      },
+      "plateau": {
+        "answer_raw": "40",
+        "answer": "40",
+        "correct": true,
+        "prompt_tokens_est": 81
+      }
+    },
+    {
+      "reg": "T6",
+      "distance": 11,
+      "gold": "49",
+      "control": {
+        "answer_raw": "59",
+        "answer": "59",
+        "correct": false,
+        "prompt_tokens_est": 280
+      },
+      "plateau": {
+        "answer_raw": "49",
+        "answer": "49",
+        "correct": true,
+        "prompt_tokens_est": 83
+      }
+    },
+    {
+      "reg": "T7",
+      "distance": 13,
+      "gold": "60",
+      "control": {
+        "answer_raw": "60",
+        "answer": "60",
+        "correct": true,
+        "prompt_tokens_est": 342
+      },
+      "plateau": {
+        "answer_raw": "60",
+        "answer": "60",
+        "correct": true,
+        "prompt_tokens_est": 86
+      }
+    },
+    {
+      "reg": "T8",
+      "distance": 16,
+      "gold": "73",
+      "control": {
+        "answer_raw": "83",
+        "answer": "83",
+        "correct": false,
+        "prompt_tokens_est": 418
+      },
+      "plateau": {
+        "answer_raw": "73",
+        "answer": "73",
+        "correct": true,
+        "prompt_tokens_est": 88
+      }
+    },
+    {
+      "reg": "T9",
+      "distance": 22,
+      "gold": "89",
+      "control": {
+        "answer_raw": "110",
+        "answer": "110",
+        "correct": false,
+        "prompt_tokens_est": 528
+      },
+      "plateau": {
+        "answer_raw": "89",
+        "answer": "89",
+        "correct": true,
+        "prompt_tokens_est": 93
+      }
+    },
+    {
+      "reg": "T10",
+      "distance": 28,
+      "gold": "111",
+      "control": {
+        "answer_raw": "111",
+        "answer": "111",
+        "correct": true,
+        "prompt_tokens_est": 675
+      },
+      "plateau": {
+        "answer_raw": "111",
+        "answer": "111",
+        "correct": true,
+        "prompt_tokens_est": 96
+      }
+    },
+    {
+      "reg": "T11",
+      "distance": 34,
+      "gold": "139",
+      "control": {
+        "answer_raw": "139",
+        "answer": "139",
+        "correct": true,
+        "prompt_tokens_est": 854
+      },
+      "plateau": {
+        "answer_raw": "168",
+        "answer": "168",
+        "correct": false,
+        "prompt_tokens_est": 99
+      }
+    },
+    {
+      "reg": "T12",
+      "distance": 40,
+      "gold": "173",
+      "control": {
+        "answer_raw": "173",
+        "answer": "173",
+        "correct": true,
+        "prompt_tokens_est": 1064
+      },
+      "plateau": {
+        "answer_raw": "208",
+        "answer": "208",
+        "correct": false,
+        "prompt_tokens_est": 102
+      }
+    },
+    {
+      "reg": "T13",
+      "distance": 48,
+      "gold": "213",
+      "control": {
+        "answer_raw": "260",
+        "answer": "260",
+        "correct": false,
+        "prompt_tokens_est": 1317
+      },
+      "plateau": {
+        "answer_raw": "213",
+        "answer": "213",
+        "correct": true,
+        "prompt_tokens_est": 105
+      }
+    }
+  ],
+  "token_metric": "estimated tokens (chars/4), identical proxy both arms"
+}

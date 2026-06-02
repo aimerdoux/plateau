@@ -1,32 +1,38 @@
 # Plateau
 
 **Bounded, predictable context for long-horizon agents.** Carry a small, re-grounded
-signal across steps instead of replaying the whole transcript. Context stays flat; the
-agent can run long without climbing toward the context ceiling.
+signal across steps instead of replaying the whole transcript. Context stays flat as the
+task grows — and a stored fact stays one short line away instead of sinking into a
+transcript the agent has to search.
 
-![context per step: full-history control climbs, Plateau stays flat](demo/context_per_step.png)
+![recall accuracy vs fact-distance, two arms](demo/recall_vs_distance.png)
 
-*Measured, 14-step dependent task: the full-history arm's context climbs ~17.6 tokens/step
-(84 → 312) while Plateau holds flat at ~0.035 tokens/step (81 → 83). [Sealed data + full
-readout below.](#the-receipts)*
+*Measured, pure-recall task: as a fact sinks into history, the full-history control's
+recall degrades (1.0 → 0.5) while it carries an ever-growing transcript (95 → 1,317
+tokens). Plateau keeps the fact in a bounded signal (68 → 105 tokens) and recalls it
+flatter and higher overall. Honest verdict below — this was a NULL (near-miss) by our own
+pre-registered bar, not a clean win.*
 
 ## The idea
 
 A long-running agent's scarcest resource is its context window. The naive loop carries
-the full history forward, so context grows every step until the window fills and the
-agent degrades or dies. Plateau replaces *carry everything* with *carry a small
-re-grounded signal*:
+the full transcript forward, so context grows every step until the window fills and the
+agent degrades. Plateau replaces *carry everything* with *carry a small re-grounded
+signal*:
 
 - At each step you **emit** a compact `RelationalState` — `open_goals`, `stance`,
   `lessons`, `pointers`, and gated `verified_facts`.
 - At the next step you **inflate** that signal instead of the transcript, and **ground**
   it: every carried fact is re-checked against the live environment; anything reality no
-  longer supports is flagged **stale** and dropped.
+  longer supports is dropped as **stale**.
 
 The catch that keeps a bounded context *honest*: a fact may enter the signal only if it
-passes **the gate** — it must be backed by a `Measurement` that re-verifies right now.
-A model's own assertion is never a measurement. Bounded context is cheap; the gate is
-what stops it from quietly filling with confident fabrications.
+passes **the gate** — backed by a `Measurement` that re-verifies right now. A model's own
+assertion is never a measurement. Bounded context is cheap; the gate is what stops it from
+filling with confident fabrications.
+
+This measures **context efficiency** and **recall** — tokens carried, and whether a stored
+fact can still be retrieved. It makes no claim about understanding or any inner state.
 
 ## Quickstart
 
@@ -35,71 +41,79 @@ pip install -e .
 python examples/bare_loop.py        # the whole loop in plain Python, no agent framework
 ```
 
-`bare_loop.py` runs an 8-step dependent computation carrying only the signal: the final
-result is correct, the emitted signal stays flat (328 → 329 bytes), the gate refuses an
-ungrounded claim, and a tampered measurement is caught as stale — all with zero
-third-party dependencies.
-
-```python
-from plateau import RelationalState, SelfState, Thought, Measurement, emit, inflate, apply_gate
-
-sig = RelationalState(open_goals=["ship the parser"], stance="test-first")
-# ... do a step, propose a fact backed by something re-readable ...
-m = Measurement("file_hash", "build.ok", "<sha256>")
-new = apply_gate(SelfState(sig, [Thought("build passes", m)]))  # only grounded facts admitted
-blob = emit(SelfState(signal=new))                              # compact, bounded
-state = inflate(blob).state                                     # re-grounded next step
-```
+`bare_loop.py` runs an 8-step dependent computation carrying only the signal: the result
+is correct, the emitted signal stays flat (328 → 329 bytes), the gate refuses an
+ungrounded claim, and a tampered measurement is caught as stale — zero third-party deps.
 
 ## The receipts
 
-Every number here is produced by the same machinery, sealed write-once before scoring,
-and reproduced from the sealed file in a fresh process. We report the verdict our own
-pre-registered rule gives us — including where it denies us a clean win.
+Every number is produced by the same machinery, **sealed write-once before scoring**, and
+**reproduced from the sealed file in a fresh process**. We report the verdict our own
+pre-registered rule gives us — including where it denies us a win.
 
-- **Pre-registration** (written before the run): [`demo/demo_prereg.md`](demo/demo_prereg.md)
-- **Sealed raw + manifest**: [`demo/raw/`](demo/raw/)
-- **Verdict** (rendered from sealed data): [`demo/verdict.json`](demo/verdict.json)
-- **Full readout**: [`demo/demo_readout.md`](demo/demo_readout.md)
+### Headline experiment — recall vs distance (`demo/`, pure recall, no arithmetic)
 
-**What is proven:** context efficiency. Full-history context climbs at 17.6 tok/step and
-would cross a 200k budget in ~11k steps; Plateau's slope is ~0.035 tok/step — effectively
-flat, ~never. Slope-difference 95% CI `[17.31, 17.75]` excludes zero.
+Pre-registration: [`demo/demo2_prereg.md`](demo/demo2_prereg.md) · sealed raw:
+[`demo/raw2/`](demo/raw2/) · verdict: [`demo/verdict2.json`](demo/verdict2.json) ·
+[full readout](demo/demo2_readout.md).
 
-**Honest failure mode — read this.** In the demo, Plateau answered 36% of the dependent
-steps correctly vs the control's 14% — Plateau *beat* full-history — but **neither arm
-cleared the 90% completion floor we pre-registered**, so by our own locked rule this is a
-**`NOT-A-CLEAN-WIN`**, not a win. The cause was an instrument confound: the toy subagents
-made frequent arithmetic slips that cascade under GOLD-vs-error-propagation scoring, on
-*both* arms. (One genuine long-context pathology did show up: the full-history control
-**perseverated**, repeating a stale answer as its transcript filled, and on a long-range
-recall step it returned a value from 10 steps earlier's *seed* instead of the current
-one — exactly the failure bounded context avoids.) A recall-only task would isolate the
-mechanism from arithmetic noise; that's the honest next experiment. We ship the demo that
-denied us a clean headline because that's the one worth trusting.
+A long chain `SET`s verbatim values and later `QUERY`s them at increasing distance (steps
+since the value was set). No arithmetic — a wrong answer can only be a memory failure.
+
+| recall accuracy | near (d≤5) | mid (6–13) | far (≥14) | overall |
+|---|---|---|---|---|
+| full-history control | 1.00 | 0.75 | **0.50** | 0.71 |
+| Plateau (bounded) | 0.75 | 1.00 | **0.67** | 0.79 |
+
+**Verdict: `NULL (near-miss)`.** Full-history recall degrades clearly as facts sink
+(1.00 → 0.50); Plateau is flatter and higher overall (0.79 vs 0.71) and beat control at
+every distance bin except the near dip — **but its far-recall (0.67) did not clear the
+0.70 floor we pre-registered**, so by our own locked rule this is **not a win**. The
+directional result favors Plateau; we do not claim it. n is small (far bin = 6), and two of
+Plateau's misses were it grabbing a top-of-file value rather than scanning to the target —
+a presentation artifact, not distance decay. The honest next experiment is a larger n with
+a cleaner register layout; we ship the NULL rather than tune until it crosses the line.
+
+### Supporting — context cost is bounded (both demos, decisive)
+
+The bounded-context half is unambiguous and reproduces in both demos: the full-history arm
+carries an ever-growing transcript (here 95 → 1,317 tokens, ~85 tok/step) while Plateau
+stays flat (68 → 105 tokens). That is the engineering benefit, and it holds regardless of
+the recall verdict. An earlier arithmetic demo ([`demo/demo_prereg.md`](demo/demo_prereg.md),
+[`demo/verdict.json`](demo/verdict.json), [chart](demo/context_per_step.png)) showed the
+same token bound but had its completion axis confounded by arithmetic noise — which is
+exactly why this recall-only demo exists.
 
 See [`examples/continuum_story.md`](examples/continuum_story.md) for how this project's
-discipline once **killed its own headline hypothesis** and **caught its own fabricated
-"PASS"** — the reason these receipts are worth reading.
+discipline **killed its own headline hypothesis** and **caught its own fabricated "PASS"** —
+the reason these receipts are worth reading. Integrity model: [`INTEGRITY.md`](INTEGRITY.md).
 
 ## Claude Code adapter
 
-A thin adapter wires the core to a Claude Code session at the step boundary
-(pre-step inflate+ground, post-step gate+emit). All logic stays in the core.
-See [`adapters/claude_code/`](adapters/claude_code/).
+A thin adapter wires the core to a Claude Code session at the step boundary (pre-step
+inflate+ground, post-step gate+emit). All logic stays in the core. See
+[`adapters/claude_code/`](adapters/claude_code/).
+
+## The condensation limit (stated plainly)
+
+Plateau does **not** claim flat-forever recall. Its signal is bounded, so it can hold only
+so much. Past the point where genuinely more distinct facts must be live than the signal
+carries, recall MUST fall and real context has to be added back. These demos test recall of
+facts that stay within the bounded file; they do not claim infinite compression. Plateau
+bounds and re-grounds context; it does not abolish the need for context.
 
 ## What this is not
 
-Plateau bounds context and keeps only re-grounded state. It does not make the model use
-that state perfectly, and it makes **no claim about understanding or any inner state** —
-it measures context efficiency, nothing more.
+It measures context efficiency and recall — nothing about understanding, coherence, or any
+inner state. And it does not make the model use the carried state perfectly; that depends
+on the model.
 
 ## Layout
 
 ```
 plateau/        core: signal (gate), continuum (emit/inflate/ground), metrics, integrity
 examples/       bare_loop.py (host-free proof) + the continuum story
-demo/           pre-registration, harness, sealed raw, verdict, hero chart
+demo/           two pre-registered demos, sealed raw, verdicts, charts
 adapters/       claude_code/ (thin SKILL.md + hook)
 tests/          26 tests, core has zero third-party deps
 ```

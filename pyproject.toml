@@ -20,8 +20,8 @@ demo = ["numpy>=1.24", "matplotlib>=3.7"]
 test = ["pytest>=7"]
 
 [project.urls]
-Homepage = "https://github.com/OWNER/plateau"
-Repository = "https://github.com/OWNER/plateau"
+Homepage = "https://github.com/aimerdoux/plateau"
+Repository = "https://github.com/aimerdoux/plateau"
 
 [build-system]
 requires = ["hatchling"]

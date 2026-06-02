@@ -1,0 +1,46 @@
+{
+  "metric": "recall_accuracy_vs_distance",
+  "n_queries": 14,
+  "bins": {
+    "near": "<=5",
+    "mid": "6-13",
+    "far": ">=14"
+  },
+  "recall_by_bin": {
+    "control": {
+      "near": 1.0,
+      "mid": 0.75,
+      "far": 0.5,
+      "overall": 0.7143
+    },
+    "plateau": {
+      "near": 0.75,
+      "mid": 1.0,
+      "far": 0.6667,
+      "overall": 0.7857
+    }
+  },
+  "recall_vs_distance_slope": {
+    "control": -0.00969,
+    "plateau": -0.00875
+  },
+  "control_token_slope": 85.567,
+  "control_prompt_first_last": [
+    95,
+    1317
+  ],
+  "plateau_prompt_first_last": [
+    68,
+    105
+  ],
+  "prereg_claims": {
+    "R1_control_tokens_climb": true,
+    "R2_control_recall_degrades": true,
+    "R3_plateau_recall_flat_and_high": false,
+    "R4_plateau_far_beats_control_far": true
+  },
+  "control_stale_or_wrong_far_count": 4,
+  "verdict": "NULL (near-miss) \u2014 by the locked rule this is NOT a win: Plateau's far recall 0.6667 did not clear the pre-registered 0.7 floor. BUT Plateau was both flatter and higher than control (plateau near 0.75\u2192far 0.6667, drop 0.083; control near 1.0\u2192far 0.5, drop 0.5; plateau far 0.6667 > control far 0.5). The directional result favors Plateau; we do not claim the win. n is small (far bin = 6).",
+  "token_metric": "estimated tokens (chars/4), identical proxy both arms",
+  "source": "demo/raw2/records.json (sealed)"
+}
