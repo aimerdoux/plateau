@@ -1,0 +1,302 @@
+{
+  "control_history": [
+    [
+      "Set R2 = R0 + R1. Report the new value of R2.",
+      "8"
+    ],
+    [
+      "Set R4 = R3 * R2. Report the new value of R4.",
+      "8"
+    ],
+    [
+      "Set R0 = R5 - R1. Report the new value of R0.",
+      "8"
+    ],
+    [
+      "Set R6 = R4 + R3. Report the new value of R6.",
+      "8"
+    ],
+    [
+      "Set R1 = R2 * R0. Report the new value of R1.",
+      "13"
+    ],
+    [
+      "Report the current value of R3.",
+      "7"
+    ],
+    [
+      "Set R5 = R6 - R2. Report the new value of R5.",
+      "8"
+    ],
+    [
+      "Set R3 = R1 + R4. Report the new value of R3.",
+      "13"
+    ],
+    [
+      "Report the current value of R0.",
+      "8"
+    ],
+    [
+      "Set R7 = R5 * R0. Report the new value of R7.",
+      "8"
+    ],
+    [
+      "Report the current value of R2.",
+      "2"
+    ],
+    [
+      "Set R4 = R7 - R6. Report the new value of R4.",
+      "8"
+    ],
+    [
+      "Report the current value of R1.",
+      "13"
+    ],
+    [
+      "Set R0 = R4 + R3. Report the new value of R0.",
+      "13"
+    ]
+  ],
+  "plateau_blob": "{\"lessons\":[],\"open_goals\":[\"maintain register file\"],\"pointers\":[],\"schema\":\"plateau.signal.v1\",\"stance\":\"answer from the carried register values\",\"verified_facts\":[{\"claim\":\"R2=8\",\"grounding\":{\"kind\":\"file_hash\",\"source\":\"R2.txt\",\"value\":\"sha256:2c624232cdd221771294dfbb310aca000a0df6ac8b66b696d90ef06fdefb64a3\"}},{\"claim\":\"R6=63\",\"grounding\":{\"kind\":\"file_hash\",\"source\":\"R6.txt\",\"value\":\"sha256:da4ea2a5506f2693eae190d9360a1f31793c98a1adade51d93533a6f520ace1c\"}},{\"claim\":\"R1=40\",\"grounding\":{\"kind\":\"file_hash\",\"source\":\"R1.txt\",\"value\":\"sha256:d59eced1ded07f84c145592f65bdf854358e009c5cd705f5215bf18697fed103\"}},{\"claim\":\"R5=63\",\"grounding\":{\"kind\":\"file_hash\",\"source\":\"R5.txt\",\"value\":\"sha256:da4ea2a5506f2693eae190d9360a1f31793c98a1adade51d93533a6f520ace1c\"}},{\"claim\":\"R3=80\",\"grounding\":{\"kind\":\"file_hash\",\"source\":\"R3.txt\",\"value\":\"sha256:48449a14a4ff7d79bb7a1b6f3d488eba397c36ef25634c111b49baf362511afc\"}},{\"claim\":\"R7=126\",\"grounding\":{\"kind\":\"file_hash\",\"source\":\"R7.txt\",\"value\":\"sha256:65a699905c02619370bcf9207f5a477c3d67130ca71ec6f750e07fe8d510b084\"}},{\"claim\":\"R4=54\",\"grounding\":{\"kind\":\"file_hash\",\"source\":\"R4.txt\",\"value\":\"sha256:2fca346db656187102ce806ac732e06a62df0dbb2829e511a770556d398e1a6e\"}},{\"claim\":\"R0=134\",\"grounding\":{\"kind\":\"file_hash\",\"source\":\"R0.txt\",\"value\":\"sha256:5d389f5e2e34c6b0bad96581c22cee0be36dcf627cd73af4d4cccacd9ef40cc3\"}}]}",
+  "work": "/Users/geniex/bmacp-trunk/plateau/demo/raw/plateau_work",
+  "rows": [
+    {
+      "step": 1,
+      "kind": "UPDATE",
+      "instruction": "Set R2 = R0 + R1. Report the new value of R2.",
+      "gold": 8,
+      "queried_age": 0,
+      "control": {
+        "answer": "8",
+        "correct": true,
+        "prompt_tokens_est": 84
+      },
+      "plateau": {
+        "answer": "8",
+        "correct": true,
+        "prompt_tokens_est": 81
+      }
+    },
+    {
+      "step": 2,
+      "kind": "UPDATE",
+      "instruction": "Set R4 = R3 * R2. Report the new value of R4.",
+      "gold": 56,
+      "queried_age": 0,
+      "control": {
+        "answer": "8",
+        "correct": false,
+        "prompt_tokens_est": 99
+      },
+      "plateau": {
+        "answer": "56",
+        "correct": true,
+        "prompt_tokens_est": 81
+      }
+    },
+    {
+      "step": 3,
+      "kind": "UPDATE",
+      "instruction": "Set R0 = R5 - R1. Report the new value of R0.",
+      "gold": 4,
+      "queried_age": 0,
+      "control": {
+        "answer": "8",
+        "correct": false,
+        "prompt_tokens_est": 118
+      },
+      "plateau": {
+        "answer": "2",
+        "correct": false,
+        "prompt_tokens_est": 81
+      }
+    },
+    {
+      "step": 4,
+      "kind": "UPDATE",
+      "instruction": "Set R6 = R4 + R3. Report the new value of R6.",
+      "gold": 63,
+      "queried_age": 0,
+      "control": {
+        "answer": "8",
+        "correct": false,
+        "prompt_tokens_est": 137
+      },
+      "plateau": {
+        "answer": "63",
+        "correct": true,
+        "prompt_tokens_est": 81
+      }
+    },
+    {
+      "step": 5,
+      "kind": "UPDATE",
+      "instruction": "Set R1 = R2 * R0. Report the new value of R1.",
+      "gold": 32,
+      "queried_age": 0,
+      "control": {
+        "answer": "13",
+        "correct": false,
+        "prompt_tokens_est": 155
+      },
+      "plateau": {
+        "answer": "40",
+        "correct": false,
+        "prompt_tokens_est": 81
+      }
+    },
+    {
+      "step": 6,
+      "kind": "QUERY",
+      "instruction": "Report the current value of R3.",
+      "gold": 7,
+      "queried_age": 6,
+      "control": {
+        "answer": "7",
+        "correct": true,
+        "prompt_tokens_est": 171
+      },
+      "plateau": {
+        "answer": "7",
+        "correct": true,
+        "prompt_tokens_est": 78
+      }
+    },
+    {
+      "step": 7,
+      "kind": "UPDATE",
+      "instruction": "Set R5 = R6 - R2. Report the new value of R5.",
+      "gold": 55,
+      "queried_age": 0,
+      "control": {
+        "answer": "8",
+        "correct": false,
+        "prompt_tokens_est": 190
+      },
+      "plateau": {
+        "answer": "63",
+        "correct": false,
+        "prompt_tokens_est": 82
+      }
+    },
+    {
+      "step": 8,
+      "kind": "UPDATE",
+      "instruction": "Set R3 = R1 + R4. Report the new value of R3.",
+      "gold": 88,
+      "queried_age": 0,
+      "control": {
+        "answer": "13",
+        "correct": false,
+        "prompt_tokens_est": 208
+      },
+      "plateau": {
+        "answer": "80",
+        "correct": false,
+        "prompt_tokens_est": 82
+      }
+    },
+    {
+      "step": 9,
+      "kind": "QUERY",
+      "instruction": "Report the current value of R0.",
+      "gold": 4,
+      "queried_age": 6,
+      "control": {
+        "answer": "8",
+        "correct": false,
+        "prompt_tokens_est": 224
+      },
+      "plateau": {
+        "answer": "80",
+        "correct": false,
+        "prompt_tokens_est": 79
+      }
+    },
+    {
+      "step": 10,
+      "kind": "UPDATE",
+      "instruction": "Set R7 = R5 * R0. Report the new value of R7.",
+      "gold": 220,
+      "queried_age": 0,
+      "control": {
+        "answer": "8",
+        "correct": false,
+        "prompt_tokens_est": 243
+      },
+      "plateau": {
+        "answer": "126",
+        "correct": false,
+        "prompt_tokens_est": 82
+      }
+    },
+    {
+      "step": 11,
+      "kind": "QUERY",
+      "instruction": "Report the current value of R2.",
+      "gold": 8,
+      "queried_age": 10,
+      "control": {
+        "answer": "2",
+        "correct": false,
+        "prompt_tokens_est": 258
+      },
+      "plateau": {
+        "answer": "8",
+        "correct": true,
+        "prompt_tokens_est": 79
+      }
+    },
+    {
+      "step": 12,
+      "kind": "UPDATE",
+      "instruction": "Set R4 = R7 - R6. Report the new value of R4.",
+      "gold": 157,
+      "queried_age": 0,
+      "control": {
+        "answer": "8",
+        "correct": false,
+        "prompt_tokens_est": 277
+      },
+      "plateau": {
+        "answer": "54",
+        "correct": false,
+        "prompt_tokens_est": 83
+      }
+    },
+    {
+      "step": 13,
+      "kind": "QUERY",
+      "instruction": "Report the current value of R1.",
+      "gold": 32,
+      "queried_age": 8,
+      "control": {
+        "answer": "13",
+        "correct": false,
+        "prompt_tokens_est": 293
+      },
+      "plateau": {
+        "answer": "40",
+        "correct": false,
+        "prompt_tokens_est": 79
+      }
+    },
+    {
+      "step": 14,
+      "kind": "UPDATE",
+      "instruction": "Set R0 = R4 + R3. Report the new value of R0.",
+      "gold": 245,
+      "queried_age": 0,
+      "control": {
+        "answer": "13",
+        "correct": false,
+        "prompt_tokens_est": 312
+      },
+      "plateau": {
+        "answer": "134",
+        "correct": false,
+        "prompt_tokens_est": 83
+      }
+    }
+  ]
+}

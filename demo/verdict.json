@@ -1,0 +1,78 @@
+{
+  "metric": "context_growth_slope",
+  "control": {
+    "slope": 17.567,
+    "mean_prompt": 197.8,
+    "mean_completion": 0.1429,
+    "prompt_first_last": [
+      84,
+      312
+    ]
+  },
+  "plateau": {
+    "slope": 0.035,
+    "mean_prompt": 80.9,
+    "mean_completion": 0.3571,
+    "prompt_first_last": [
+      81,
+      83
+    ]
+  },
+  "headline_slope_diff": 17.532,
+  "claims": {
+    "context_flattened_<=25%_control": true,
+    "completion_parity": true,
+    "anti_rig_control_climbs": true
+  },
+  "slope_diff_ci95": {
+    "lo": 17.307,
+    "hi": 17.749,
+    "excludes_zero": true
+  },
+  "verdict": "NOT-A-CLEAN-WIN \u2014 context-slope win is decisive (D1,D2,D4 hold) and Plateau BEAT control on completion, but neither arm cleared the pre-registered 90% parity floor: an INSTRUMENT CONFOUND (unreliable subagent arithmetic + GOLD-vs-error-propagation scoring) swamped the completion axis. NOT 'Plateau forgets' (Plateau > control). Re-run with a recall-only task to isolate the mechanism. Reported honestly as not-a-win per the locked rule.",
+  "library_decide_verdict": "WIN \u2014 Plateau holds a near-flat context slope at completion parity while full-history climbs. Bounded context, no amnesia.",
+  "prereg_claims": {
+    "D1_control_climbs": true,
+    "D2_context_flat": true,
+    "D3_parity_ge_control": true,
+    "D3_parity_ge_90pct_floor": false,
+    "D4_ci_excludes_zero": true,
+    "parity_floor": 0.9,
+    "plateau_completion": 0.3571,
+    "control_completion": 0.1429
+  },
+  "long_range_queries": {
+    "n": 4,
+    "ages": [
+      6,
+      6,
+      10,
+      8
+    ],
+    "control_correct": 1,
+    "plateau_correct": 2
+  },
+  "ceiling_extrapolation": {
+    "budget_tokens": 200000,
+    "control": {
+      "slope": 17.567,
+      "current": 312,
+      "budget": 200000,
+      "steps_to_breach": 11367.2,
+      "will_breach": true,
+      "note": "at this slope, ~11367.2 steps until budget"
+    },
+    "plateau": {
+      "slope": 0.035,
+      "current": 83,
+      "budget": 200000,
+      "steps_to_breach": 5685139.7,
+      "will_breach": true,
+      "note": "at this slope, ~5685139.7 steps until budget"
+    },
+    "note": "extrapolation from measured slope; not run to the literal ceiling"
+  },
+  "token_metric": "estimated tokens (chars/4), identical proxy both arms",
+  "source": "demo/raw/records.json (sealed)",
+  "n_steps": 14
+}

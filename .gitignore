@@ -1,0 +1,12 @@
+__pycache__/
+*.pyc
+.pytest_cache/
+*.egg-info/
+build/
+dist/
+.venv/
+venv/
+# Plateau working signal written by the adapter at runtime
+.plateau/
+# demo plateau measurement work dir (the sealed records.json + manifest ARE committed)
+demo/raw/plateau_work/
