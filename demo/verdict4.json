@@ -1,0 +1,55 @@
+{
+  "arms": {
+    "arm1_fullhistory": {
+      "completion": true,
+      "context": [
+        243,
+        1172
+      ],
+      "errors": 0,
+      "n_steps": 2,
+      "slope": 929.0,
+      "steps_to_done": 2
+    },
+    "arm2_efficiency": {
+      "completion": true,
+      "context": [
+        413,
+        826,
+        1034
+      ],
+      "errors": 0,
+      "n_steps": 3,
+      "slope": 310.5,
+      "steps_to_done": 3
+    },
+    "arm3_autonomy": {
+      "completion": true,
+      "context": [
+        435,
+        1372,
+        1991
+      ],
+      "errors": 0,
+      "n_steps": 3,
+      "slope": 778.0,
+      "steps_to_done": 3
+    }
+  },
+  "autonomy": {
+    "arm2_errors": 0,
+    "arm2_steps": 3,
+    "arm3_errors": 0,
+    "arm3_steps": 3,
+    "reason": "arm3 ties/underperforms arm2 (steps 3 vs 3, errors 0 vs 0) -> Plateau is an efficiency tool, not a capability tool at this scale",
+    "verdict": "NULL"
+  },
+  "efficiency": {
+    "arm1_climbs": true,
+    "arm1_slope": 929.0,
+    "arm2_slope": 310.5,
+    "completion_parity": true,
+    "reason": "arm2 slope 310.5 not <= 25% of arm1 929.0 (no bound achieved)",
+    "verdict": "NULL"
+  }
+}

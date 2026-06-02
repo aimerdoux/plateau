@@ -1,0 +1,326 @@
+[demo6 step=4]
+TASK (identical for both arms): build a STRICTLY SERIAL 'verification chain' feature in the plateau package. Each layer depends on the prior; the success check passes only when ALL layers work.
+L1 plateau/signal.py: add Measurement kind 'command_output' — whitelisted command, value='sha256:'+sha256(raw stdout), fail CLOSED on nonzero-exit/non-whitelisted/missing; whitelist API set_command_whitelist(list)/_CMD_WHITELIST.
+L2 plateau/signal.py: add composite kind 'all_of' — source is a JSON list of child specs {kind,source,value}; reverify() True iff EVERY child reverifies; fail closed on empty/malformed/unknown-child kind.
+L3 plateau/continuum.py: emit/inflate/ground carry 'all_of' losslessly (nested children intact); an all_of whose source won't parse is treated STALE (guard).
+L4 plateau/signal.py: ground_report(state)->dict that walks verified_facts; per fact {claim,kind,live,stale_children}; descends all_of and names failing child sources; aggregate {n_live,n_stale}.
+L5 plateau/report.py (new) + `python -m plateau.report <blob_file>`: inflate a signal blob, run ground_report, print JSON, exit 0 iff all live else 1.
+L6 tests/test_verification_chain.py (new, >=6 tests) covering each layer + gate admits an all_of only while every child live; plus one-paragraph docs in README.md + adapters/claude_code/SKILL.md (docs not required by the check).
+advance ONE coherent sub-task this step, then STOP; do not attempt the whole feature at once.
+
+CONTEXT CARRIED INTO THIS STEP (read this, then do the sub-task above):
+
+--- prior step 1 PROMPT ---
+[demo6 step=1]
+TASK (identical for both arms): build a STRICTLY SERIAL 'verification chain' feature in the plateau package. Each layer depends on the prior; the success check passes only when ALL layers work.
+L1 plateau/signal.py: add Measurement kind 'command_output' — whitelisted command, value='sha256:'+sha256(raw stdout), fail CLOSED on nonzero-exit/non-whitelisted/missing; whitelist API set_command_whitelist(list)/_CMD_WHITELIST.
+L2 plateau/signal.py: add composite kind 'all_of' — source is a JSON list of child specs {kind,source,value}; reverify() True iff EVERY child reverifies; fail closed on empty/malformed/unknown-child kind.
+L3 plateau/continuum.py: emit/inflate/ground carry 'all_of' losslessly (nested children intact); an all_of whose source won't parse is treated STALE (guard).
+L4 plateau/signal.py: ground_report(state)->dict that walks verified_facts; per fact {claim,kind,live,stale_children}; descends all_of and names failing child sources; aggregate {n_live,n_stale}.
+L5 plateau/report.py (new) + `python -m plateau.report <blob_file>`: inflate a signal blob, run ground_report, print JSON, exit 0 iff all live else 1.
+L6 tests/test_verification_chain.py (new, >=6 tests) covering each layer + gate admits an all_of only while every child live; plus one-paragraph docs in README.md + adapters/claude_code/SKILL.md (docs not required by the check).
+advance ONE coherent sub-task this step, then STOP; do not attempt the whole feature at once.
+
+CONTEXT CARRIED INTO THIS STEP (read this, then do the sub-task above):
+
+--- prior step 1 REPLY ---
+# demo6 step=1 — arm1_fullhistory
+
+## Sub-task advanced: L1 — `command_output` Measurement kind
+
+### What changed
+
+**`plateau/signal.py`**
+- Imports added: `hashlib`, `shlex`, `subprocess`.
+- New module global `_CMD_WHITELIST: list[list[str]]` (EMPTY by default — fail closed until host opts in). Each entry is an argv token list.
+- New public fn `set_command_whitelist(commands: list) -> None`: shlex-splits each command string into an argv list and replaces the whitelist. `[]` forbids all command_output. Unparseable/empty entries are ignored, never silently allowed. Matching is on the FULL argv list (`'ls -1'` ≠ `'ls'`).
+- New private helper `_command_is_whitelisted(argv) -> bool` (exact `argv in _CMD_WHITELIST`).
+- `Measurement.kind` Literal extended with `"command_output"`.
+- `Measurement.reverify()` now dispatches `command_output` → new method `_reverify_command_output()`:
+  - `value` == `'sha256:' + sha256(raw stdout bytes)`.
+  - Fails CLOSED (returns False, never raises) on: empty/unparseable source, non-whitelisted argv (refused WITHOUT executing), missing executable / spawn error / timeout (30s), nonzero exit code, or hash mismatch.
+  - Runs with `cwd=_GROUND_ROOT`, `capture_output=True`.
+
+**`plateau/__init__.py`**
+- Exported `set_command_whitelist` (added to the `.signal` import block and to `__all__`).
+
+### Verification
+- Full suite: `26 passed` (was 26 — no regressions; no new tests added this step, L6 owns tests).
+- Manual smoke confirmed: empty-whitelist→fail, whitelisted+matching→pass, wrong value→fail, non-whitelisted argv→fail, nonzero exit→fail, missing exec→fail, empty/unbalanced-quote source→fail.
+
+CARRY: L1 DONE. `plateau.signal.Measurement(kind, source, value)`; kind Literal now includes `"command_output"` (alongside file_hash/test_result/oracle_score/exit_code/operator). For command_output: `source`=command string (shlex-split to argv), `value`=`"sha256:"+sha256(raw_stdout_bytes).hexdigest()`. Whitelist API: `set_command_whitelist(list_of_command_strings)` (exported from `plateau`) + module global `plateau.signal._CMD_WHITELIST` (list[list[str]], argv lists, EMPTY default) + helper `plateau.signal._command_is_whitelisted(argv)`. `reverify()` fails CLOSED on nonzero-exit/non-whitelisted/missing/unparseable/mismatch and NEVER raises. `Measurement` is `@dataclass(frozen=True)`; gate admits a Thought only if `grounding.reverify()` is True. NEXT (L2): add composite kind `"all_of"` to the SAME `Measurement.kind` Literal — `source` is a JSON list of child specs `{kind,source,value}`; `reverify()` True iff EVERY child Measurement reverifies; fail closed on empty list / malformed JSON / unknown child kind. Reuse `Measurement(**child).reverify()` per child. Remember to add `"all_of"` to the kind Literal and keep the file_hash/command_output branches intact. Tests dir uses pytest `tmp_path` + `set_ground_root(str(tmp_path))` pattern; run with `uv run --with pytest --with numpy pytest -q`.
+
+
+--- prior step 2 PROMPT ---
+[demo6 step=2]
+TASK (identical for both arms): build a STRICTLY SERIAL 'verification chain' feature in the plateau package. Each layer depends on the prior; the success check passes only when ALL layers work.
+L1 plateau/signal.py: add Measurement kind 'command_output' — whitelisted command, value='sha256:'+sha256(raw stdout), fail CLOSED on nonzero-exit/non-whitelisted/missing; whitelist API set_command_whitelist(list)/_CMD_WHITELIST.
+L2 plateau/signal.py: add composite kind 'all_of' — source is a JSON list of child specs {kind,source,value}; reverify() True iff EVERY child reverifies; fail closed on empty/malformed/unknown-child kind.
+L3 plateau/continuum.py: emit/inflate/ground carry 'all_of' losslessly (nested children intact); an all_of whose source won't parse is treated STALE (guard).
+L4 plateau/signal.py: ground_report(state)->dict that walks verified_facts; per fact {claim,kind,live,stale_children}; descends all_of and names failing child sources; aggregate {n_live,n_stale}.
+L5 plateau/report.py (new) + `python -m plateau.report <blob_file>`: inflate a signal blob, run ground_report, print JSON, exit 0 iff all live else 1.
+L6 tests/test_verification_chain.py (new, >=6 tests) covering each layer + gate admits an all_of only while every child live; plus one-paragraph docs in README.md + adapters/claude_code/SKILL.md (docs not required by the check).
+advance ONE coherent sub-task this step, then STOP; do not attempt the whole feature at once.
+
+CONTEXT CARRIED INTO THIS STEP (read this, then do the sub-task above):
+
+--- prior step 1 PROMPT ---
+[demo6 step=1]
+TASK (identical for both arms): build a STRICTLY SERIAL 'verification chain' feature in the plateau package. Each layer depends on the prior; the success check passes only when ALL layers work.
+L1 plateau/signal.py: add Measurement kind 'command_output' — whitelisted command, value='sha256:'+sha256(raw stdout), fail CLOSED on nonzero-exit/non-whitelisted/missing; whitelist API set_command_whitelist(list)/_CMD_WHITELIST.
+L2 plateau/signal.py: add composite kind 'all_of' — source is a JSON list of child specs {kind,source,value}; reverify() True iff EVERY child reverifies; fail closed on empty/malformed/unknown-child kind.
+L3 plateau/continuum.py: emit/inflate/ground carry 'all_of' losslessly (nested children intact); an all_of whose source won't parse is treated STALE (guard).
+L4 plateau/signal.py: ground_report(state)->dict that walks verified_facts; per fact {claim,kind,live,stale_children}; descends all_of and names failing child sources; aggregate {n_live,n_stale}.
+L5 plateau/report.py (new) + `python -m plateau.report <blob_file>`: inflate a signal blob, run ground_report, print JSON, exit 0 iff all live else 1.
+L6 tests/test_verification_chain.py (new, >=6 tests) covering each layer + gate admits an all_of only while every child live; plus one-paragraph docs in README.md + adapters/claude_code/SKILL.md (docs not required by the check).
+advance ONE coherent sub-task this step, then STOP; do not attempt the whole feature at once.
+
+CONTEXT CARRIED INTO THIS STEP (read this, then do the sub-task above):
+
+--- prior step 1 REPLY ---
+# demo6 step=1 — arm1_fullhistory
+
+## Sub-task advanced: L1 — `command_output` Measurement kind
+
+### What changed
+
+**`plateau/signal.py`**
+- Imports added: `hashlib`, `shlex`, `subprocess`.
+- New module global `_CMD_WHITELIST: list[list[str]]` (EMPTY by default — fail closed until host opts in). Each entry is an argv token list.
+- New public fn `set_command_whitelist(commands: list) -> None`: shlex-splits each command string into an argv list and replaces the whitelist. `[]` forbids all command_output. Unparseable/empty entries are ignored, never silently allowed. Matching is on the FULL argv list (`'ls -1'` ≠ `'ls'`).
+- New private helper `_command_is_whitelisted(argv) -> bool` (exact `argv in _CMD_WHITELIST`).
+- `Measurement.kind` Literal extended with `"command_output"`.
+- `Measurement.reverify()` now dispatches `command_output` → new method `_reverify_command_output()`:
+  - `value` == `'sha256:' + sha256(raw stdout bytes)`.
+  - Fails CLOSED (returns False, never raises) on: empty/unparseable source, non-whitelisted argv (refused WITHOUT executing), missing executable / spawn error / timeout (30s), nonzero exit code, or hash mismatch.
+  - Runs with `cwd=_GROUND_ROOT`, `capture_output=True`.
+
+**`plateau/__init__.py`**
+- Exported `set_command_whitelist` (added to the `.signal` import block and to `__all__`).
+
+### Verification
+- Full suite: `26 passed` (was 26 — no regressions; no new tests added this step, L6 owns tests).
+- Manual smoke confirmed: empty-whitelist→fail, whitelisted+matching→pass, wrong value→fail, non-whitelisted argv→fail, nonzero exit→fail, missing exec→fail, empty/unbalanced-quote source→fail.
+
+CARRY: L1 DONE. `plateau.signal.Measurement(kind, source, value)`; kind Literal now includes `"command_output"` (alongside file_hash/test_result/oracle_score/exit_code/operator). For command_output: `source`=command string (shlex-split to argv), `value`=`"sha256:"+sha256(raw_stdout_bytes).hexdigest()`. Whitelist API: `set_command_whitelist(list_of_command_strings)` (exported from `plateau`) + module global `plateau.signal._CMD_WHITELIST` (list[list[str]], argv lists, EMPTY default) + helper `plateau.signal._command_is_whitelisted(argv)`. `reverify()` fails CLOSED on nonzero-exit/non-whitelisted/missing/unparseable/mismatch and NEVER raises. `Measurement` is `@dataclass(frozen=True)`; gate admits a Thought only if `grounding.reverify()` is True. NEXT (L2): add composite kind `"all_of"` to the SAME `Measurement.kind` Literal — `source` is a JSON list of child specs `{kind,source,value}`; `reverify()` True iff EVERY child Measurement reverifies; fail closed on empty list / malformed JSON / unknown child kind. Reuse `Measurement(**child).reverify()` per child. Remember to add `"all_of"` to the kind Literal and keep the file_hash/command_output branches intact. Tests dir uses pytest `tmp_path` + `set_ground_root(str(tmp_path))` pattern; run with `uv run --with pytest --with numpy pytest -q`.
+
+
+--- prior step 2 REPLY ---
+# demo6 step=2 — arm1_fullhistory
+
+## Sub-task advanced: L2 — `all_of` composite Measurement kind
+
+### What changed
+
+**`plateau/signal.py`**
+- Imported `json`.
+- Extended `Measurement.kind` Literal to include `"all_of"` (now: file_hash / test_result / oracle_score / exit_code / operator / command_output / all_of).
+- `Measurement.reverify()` now dispatches `all_of` → new method `_reverify_all_of()`.
+- New method `_reverify_all_of()`:
+  - `source` is a JSON list of child specs `{kind, source, value}`.
+  - Parses with `json.loads`; builds each child via `Measurement(kind, source, value)` and returns True **iff EVERY child `.reverify()` is True**.
+  - Fails CLOSED (returns False, never raises) on: empty `source`, malformed JSON (`ValueError`/`TypeError`), non-list payload, empty list, a child that is not a dict, a child missing/ non-string `source`/`value`, or an unknown child `kind` (validated against the explicit valid-kinds set).
+  - Recurses correctly: an `all_of` may be a child of another `all_of` (nested composites verified).
+
+### Verification
+- Full suite: `26 passed` (no regressions; L6 still owns the new tests).
+- Manual smoke confirmed all branches: happy (all children live)→True; one child wrong→False; empty list→False; malformed JSON→False; non-list payload→False; unknown child kind→False; child not a dict→False; missing keys→False; empty source→False; nested all_of→True.
+
+CARRY: L2 DONE. `Measurement.kind` Literal now includes `"all_of"`. For `all_of`: `source` = JSON-encoded `list[dict]` of child specs each `{"kind":..,"source":..,"value":..}`; `value` is unused (pass `""`). `reverify()` builds `Measurement(**child)` per child and returns True iff ALL reverify; fails CLOSED on empty/malformed-JSON/non-list/empty-list/child-not-dict/missing-or-nonstring-keys/unknown-child-kind, and NEVER raises. Implemented in private method `Measurement._reverify_all_of()`. Valid child kinds set is the explicit list `{file_hash, test_result, oracle_score, exit_code, operator, command_output, all_of}` (all_of nesting supported). `Measurement` remains `@dataclass(frozen=True)`. NEXT (L3, `plateau/continuum.py`): make emit/inflate/ground carry `all_of` LOSSLESSLY — the JSON child list in `source` must survive round-trip with nested children intact (do not re-serialize/lose nesting). An `all_of` whose `source` won't `json.loads` (or isn't a non-empty list) must be treated STALE by the continuum guard (mirror how reverify fails closed). Inspect `plateau/continuum.py` for the existing emit/inflate/ground + stale-guard pattern (likely keys off `grounding_kind`/`grounding_source`/`grounding_value` from gate's admitted dicts in `signal.py`). Tests dir uses pytest `tmp_path` + `set_ground_root(str(tmp_path))`; run with `uv run --with pytest --with numpy pytest -q`.
+
+
+--- prior step 3 PROMPT ---
+[demo6 step=3]
+TASK (identical for both arms): build a STRICTLY SERIAL 'verification chain' feature in the plateau package. Each layer depends on the prior; the success check passes only when ALL layers work.
+L1 plateau/signal.py: add Measurement kind 'command_output' — whitelisted command, value='sha256:'+sha256(raw stdout), fail CLOSED on nonzero-exit/non-whitelisted/missing; whitelist API set_command_whitelist(list)/_CMD_WHITELIST.
+L2 plateau/signal.py: add composite kind 'all_of' — source is a JSON list of child specs {kind,source,value}; reverify() True iff EVERY child reverifies; fail closed on empty/malformed/unknown-child kind.
+L3 plateau/continuum.py: emit/inflate/ground carry 'all_of' losslessly (nested children intact); an all_of whose source won't parse is treated STALE (guard).
+L4 plateau/signal.py: ground_report(state)->dict that walks verified_facts; per fact {claim,kind,live,stale_children}; descends all_of and names failing child sources; aggregate {n_live,n_stale}.
+L5 plateau/report.py (new) + `python -m plateau.report <blob_file>`: inflate a signal blob, run ground_report, print JSON, exit 0 iff all live else 1.
+L6 tests/test_verification_chain.py (new, >=6 tests) covering each layer + gate admits an all_of only while every child live; plus one-paragraph docs in README.md + adapters/claude_code/SKILL.md (docs not required by the check).
+advance ONE coherent sub-task this step, then STOP; do not attempt the whole feature at once.
+
+CONTEXT CARRIED INTO THIS STEP (read this, then do the sub-task above):
+
+--- prior step 1 PROMPT ---
+[demo6 step=1]
+TASK (identical for both arms): build a STRICTLY SERIAL 'verification chain' feature in the plateau package. Each layer depends on the prior; the success check passes only when ALL layers work.
+L1 plateau/signal.py: add Measurement kind 'command_output' — whitelisted command, value='sha256:'+sha256(raw stdout), fail CLOSED on nonzero-exit/non-whitelisted/missing; whitelist API set_command_whitelist(list)/_CMD_WHITELIST.
+L2 plateau/signal.py: add composite kind 'all_of' — source is a JSON list of child specs {kind,source,value}; reverify() True iff EVERY child reverifies; fail closed on empty/malformed/unknown-child kind.
+L3 plateau/continuum.py: emit/inflate/ground carry 'all_of' losslessly (nested children intact); an all_of whose source won't parse is treated STALE (guard).
+L4 plateau/signal.py: ground_report(state)->dict that walks verified_facts; per fact {claim,kind,live,stale_children}; descends all_of and names failing child sources; aggregate {n_live,n_stale}.
+L5 plateau/report.py (new) + `python -m plateau.report <blob_file>`: inflate a signal blob, run ground_report, print JSON, exit 0 iff all live else 1.
+L6 tests/test_verification_chain.py (new, >=6 tests) covering each layer + gate admits an all_of only while every child live; plus one-paragraph docs in README.md + adapters/claude_code/SKILL.md (docs not required by the check).
+advance ONE coherent sub-task this step, then STOP; do not attempt the whole feature at once.
+
+CONTEXT CARRIED INTO THIS STEP (read this, then do the sub-task above):
+
+--- prior step 1 REPLY ---
+# demo6 step=1 — arm1_fullhistory
+
+## Sub-task advanced: L1 — `command_output` Measurement kind
+
+### What changed
+
+**`plateau/signal.py`**
+- Imports added: `hashlib`, `shlex`, `subprocess`.
+- New module global `_CMD_WHITELIST: list[list[str]]` (EMPTY by default — fail closed until host opts in). Each entry is an argv token list.
+- New public fn `set_command_whitelist(commands: list) -> None`: shlex-splits each command string into an argv list and replaces the whitelist. `[]` forbids all command_output. Unparseable/empty entries are ignored, never silently allowed. Matching is on the FULL argv list (`'ls -1'` ≠ `'ls'`).
+- New private helper `_command_is_whitelisted(argv) -> bool` (exact `argv in _CMD_WHITELIST`).
+- `Measurement.kind` Literal extended with `"command_output"`.
+- `Measurement.reverify()` now dispatches `command_output` → new method `_reverify_command_output()`:
+  - `value` == `'sha256:' + sha256(raw stdout bytes)`.
+  - Fails CLOSED (returns False, never raises) on: empty/unparseable source, non-whitelisted argv (refused WITHOUT executing), missing executable / spawn error / timeout (30s), nonzero exit code, or hash mismatch.
+  - Runs with `cwd=_GROUND_ROOT`, `capture_output=True`.
+
+**`plateau/__init__.py`**
+- Exported `set_command_whitelist` (added to the `.signal` import block and to `__all__`).
+
+### Verification
+- Full suite: `26 passed` (was 26 — no regressions; no new tests added this step, L6 owns tests).
+- Manual smoke confirmed: empty-whitelist→fail, whitelisted+matching→pass, wrong value→fail, non-whitelisted argv→fail, nonzero exit→fail, missing exec→fail, empty/unbalanced-quote source→fail.
+
+CARRY: L1 DONE. `plateau.signal.Measurement(kind, source, value)`; kind Literal now includes `"command_output"` (alongside file_hash/test_result/oracle_score/exit_code/operator). For command_output: `source`=command string (shlex-split to argv), `value`=`"sha256:"+sha256(raw_stdout_bytes).hexdigest()`. Whitelist API: `set_command_whitelist(list_of_command_strings)` (exported from `plateau`) + module global `plateau.signal._CMD_WHITELIST` (list[list[str]], argv lists, EMPTY default) + helper `plateau.signal._command_is_whitelisted(argv)`. `reverify()` fails CLOSED on nonzero-exit/non-whitelisted/missing/unparseable/mismatch and NEVER raises. `Measurement` is `@dataclass(frozen=True)`; gate admits a Thought only if `grounding.reverify()` is True. NEXT (L2): add composite kind `"all_of"` to the SAME `Measurement.kind` Literal — `source` is a JSON list of child specs `{kind,source,value}`; `reverify()` True iff EVERY child Measurement reverifies; fail closed on empty list / malformed JSON / unknown child kind. Reuse `Measurement(**child).reverify()` per child. Remember to add `"all_of"` to the kind Literal and keep the file_hash/command_output branches intact. Tests dir uses pytest `tmp_path` + `set_ground_root(str(tmp_path))` pattern; run with `uv run --with pytest --with numpy pytest -q`.
+
+
+--- prior step 2 PROMPT ---
+[demo6 step=2]
+TASK (identical for both arms): build a STRICTLY SERIAL 'verification chain' feature in the plateau package. Each layer depends on the prior; the success check passes only when ALL layers work.
+L1 plateau/signal.py: add Measurement kind 'command_output' — whitelisted command, value='sha256:'+sha256(raw stdout), fail CLOSED on nonzero-exit/non-whitelisted/missing; whitelist API set_command_whitelist(list)/_CMD_WHITELIST.
+L2 plateau/signal.py: add composite kind 'all_of' — source is a JSON list of child specs {kind,source,value}; reverify() True iff EVERY child reverifies; fail closed on empty/malformed/unknown-child kind.
+L3 plateau/continuum.py: emit/inflate/ground carry 'all_of' losslessly (nested children intact); an all_of whose source won't parse is treated STALE (guard).
+L4 plateau/signal.py: ground_report(state)->dict that walks verified_facts; per fact {claim,kind,live,stale_children}; descends all_of and names failing child sources; aggregate {n_live,n_stale}.
+L5 plateau/report.py (new) + `python -m plateau.report <blob_file>`: inflate a signal blob, run ground_report, print JSON, exit 0 iff all live else 1.
+L6 tests/test_verification_chain.py (new, >=6 tests) covering each layer + gate admits an all_of only while every child live; plus one-paragraph docs in README.md + adapters/claude_code/SKILL.md (docs not required by the check).
+advance ONE coherent sub-task this step, then STOP; do not attempt the whole feature at once.
+
+CONTEXT CARRIED INTO THIS STEP (read this, then do the sub-task above):
+
+--- prior step 1 PROMPT ---
+[demo6 step=1]
+TASK (identical for both arms): build a STRICTLY SERIAL 'verification chain' feature in the plateau package. Each layer depends on the prior; the success check passes only when ALL layers work.
+L1 plateau/signal.py: add Measurement kind 'command_output' — whitelisted command, value='sha256:'+sha256(raw stdout), fail CLOSED on nonzero-exit/non-whitelisted/missing; whitelist API set_command_whitelist(list)/_CMD_WHITELIST.
+L2 plateau/signal.py: add composite kind 'all_of' — source is a JSON list of child specs {kind,source,value}; reverify() True iff EVERY child reverifies; fail closed on empty/malformed/unknown-child kind.
+L3 plateau/continuum.py: emit/inflate/ground carry 'all_of' losslessly (nested children intact); an all_of whose source won't parse is treated STALE (guard).
+L4 plateau/signal.py: ground_report(state)->dict that walks verified_facts; per fact {claim,kind,live,stale_children}; descends all_of and names failing child sources; aggregate {n_live,n_stale}.
+L5 plateau/report.py (new) + `python -m plateau.report <blob_file>`: inflate a signal blob, run ground_report, print JSON, exit 0 iff all live else 1.
+L6 tests/test_verification_chain.py (new, >=6 tests) covering each layer + gate admits an all_of only while every child live; plus one-paragraph docs in README.md + adapters/claude_code/SKILL.md (docs not required by the check).
+advance ONE coherent sub-task this step, then STOP; do not attempt the whole feature at once.
+
+CONTEXT CARRIED INTO THIS STEP (read this, then do the sub-task above):
+
+--- prior step 1 REPLY ---
+# demo6 step=1 — arm1_fullhistory
+
+## Sub-task advanced: L1 — `command_output` Measurement kind
+
+### What changed
+
+**`plateau/signal.py`**
+- Imports added: `hashlib`, `shlex`, `subprocess`.
+- New module global `_CMD_WHITELIST: list[list[str]]` (EMPTY by default — fail closed until host opts in). Each entry is an argv token list.
+- New public fn `set_command_whitelist(commands: list) -> None`: shlex-splits each command string into an argv list and replaces the whitelist. `[]` forbids all command_output. Unparseable/empty entries are ignored, never silently allowed. Matching is on the FULL argv list (`'ls -1'` ≠ `'ls'`).
+- New private helper `_command_is_whitelisted(argv) -> bool` (exact `argv in _CMD_WHITELIST`).
+- `Measurement.kind` Literal extended with `"command_output"`.
+- `Measurement.reverify()` now dispatches `command_output` → new method `_reverify_command_output()`:
+  - `value` == `'sha256:' + sha256(raw stdout bytes)`.
+  - Fails CLOSED (returns False, never raises) on: empty/unparseable source, non-whitelisted argv (refused WITHOUT executing), missing executable / spawn error / timeout (30s), nonzero exit code, or hash mismatch.
+  - Runs with `cwd=_GROUND_ROOT`, `capture_output=True`.
+
+**`plateau/__init__.py`**
+- Exported `set_command_whitelist` (added to the `.signal` import block and to `__all__`).
+
+### Verification
+- Full suite: `26 passed` (was 26 — no regressions; no new tests added this step, L6 owns tests).
+- Manual smoke confirmed: empty-whitelist→fail, whitelisted+matching→pass, wrong value→fail, non-whitelisted argv→fail, nonzero exit→fail, missing exec→fail, empty/unbalanced-quote source→fail.
+
+CARRY: L1 DONE. `plateau.signal.Measurement(kind, source, value)`; kind Literal now includes `"command_output"` (alongside file_hash/test_result/oracle_score/exit_code/operator). For command_output: `source`=command string (shlex-split to argv), `value`=`"sha256:"+sha256(raw_stdout_bytes).hexdigest()`. Whitelist API: `set_command_whitelist(list_of_command_strings)` (exported from `plateau`) + module global `plateau.signal._CMD_WHITELIST` (list[list[str]], argv lists, EMPTY default) + helper `plateau.signal._command_is_whitelisted(argv)`. `reverify()` fails CLOSED on nonzero-exit/non-whitelisted/missing/unparseable/mismatch and NEVER raises. `Measurement` is `@dataclass(frozen=True)`; gate admits a Thought only if `grounding.reverify()` is True. NEXT (L2): add composite kind `"all_of"` to the SAME `Measurement.kind` Literal — `source` is a JSON list of child specs `{kind,source,value}`; `reverify()` True iff EVERY child Measurement reverifies; fail closed on empty list / malformed JSON / unknown child kind. Reuse `Measurement(**child).reverify()` per child. Remember to add `"all_of"` to the kind Literal and keep the file_hash/command_output branches intact. Tests dir uses pytest `tmp_path` + `set_ground_root(str(tmp_path))` pattern; run with `uv run --with pytest --with numpy pytest -q`.
+
+
+--- prior step 2 REPLY ---
+# demo6 step=2 — arm1_fullhistory
+
+## Sub-task advanced: L2 — `all_of` composite Measurement kind
+
+### What changed
+
+**`plateau/signal.py`**
+- Imported `json`.
+- Extended `Measurement.kind` Literal to include `"all_of"` (now: file_hash / test_result / oracle_score / exit_code / operator / command_output / all_of).
+- `Measurement.reverify()` now dispatches `all_of` → new method `_reverify_all_of()`.
+- New method `_reverify_all_of()`:
+  - `source` is a JSON list of child specs `{kind, source, value}`.
+  - Parses with `json.loads`; builds each child via `Measurement(kind, source, value)` and returns True **iff EVERY child `.reverify()` is True**.
+  - Fails CLOSED (returns False, never raises) on: empty `source`, malformed JSON (`ValueError`/`TypeError`), non-list payload, empty list, a child that is not a dict, a child missing/ non-string `source`/`value`, or an unknown child `kind` (validated against the explicit valid-kinds set).
+  - Recurses correctly: an `all_of` may be a child of another `all_of` (nested composites verified).
+
+### Verification
+- Full suite: `26 passed` (no regressions; L6 still owns the new tests).
+- Manual smoke confirmed all branches: happy (all children live)→True; one child wrong→False; empty list→False; malformed JSON→False; non-list payload→False; unknown child kind→False; child not a dict→False; missing keys→False; empty source→False; nested all_of→True.
+
+CARRY: L2 DONE. `Measurement.kind` Literal now includes `"all_of"`. For `all_of`: `source` = JSON-encoded `list[dict]` of child specs each `{"kind":..,"source":..,"value":..}`; `value` is unused (pass `""`). `reverify()` builds `Measurement(**child)` per child and returns True iff ALL reverify; fails CLOSED on empty/malformed-JSON/non-list/empty-list/child-not-dict/missing-or-nonstring-keys/unknown-child-kind, and NEVER raises. Implemented in private method `Measurement._reverify_all_of()`. Valid child kinds set is the explicit list `{file_hash, test_result, oracle_score, exit_code, operator, command_output, all_of}` (all_of nesting supported). `Measurement` remains `@dataclass(frozen=True)`. NEXT (L3, `plateau/continuum.py`): make emit/inflate/ground carry `all_of` LOSSLESSLY — the JSON child list in `source` must survive round-trip with nested children intact (do not re-serialize/lose nesting). An `all_of` whose `source` won't `json.loads` (or isn't a non-empty list) must be treated STALE by the continuum guard (mirror how reverify fails closed). Inspect `plateau/continuum.py` for the existing emit/inflate/ground + stale-guard pattern (likely keys off `grounding_kind`/`grounding_source`/`grounding_value` from gate's admitted dicts in `signal.py`). Tests dir uses pytest `tmp_path` + `set_ground_root(str(tmp_path))`; run with `uv run --with pytest --with numpy pytest -q`.
+
+
+--- prior step 3 REPLY ---
+# demo6 step=3 — arm1_fullhistory
+
+## Sub-task advanced: L3 — continuum carries `all_of` losslessly + explicit STALE guard
+
+### What changed
+
+**`plateau/continuum.py`**
+- New helper `_all_of_source_parses(source: str) -> bool`: returns True only if `source`
+  `json.loads`-es into a NON-EMPTY list. Mirrors how `Measurement._reverify_all_of`
+  fails closed, but lifts the parse check up to the continuum layer.
+- `ground(state)` now has an explicit guard: a fact with `grounding_kind == "all_of"`
+  whose `grounding_source` fails `_all_of_source_parses` is appended to `stale` BEFORE
+  any child is touched, with a distinct reason
+  `"all_of source did not parse into a non-empty list (composite grounding is malformed)"`.
+  Well-formed `all_of` facts still flow through `Measurement(...).reverify()` as before;
+  if a child's reality moved they get the existing generic reason
+  `"reality no longer supports this carried fact"` — so the two failure modes are
+  distinguishable (useful for L4's `ground_report` which descends `all_of` and names
+  failing child sources).
+- Updated `ground()` docstring to document lossless `all_of` carry + the guard.
+
+### Lossless carry: already structural (verified, not re-implemented)
+`emit` / `inflate` pass `grounding.kind/source/value` through verbatim. For an `all_of`,
+the JSON child list lives in `source` as an opaque string, so it survives the
+`json.dumps`/`json.loads` round-trip with nested children (including `all_of`-in-`all_of`)
+fully intact. Confirmed by smoke: a nested `all_of` round-trips through emit→inflate with
+`grounding_kind == "all_of"` preserved and `grounding_source == original`; nested child
+source strings (e.g. `a.txt`, its `sha256:` value) all present in the blob. No change to
+`emit`/`inflate` was needed — the lossless requirement was met by the existing
+pass-through; only the explicit guard was missing.
+
+### Verification
+- Full suite: `26 passed` (no regressions; L6 still owns the new tests).
+- Smoke confirmed: nested `all_of` lossless round-trip + all-live; malformed-JSON source →
+  STALE via guard; empty-list `[]` source → STALE via guard (distinct reason);
+  well-formed `all_of` with a child whose reality moved → STALE via reverify (generic
+  reason); all-children-live `all_of` → live, no stale.
+
+CARRY: L3 DONE. Continuum now carries `all_of` losslessly and guards it. Lossless carry
+is STRUCTURAL: `emit`/`inflate` pass `grounding.kind/source/value` unchanged, so an
+`all_of`'s JSON child list (in `grounding_source`, value `""`) round-trips with nested
+children intact — including `all_of` nested in `all_of`. STALE guard lives in
+`plateau.continuum.ground()`: a `grounding_kind=="all_of"` fact whose `grounding_source`
+fails new helper `plateau.continuum._all_of_source_parses(source)` (True iff `json.loads`
+→ non-empty list) is put in `Grounding.stale` BEFORE any child runs, reason
+`"all_of source did not parse into a non-empty list (composite grounding is malformed)"`.
+Well-formed-but-failing all_of gets the generic reason
+`"reality no longer supports this carried fact"`. `Grounding` (continuum) has
+`.live: list[dict]` / `.stale: list[dict]` (+ `.stale_claims()`); each stale entry is
+`{claim, grounding_source, reason}`. `inflate(blob, fresh=True)` re-grounds and sets
+`Inflated.state.verified_facts = g.live`, `Inflated.stale = g.stale` (+ `.stale_claims()`).
+A carried verified_fact dict shape is
+`{claim, grounding_kind, grounding_source, grounding_value}`.
+NEXT (L4, `plateau/signal.py`): add `ground_report(state) -> dict` that walks
+`state.verified_facts`; per fact emit `{claim, kind, live, stale_children}` — for an
+`all_of`, DESCEND its children (parse `grounding_source`/the child `source` JSON) and
+name the failing child `source`s in `stale_children` (reuse the live/malformed split
+logic — malformed/empty all_of ⇒ live False; reuse `Measurement(**child).reverify()` per
+child to decide which children are live); aggregate `{n_live, n_stale}` over all facts.
+Mirror `ground()`'s parse-guard so a malformed all_of reports live False with an empty or
+sentinel `stale_children` consistently. Run: `uv run --with pytest --with numpy pytest -q`.
+

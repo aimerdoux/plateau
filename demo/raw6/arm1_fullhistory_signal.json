@@ -1,0 +1,14 @@
+{
+"lessons": [],
+"open_goals": [
+"L1 signal.py command_output",
+"L2 signal.py all_of composite",
+"L3 continuum.py carry all_of lossless",
+"L4 signal.py ground_report",
+"L5 plateau/report.py CLI",
+"L6 tests/test_verification_chain.py >=6 + docs"
+],
+"pointers": [],
+"stance": "serial verification-chain; each layer depends on prior; value='sha256:'+sha256(stdout); all_of reverifies iff all children live; fail closed; keep 26 tests green",
+"verified_facts": []
+}

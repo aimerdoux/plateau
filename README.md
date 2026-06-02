@@ -78,11 +78,15 @@ See [`examples/continuum_story.md`](examples/continuum_story.md) for how this pr
 discipline **killed its own headline hypothesis** and **caught its own fabricated "PASS"** —
 the reason these receipts are worth reading. Integrity model: [`INTEGRITY.md`](INTEGRITY.md).
 
-## Claude Code adapter
+## Claude Code plugin
 
-A thin adapter wires the core to a Claude Code session at the step boundary (pre-step
-inflate+ground, post-step gate+emit). All logic stays in the core.
-See [`adapters/claude_code/`](adapters/claude_code/).
+`adapters/claude_code/` is an installable **Claude Code plugin** (`.claude-plugin/plugin.json`,
+a `plateau` skill, `hooks/hooks.json`, and slash commands). Enable it and the step boundary is
+auto-wired: `UserPromptSubmit` inflates + re-grounds the carried signal and **injects it as
+`additionalContext`** (the model sees the bounded signal, not the full transcript); `Stop` gates
+queued facts and persists the bounded `.plateau/signal.json`. Commands: `/plateau:status`,
+`/plateau:gate`. All decision logic stays in the zero-dep core — the adapter is only step-boundary
+I/O. See [`adapters/claude_code/`](adapters/claude_code/).
 
 ## The condensation limit (stated plainly)
 
@@ -97,7 +101,7 @@ does not abolish the need for context.
 plateau/        core: signal (gate), continuum (emit/inflate/ground), metrics, integrity
 examples/       bare_loop.py (host-free proof) + the continuum story
 demo/           three pre-registered demos, sealed raw, verdicts, charts
-adapters/       claude_code/ (thin SKILL.md + hook)
+adapters/       claude_code/ — installable Claude Code plugin (plugin.json, skill, hooks, commands)
 tests/          26 tests, core has zero third-party deps
 ```
 

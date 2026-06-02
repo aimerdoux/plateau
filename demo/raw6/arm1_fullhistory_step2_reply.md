@@ -1,0 +1,13 @@
+DIFF:
+<terse>
+- plateau/signal.py: imported `json`. Added `"all_of"` to the `Measurement.kind` Literal (after `command_output`). Implemented the `all_of` branch in `Measurement.reverify()`: `json.loads(self.source)` wrapped in try/except (unparseable ⇒ False); fail CLOSED if result is not a list or is empty; for each child spec fail CLOSED unless it is a dict containing keys {kind,source,value}; reconstruct `Measurement(kind,source,value)` per child and `.reverify()` it; return False on first child that doesn't reverify; True only when EVERY child reverifies. Unknown/unwired child kinds fail closed via the existing per-kind contract (no special-casing needed).
+- Probed: all-children-live→True; one stale child→False; empty list→False; malformed JSON→False; non-list source→False; unknown child kind (operator)→False; child missing a key→False.
+- 26 existing tests still pass (PYTHONPATH=. pytest, repo .venv).
+</terse>
+
+CARRY:
+- L2 DONE. `all_of` spec: `Measurement(kind="all_of", source=json.dumps([{"kind","source","value"}, ...]), value="")` — top-level `value` is unused/ignored ("" by convention); the child list lives ENTIRELY in `source`. reverify True iff list non-empty AND every child dict has all of {kind,source,value} AND every reconstructed child `.reverify()` is True. Fails CLOSED on: empty list, JSON parse error, non-list, child not a dict, child missing any required key, any child kind that itself fails closed (operator/test_result/oracle_score/exit_code), any child whose value no longer re-derives.
+- Child specs nest: a child may itself be `{"kind":"all_of","source":<json list>,"value":""}`, so all_of is recursive — L3 round-trip must preserve nested `source` strings byte-for-byte (do NOT re-serialize children with different key order/whitespace; carry the `source` JSON string as an opaque blob).
+- L3 (continuum.py, NEXT): emit/inflate/ground must carry `all_of` facts losslessly — the JSON child list lives in the fact's `grounding_source` field (same field used by other kinds). An all_of whose `grounding_source` won't `json.loads` is treated STALE by the continuum guard (do not crash). Match continuum's existing per-fact carry shape ({claim, grounding_kind, grounding_source, grounding_value}) as produced by `gate()` in signal.py.
+- L4 (ground_report) will descend all_of children and name failing child `source` strings in `stale_children`; keep that in mind — the child `source` (not the whole spec) is the human-facing identifier. No continuum changes needed for L2; signal.py is the only file touched this step.
+- Reuse note: the reverify-each-child loop is the reusable primitive L4 should call into rather than re-walking JSON; consider that when wiring ground_report so the descend logic isn't duplicated.

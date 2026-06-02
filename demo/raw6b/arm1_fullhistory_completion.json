@@ -1,0 +1,113 @@
+{
+"arm": "arm1_fullhistory",
+"completion": true,
+"context": [
+365,
+1494,
+3753,
+8568,
+18186,
+37405
+],
+"errors": 0,
+"slope": 6859.742857142857,
+"steps": [
+{
+"check": {
+"errors": 0,
+"exit": 0,
+"failed": 0,
+"n_tests": 26,
+"ok": false,
+"ok_pytest": false,
+"passed": 26,
+"probe_ok": false,
+"probe_reason": "no ground_report API (L4 missing)",
+"pytest_tail": "..........................                                               [100%]\n26 passed in 0.23s"
+},
+"context_tokens": 365,
+"step": 1
+},
+{
+"check": {
+"errors": 0,
+"exit": 0,
+"failed": 0,
+"n_tests": 26,
+"ok": false,
+"ok_pytest": false,
+"passed": 26,
+"probe_ok": false,
+"probe_reason": "no ground_report API (L4 missing)",
+"pytest_tail": "..........................                                               [100%]\n26 passed in 0.24s"
+},
+"context_tokens": 1494,
+"step": 2
+},
+{
+"check": {
+"errors": 0,
+"exit": 0,
+"failed": 0,
+"n_tests": 26,
+"ok": false,
+"ok_pytest": false,
+"passed": 26,
+"probe_ok": false,
+"probe_reason": "no ground_report API (L4 missing)",
+"pytest_tail": "..........................                                               [100%]\n26 passed in 0.24s"
+},
+"context_tokens": 3753,
+"step": 3
+},
+{
+"check": {
+"errors": 0,
+"exit": 0,
+"failed": 0,
+"n_tests": 26,
+"ok": false,
+"ok_pytest": false,
+"passed": 26,
+"probe_ok": false,
+"probe_reason": "no plateau.report module (L5): ImportError(\"cannot import name 'report' from 'plateau' (/Users/geniex/bmacp-trunk/demo6b_arms/arm1_fullhistory/plateau/__init__.py)\")",
+"pytest_tail": "..........................                                               [100%]\n26 passed in 0.23s"
+},
+"context_tokens": 8568,
+"step": 4
+},
+{
+"check": {
+"errors": 0,
+"exit": 0,
+"failed": 0,
+"n_tests": 26,
+"ok": false,
+"ok_pytest": false,
+"passed": 26,
+"probe_ok": true,
+"probe_reason": "verification chain L1-L5: live-admit, stale-propagation, report+CLI all hold",
+"pytest_tail": "..........................                                               [100%]\n26 passed in 0.25s"
+},
+"context_tokens": 18186,
+"step": 5
+},
+{
+"check": {
+"errors": 0,
+"exit": 0,
+"failed": 0,
+"n_tests": 32,
+"ok": true,
+"ok_pytest": true,
+"passed": 32,
+"probe_ok": true,
+"probe_reason": "verification chain L1-L5: live-admit, stale-propagation, report+CLI all hold",
+"pytest_tail": "................................                                         [100%]\n32 passed in 0.33s"
+},
+"context_tokens": 37405,
+"step": 6
+}
+],
+"steps_to_done": 6
+}

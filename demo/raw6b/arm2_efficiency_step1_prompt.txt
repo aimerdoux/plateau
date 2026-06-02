@@ -1,0 +1,12 @@
+[demo6 step=1]
+TASK (identical for both arms): build a STRICTLY SERIAL 'verification chain' feature in the plateau package. Each layer depends on the prior; the success check passes only when ALL layers work.
+L1 plateau/signal.py: add Measurement kind 'command_output' — whitelisted command, value='sha256:'+sha256(raw stdout), fail CLOSED on nonzero-exit/non-whitelisted/missing; whitelist API set_command_whitelist(list)/_CMD_WHITELIST.
+L2 plateau/signal.py: add composite kind 'all_of' — source is a JSON list of child specs {kind,source,value}; reverify() True iff EVERY child reverifies; fail closed on empty/malformed/unknown-child kind.
+L3 plateau/continuum.py: emit/inflate/ground carry 'all_of' losslessly (nested children intact); an all_of whose source won't parse is treated STALE (guard).
+L4 plateau/signal.py: ground_report(state)->dict that walks verified_facts; per fact {claim,kind,live,stale_children}; descends all_of and names failing child sources; aggregate {n_live,n_stale}.
+L5 plateau/report.py (new) + `python -m plateau.report <blob_file>`: inflate a signal blob, run ground_report, print JSON, exit 0 iff all live else 1.
+L6 tests/test_verification_chain.py (new, >=6 tests) covering each layer + gate admits an all_of only while every child live; plus one-paragraph docs in README.md + adapters/claude_code/SKILL.md (docs not required by the check).
+advance ONE coherent sub-task this step, then STOP; do not attempt the whole feature at once.
+
+CONTEXT CARRIED INTO THIS STEP (read this, then do the sub-task above):
+{"lessons":[],"open_goals":["L1 signal.py command_output","L2 signal.py all_of composite","L3 continuum.py carry all_of lossless","L4 signal.py ground_report","L5 plateau/report.py CLI","L6 tests/test_verification_chain.py >=6 + docs"],"pointers":[],"schema":"plateau.signal.v1","stance":"serial verification-chain; each layer depends on prior; value='sha256:'+sha256(stdout); all_of reverifies iff all children live; fail closed; keep 26 tests green","verified_facts":[]}

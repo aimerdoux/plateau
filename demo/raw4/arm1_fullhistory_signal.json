@@ -1,0 +1,12 @@
+{
+"lessons": [],
+"open_goals": [
+"1 signal.py: command_output reverify branch (whitelist, sha256 stdout, fail-closed)",
+"2 continuum.py: carry kind losslessly (verify + guard)",
+"3 tests/test_measurement_kinds.py: >=2 tests live-admit + stale-drop",
+"4 README.md + adapters/claude_code/SKILL.md: document kind + pending-facts example"
+],
+"pointers": [],
+"stance": "implement command_output end-to-end; value='sha256:'+sha256(raw stdout); fail closed on nonzero-exit/non-whitelisted/missing; keep existing 26 tests green",
+"verified_facts": []
+}

@@ -1,0 +1,12 @@
+{
+  "efficiency": {
+    "arm1_climbs": true,
+    "arm1_slope": 6839.2,
+    "arm2_slope": 203.34285714285716,
+    "completion_parity": true,
+    "reason": "arm1 climbs (slope 6839.2); arm2 slope 203.3 <= 25% of arm1; completion parity held",
+    "verdict": "WIN"
+  },
+  "harness4_pin_ok": true,
+  "note": "demo6 is 2-arm; autonomy NOT tested (demo4 NULL stands)"
+}

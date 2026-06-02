@@ -86,10 +86,53 @@ def post() -> dict:
             "note": "only facts whose Measurement re-verified were admitted to the signal"}
 
 
+def _render_carried(cs: dict, stale: list) -> str:
+    """Compact rendering of the carried self-state for injection as additionalContext.
+    This IS the bounded signal — keep it small."""
+    parts = ["[Plateau — carried self-state, re-grounded against the repo this step]"]
+    if cs["open_goals"]:
+        parts.append("open goals: " + "; ".join(cs["open_goals"]))
+    if cs["stance"]:
+        parts.append("stance: " + cs["stance"])
+    if cs["lessons"]:
+        parts.append("lessons: " + "; ".join(cs["lessons"]))
+    if cs["pointers"]:
+        parts.append("pointers: " + "; ".join(cs["pointers"]))
+    if cs["verified_facts"]:
+        parts.append("verified facts (gated): " + "; ".join(cs["verified_facts"]))
+    if stale:
+        parts.append("DROPPED as stale (reality moved — do not trust): " + "; ".join(stale))
+    if len(parts) == 1:
+        parts.append("(empty — no signal carried yet)")
+    return "\n".join(parts)
+
+
 def main() -> None:
-    mode = sys.argv[1] if len(sys.argv) > 1 else "pre"
+    """CLI + Claude Code hook entry. `--cc` emits Claude-Code-hook JSON:
+    UserPromptSubmit (pre) injects the carried signal as additionalContext; Stop (post)
+    gates+persists and returns a one-line systemMessage. Without `--cc`, prints the raw
+    dict (manual/dry use). The pre()/post() decision logic is unchanged either way."""
+    args = [a for a in sys.argv[1:] if a != "--cc"]
+    cc = "--cc" in sys.argv[1:]
+    mode = args[0] if args else "pre"
+    if cc:
+        try:
+            sys.stdin.read()  # drain the hook's stdin JSON; we ground via cwd, not stdin
+        except Exception:
+            pass
     out = pre() if mode == "pre" else post()
-    print(json.dumps(out, indent=2))
+    if not cc:
+        print(json.dumps(out, indent=2))
+        return
+    if mode == "pre":
+        ctx = _render_carried(out["carried_self_state"], out["stale_dropped_at_inflate"])
+        print(json.dumps({"hookSpecificOutput": {
+            "hookEventName": "UserPromptSubmit", "additionalContext": ctx}}))
+    else:
+        n_adm, n_drop = len(out.get("admitted", [])), len(out.get("dropped_ungrounded", []))
+        print(json.dumps({"suppressOutput": True,
+                          "systemMessage": f"Plateau: signal persisted to {out['signal_path']} "
+                                           f"({n_adm} fact(s) admitted, {n_drop} dropped ungrounded)."}))
 
 
 if __name__ == "__main__":

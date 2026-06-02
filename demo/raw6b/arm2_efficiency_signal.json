@@ -1,0 +1,48 @@
+{
+"lessons": [
+"schema=plateau.signal.v1. L1 DONE. signal.py API now: `Measurement.kind` Literal includes `\"command_output\"`; value format = `'sha256:'+sha256(raw stdout bytes)`; whitelist via `set_command_whitelist(",
+"schema=plateau.signal.v1. L1+L2 DONE. signal.py API: `Measurement.kind` Literal now includes `\"all_of\"`; an all_of's `source` = JSON list of child specs `[{\"kind\",\"source\",\"value\"}, ...]` and its `val",
+"schema=plateau.signal.v1. L1+L2+L3 DONE. `all_of` (kind in `Measurement.kind` Literal) crosses emit/inflate/ground losslessly via the `grounding.source` JSON string (child specs `[{\"kind\",\"source\",\"va",
+"schema=plateau.signal.v1. L1+L2+L3+L4 DONE. New API in `plateau/signal.py`: `ground_report(state: RelationalState) -> dict` returns `{\"facts\":[{\"claim\":str,\"kind\":str,\"live\":bool,\"stale_children\":[str",
+"schema=plateau.signal.v1. L1+L2+L3+L4+L5 DONE. New module `plateau/report.py` exposes `run(blob_file: str) -> int` and `main(argv=None) -> int`; CLI entry `python -m plateau.report <blob_file>` inflat",
+"L1+L2+L3+L4+L5+L6(tests) DONE. New file `tests/test_verification_chain.py` (8 tests) is green; suite now 36 passing. Imports used by tests: `ground_report`, `set_command_whitelist`, `command_whitelist"
+],
+"open_goals": [
+"L1 signal.py command_output",
+"L2 signal.py all_of composite",
+"L3 continuum.py carry all_of lossless",
+"L4 signal.py ground_report",
+"L5 plateau/report.py CLI",
+"L6 tests/test_verification_chain.py >=6 + docs"
+],
+"pointers": [
+"arm_repo:/Users/geniex/bmacp-trunk/demo6b_arms/arm2_efficiency"
+],
+"stance": "serial verification-chain; each layer depends on prior; value='sha256:'+sha256(stdout); all_of reverifies iff all children live; fail closed; keep 26 tests green",
+"verified_facts": [
+{
+"claim": "plateau/signal.py present",
+"grounding_kind": "file_hash",
+"grounding_source": "/Users/geniex/bmacp-trunk/demo6b_arms/arm2_efficiency/plateau/signal.py",
+"grounding_value": "sha256:52fbea71b59d4837696fd8230875b80d9cdfba2b39774f1c4d938a389e21eb34"
+},
+{
+"claim": "plateau/continuum.py present",
+"grounding_kind": "file_hash",
+"grounding_source": "/Users/geniex/bmacp-trunk/demo6b_arms/arm2_efficiency/plateau/continuum.py",
+"grounding_value": "sha256:787ac5f36193e7bd9ab4060481ebd8472e99413fc42d149165107461160e2ead"
+},
+{
+"claim": "plateau/report.py present",
+"grounding_kind": "file_hash",
+"grounding_source": "/Users/geniex/bmacp-trunk/demo6b_arms/arm2_efficiency/plateau/report.py",
+"grounding_value": "sha256:d4d71254282943c5ce766ff56fde7e05f790cae6f07d234d5fc9a90e4849a523"
+},
+{
+"claim": "tests/test_verification_chain.py present",
+"grounding_kind": "file_hash",
+"grounding_source": "/Users/geniex/bmacp-trunk/demo6b_arms/arm2_efficiency/tests/test_verification_chain.py",
+"grounding_value": "sha256:efa106fcc5f7cba209884163bcfa71a7677b59806e250c65f8621c0f80268a03"
+}
+]
+}

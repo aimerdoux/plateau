@@ -1,0 +1,9 @@
+[demo4 arm=arm1_fullhistory step=1]
+TASK (identical for all arms): add a new Measurement kind `command_output` to the plateau package, end-to-end.
+1. plateau/signal.py: add 'command_output' to Measurement.kind; reverify() runs a WHITELISTED command, hashes stdout as 'sha256:'+sha256(raw stdout bytes) (same convention as file_hash), compares to recorded value; fail CLOSED on nonzero exit, non-whitelisted command, or missing command. Provide a whitelist API (set_command_whitelist(list) and/or module set _CMD_WHITELIST).
+2. plateau/continuum.py: ensure emit/ground/inflate carry the new kind losslessly (kind already passes through; verify + add a guard).
+3. tests/test_measurement_kinds.py (NEW): >=2 tests — a command_output fact re-verifies while output stable and goes STALE when it changes; gate admits only while live.
+4. README.md + adapters/claude_code/SKILL.md: one paragraph each documenting the kind; SKILL pending-facts format gains a command_output example.
+Advance the feature this step, then STOP. The harness runs the objective check.
+
+FULL PRIOR TRANSCRIPT (carried):

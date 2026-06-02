@@ -1,0 +1,11 @@
+DIFF:
+- plateau/signal.py: imports hashlib/shlex/subprocess. Added module-level `_CMD_WHITELIST: set[str]`, `set_command_whitelist(list)`, `command_whitelist()->set`. Measurement.kind Literal now includes "command_output". reverify() dispatches command_output to new `_reverify_command_output()`: shlex-splits source, runs argv via subprocess (cwd=_GROUND_ROOT, stdout=PIPE, stderr=DEVNULL); value compared to `"sha256:"+sha256(raw stdout bytes)`. Fails CLOSED (False) on empty/missing cmd, cmd not in `_CMD_WHITELIST`, unparsable argv, OSError/ValueError, or nonzero exit.
+- plateau/__init__.py: export + __all__ add `set_command_whitelist`, `command_whitelist`.
+- Verified: 26 tests green; manual repl confirms whitelisted-match True, non-whitelisted/missing/nonzero-exit all False.
+
+CARRY:
+- L1 DONE. Signatures: `Measurement(kind,source,value)` with kind in {file_hash,command_output,test_result,oracle_score,exit_code,operator}; `_CMD_WHITELIST: set[str]`; `set_command_whitelist(list)->None`; `command_whitelist()->set`. command_output value convention = `"sha256:"+sha256(stdout)` (mirrors integrity.file_hash which is sha256 of file BYTES).
+- L2 (next): add kind "all_of" to the Literal + reverify dispatch. source is a JSON list of child specs `{kind,source,value}`. reverify() True iff EVERY child Measurement(**spec).reverify() is True; fail closed on empty list, json parse error, malformed/missing keys, or unknown child kind. Put logic in a `_reverify_all_of()` helper next to `_reverify_command_output()`.
+- L3: continuum.py emit/inflate/ground must carry all_of losslessly (nested child specs intact through JSON round-trip); an all_of whose source won't JSON-parse is treated STALE. Check continuum.py's current fact-carry shape (verified_facts are dicts {claim,grounding_kind,grounding_source,grounding_value}).
+- L4: signal.py `ground_report(state)->dict` walks state.verified_facts; per fact {claim,kind,live,stale_children}; descends all_of, names failing child sources; aggregate {n_live,n_stale}.
+- L5: new plateau/report.py + `python -m plateau.report <blob_file>` — inflate blob, run ground_report, print JSON, exit 0 iff all live else 1. L6: tests/test_verification_chain.py (>=6) + README/SKILL docs paragraph.

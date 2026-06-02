@@ -1,0 +1,57 @@
+{
+"lessons": [
+"`live` per fact = `Measurement(kind,source,value).reverify()`; for non-`all_of` kinds `stale_children` is `[]`. `n_live`/`n_stale` count facts (a fact is stale if `not live`), not children.",
+"Remaining: L4 `ground_report` (signal.py), L5 `plateau/report.py` + `python -m plateau.report <blob_file>` (inflate blob \u2192 ground_report \u2192 print JSON \u2192 exit 0 iff all live else 1), L6 `tests/test_veri",
+"Test runner: `uv run --extra test --extra demo python -m pytest -q` (the `demo`/numpy extra is REQUIRED or 4 metrics tests error on numpy import \u2014 unrelated to signal work).",
+"L5 = NEW file `plateau/report.py` with a `__main__` (`python -m plateau.report <blob_file>`): read blob_file, `inflate(blob)` (continuum, re-grounds), `ground_report(inflated.state)`, `print(json.dump",
+"Gotcha: `file_hash` (plateau.integrity) ALREADY returns a `sha256:`-prefixed string \u2014 do NOT re-prefix when building expected values in tests/blobs (double `sha256:sha256:` silently fails reverify).",
+"ground_report shape is settled: `{\"n_live\":int,\"n_stale\":int,\"facts\":[{claim,kind,live,stale_children}]}`; CLI exit code keys off `n_stale==0`. inflate already drops stale facts into `Inflated.stale`,",
+"Test runner: `uv run --extra test --extra demo python -m pytest -q` (demo/numpy extra REQUIRED).",
+"Remaining after L5: L6 `tests/test_verification_chain.py` (>=6 tests covering each layer L1\u2013L5 + \"gate admits an all_of only while every child live\") + one-paragraph docs in README.md and adapters/cla",
+"L6 is the only remaining layer: NEW `tests/test_verification_chain.py`, >=6 tests, total >=32 (currently 26). Cover one test per layer L1-L5 + the keystone \"gate admits an all_of only while every chil",
+"Test fixtures: write real temp files under a `set_ground_root(tmpdir)`; build all_of source via `json.dumps([{kind,source,value}, ...])`; `file_hash()` already returns a `sha256:`-prefixed string \u2014 do",
+"L5 CLI test (in test_verification_chain.py): emit a blob to a temp file, call `plateau.report.main([path])` in-process and assert rc 0/1; OR subprocess `[sys.executable,\"-m\",\"plateau.report\",path]`. A",
+"Runner gotcha (unchanged): `uv run --extra test --extra demo python -m pytest -q` \u2014 the `demo`/numpy extra is REQUIRED or 4 metrics tests error on numpy import.",
+"Docs (not gated by the check): one paragraph each in `README.md` and `adapters/claude_code/SKILL.md` describing the serial verification chain (command_output \u2192 all_of \u2192 lossless carry \u2192 ground_report ",
+"Full suite 34 passed, 0 failures (was 26; +8). Confirmed under both `uv run --extra test --extra demo python -m pytest -q` and `uv run --with pytest --with numpy pytest -q`.",
+"Feature complete: L1-L6 all done. Nothing left."
+],
+"open_goals": [
+"L1 signal.py command_output",
+"L2 signal.py all_of composite",
+"L3 continuum.py carry all_of lossless",
+"L4 signal.py ground_report",
+"L5 plateau/report.py CLI",
+"L6 tests/test_verification_chain.py >=6 + docs"
+],
+"pointers": [
+"arm_repo:/Users/geniex/bmacp-trunk/demo6_arms/arm2_efficiency"
+],
+"stance": "serial verification-chain; each layer depends on prior; value='sha256:'+sha256(stdout); all_of reverifies iff all children live; fail closed; keep 26 tests green",
+"verified_facts": [
+{
+"claim": "plateau/signal.py present",
+"grounding_kind": "file_hash",
+"grounding_source": "/Users/geniex/bmacp-trunk/demo6_arms/arm2_efficiency/plateau/signal.py",
+"grounding_value": "sha256:b434a8c80f57dad4ade997417af217122fdc2dd6f015f0ab47ae563226bef058"
+},
+{
+"claim": "plateau/continuum.py present",
+"grounding_kind": "file_hash",
+"grounding_source": "/Users/geniex/bmacp-trunk/demo6_arms/arm2_efficiency/plateau/continuum.py",
+"grounding_value": "sha256:2abc25eff1e243115ab3b14cd2e1d907c4e81646c70a67229df90c8d103dddf8"
+},
+{
+"claim": "plateau/report.py present",
+"grounding_kind": "file_hash",
+"grounding_source": "/Users/geniex/bmacp-trunk/demo6_arms/arm2_efficiency/plateau/report.py",
+"grounding_value": "sha256:2079441f5a9c7d73ba0475cf3ae57501b4015f65a6edf31332f9061316d8ffd4"
+},
+{
+"claim": "tests/test_verification_chain.py present",
+"grounding_kind": "file_hash",
+"grounding_source": "/Users/geniex/bmacp-trunk/demo6_arms/arm2_efficiency/tests/test_verification_chain.py",
+"grounding_value": "sha256:45f51a2f5c25a602ef91b15ce6d9562426908354c2560c105123e9590401f74e"
+}
+]
+}

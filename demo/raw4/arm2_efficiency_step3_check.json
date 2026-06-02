@@ -1,0 +1,12 @@
+{
+"errors": 0,
+"exit": 0,
+"failed": 0,
+"n_tests": 30,
+"ok": true,
+"ok_pytest": true,
+"passed": 30,
+"probe_ok": true,
+"probe_reason": "command_output kind: live-admit, stale-drop, fail-closed all hold",
+"pytest_tail": "..............................                                           [100%]\n30 passed in 0.24s"
+}

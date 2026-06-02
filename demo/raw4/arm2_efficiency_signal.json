@@ -1,0 +1,49 @@
+{
+"lessons": [
+"Whitelist API: `set_command_whitelist(list[str])` replaces set; module set is `_CMD_WHITELIST`; read-only helper `command_whitelist()` returns a copy. Empty whitelist \u21d2 every command_output fails clos",
+"Value convention: `value = \"sha256:\" + sha256(raw stdout BYTES).hexdigest()` (matches integrity.file_hash 'sha256:' prefix). `source` is the EXACT command string (must equal a whitelist entry verbatim",
+"`\"command_output\"` is now in the Measurement.kind Literal. continuum.py already passes kind through dicts \u2014 step 2 just needs verify + a guard, no Literal change there.",
+"For tests (step 3): toggle liveness by editing the whitelist (admit only while live) AND/OR by changing the command's stdout to flip STALE; gate()/apply_gate() already key off reverify() with no kind-",
+"DONE this step: sub-task 1 (signal.py command_output reverify branch + whitelist API + Literal). REMAINS: continuum.py guard, tests/test_measurement_kinds.py (>=2), README.md + adapters/claude_code/SK",
+"signal.py (step1) + continuum.py guard (step2) DONE. REMAINS: tests/test_measurement_kinds.py (>=2), README.md, adapters/claude_code/SKILL.md.",
+"Test harness pattern (mirror tests/test_continuum.py): use `set_ground_root(str(tmp_path))`; write a tiny script file under tmp_path and whitelist a stable command e.g. `set_command_whitelist([\"cat ou",
+"Whitelist API now importable from top-level `plateau`: `set_command_whitelist`, `command_whitelist`. `source` must equal a whitelist entry VERBATIM. Empty whitelist \u21d2 all command_output fail closed.",
+"Guard means a command_output fact only stays live if (a) command whitelisted AND (b) clean exit AND (c) stdout re-hashes to recorded value AND (d) kind known. Tests can rely on de-whitelisting as a cl",
+"existing tests must stay green (currently green). New test file makes it 28+.",
+"signal.py (step1) + continuum.py guard (step2) + tests/test_measurement_kinds.py (step3) DONE. REMAINS: README.md paragraph + adapters/claude_code/SKILL.md paragraph & pending-facts command_output exa",
+"command_output contract proven by tests: value=\"sha256:\"+sha256(raw stdout bytes); source must equal a whitelist entry verbatim; fail closed on de-whitelist / nonzero-exit / missing.",
+"Docs step can reuse the example: source=\"cat out.txt\", value=\"sha256:<hex>\", kind=\"command_output\"; note whitelist is required (set_command_whitelist) or the fact never re-grounds.",
+"tests green; keep green when adding docs (docs are non-code, no test impact expected)."
+],
+"open_goals": [
+"1 signal.py: command_output reverify branch (whitelist, sha256 stdout, fail-closed)",
+"2 continuum.py: carry kind losslessly (verify + guard)",
+"3 tests/test_measurement_kinds.py: >=2 tests live-admit + stale-drop",
+"4 README.md + adapters/claude_code/SKILL.md: document kind + pending-facts example"
+],
+"pointers": [
+"arm_repo:/Users/geniex/bmacp-trunk/demo4_arms/arm2_efficiency",
+"last_reply:/Users/geniex/bmacp-trunk/plateau/demo/raw4/arm2_efficiency_step3_reply.md"
+],
+"stance": "implement command_output end-to-end; value='sha256:'+sha256(raw stdout); fail closed on nonzero-exit/non-whitelisted/missing; keep existing 26 tests green",
+"verified_facts": [
+{
+"claim": "plateau/signal.py present",
+"grounding_kind": "file_hash",
+"grounding_source": "/Users/geniex/bmacp-trunk/demo4_arms/arm2_efficiency/plateau/signal.py",
+"grounding_value": "sha256:9155259344e69b087a9e4c7d38982138371450c30e5e6d7fffa8274223d0abd1"
+},
+{
+"claim": "plateau/continuum.py present",
+"grounding_kind": "file_hash",
+"grounding_source": "/Users/geniex/bmacp-trunk/demo4_arms/arm2_efficiency/plateau/continuum.py",
+"grounding_value": "sha256:539d4d60c00ced6a134bb0c77f2701d3f87208ab41391dd70aea2fba868c6550"
+},
+{
+"claim": "tests/test_measurement_kinds.py present",
+"grounding_kind": "file_hash",
+"grounding_source": "/Users/geniex/bmacp-trunk/demo4_arms/arm2_efficiency/tests/test_measurement_kinds.py",
+"grounding_value": "sha256:8cae9078f133e53f12cfbf9da6426454d2178b5363217918e6f48f97f098f26a"
+}
+]
+}

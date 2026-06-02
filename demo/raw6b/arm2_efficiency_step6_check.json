@@ -1,0 +1,12 @@
+{
+"errors": 0,
+"exit": 0,
+"failed": 0,
+"n_tests": 36,
+"ok": true,
+"ok_pytest": true,
+"passed": 36,
+"probe_ok": true,
+"probe_reason": "verification chain L1-L5: live-admit, stale-propagation, report+CLI all hold",
+"pytest_tail": "....................................                                     [100%]\n36 passed in 0.26s"
+}

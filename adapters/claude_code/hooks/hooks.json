@@ -1,0 +1,28 @@
+{
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/hook.py pre --cc",
+            "timeout": 15,
+            "statusMessage": "Plateau: inflating + re-grounding carried signal"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/hook.py post --cc",
+            "timeout": 15,
+            "statusMessage": "Plateau: gating facts + persisting bounded signal"
+          }
+        ]
+      }
+    ]
+  }
+}
