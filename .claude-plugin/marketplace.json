@@ -1,0 +1,21 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "plateau",
+  "description": "Bounded, predictable context for long Claude Code sessions — carry a small, re-grounded signal across steps instead of replaying the whole transcript.",
+  "owner": { "name": "Plateau contributors" },
+  "plugins": [
+    {
+      "name": "plateau",
+      "description": "Carry a small, re-grounded signal across steps instead of letting the transcript climb toward the context ceiling. UserPromptSubmit injects the bounded signal as context; Stop gates newly proposed facts (a fact enters the signal only if a Measurement re-verifies against the repo). Commands: /plateau:status, /plateau:gate. Requires the `plateau` core package: pip install git+https://github.com/aimerdoux/plateau.git",
+      "author": { "name": "Plateau contributors" },
+      "category": "productivity",
+      "source": {
+        "source": "git-subdir",
+        "url": "https://github.com/aimerdoux/plateau.git",
+        "path": "adapters/claude_code",
+        "ref": "main"
+      },
+      "homepage": "https://github.com/aimerdoux/plateau"
+    }
+  ]
+}

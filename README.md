@@ -88,6 +88,20 @@ queued facts and persists the bounded `.plateau/signal.json`. Commands: `/platea
 `/plateau:gate`. All decision logic stays in the zero-dep core — the adapter is only step-boundary
 I/O. See [`adapters/claude_code/`](adapters/claude_code/).
 
+**Install in a fresh Claude Code session:**
+
+```bash
+pip install git+https://github.com/aimerdoux/plateau.git    # the core (so the hook can import plateau)
+```
+```
+/plugin marketplace add aimerdoux/plateau
+/plugin install plateau@plateau
+```
+
+The hooks and `/plateau:*` commands activate automatically. The carried signal persists to
+`.plateau/signal.json` in the project. (The hook runs `python3`; install the core into the
+same interpreter Claude Code's hooks use.)
+
 ## The condensation limit (stated plainly)
 
 Plateau does not claim flat-forever recall. Its signal is bounded, so it can hold only so
