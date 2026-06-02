@@ -11,3 +11,4 @@ venv/
 # demo plateau measurement work dirs (the sealed records.json + manifest ARE committed)
 demo/raw/plateau_work/
 demo/raw2/plateau_work/
+demo/raw3/plateau_work/

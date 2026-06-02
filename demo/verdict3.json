@@ -1,0 +1,46 @@
+{
+  "metric": "recall_accuracy_vs_distance",
+  "n_queries": 18,
+  "bins": {
+    "near": "<=5",
+    "mid": "6-13",
+    "far": ">=14"
+  },
+  "recall_by_bin": {
+    "control": {
+      "near": 1.0,
+      "mid": 0.75,
+      "far": 0.8,
+      "overall": 0.8333
+    },
+    "plateau": {
+      "near": 1.0,
+      "mid": 1.0,
+      "far": 1.0,
+      "overall": 1.0
+    }
+  },
+  "recall_vs_distance_slope": {
+    "control": -0.00578,
+    "plateau": 0.0
+  },
+  "control_token_slope": 114.836,
+  "control_prompt_first_last": [
+    98,
+    2138
+  ],
+  "plateau_prompt_first_last": [
+    71,
+    120
+  ],
+  "prereg_claims": {
+    "R1_control_tokens_climb": true,
+    "R2_control_recall_degrades": false,
+    "R3_plateau_recall_flat_and_high": true,
+    "R4_plateau_far_beats_control_far": true
+  },
+  "control_stale_or_wrong_far_count": 3,
+  "verdict": "UNSCORABLE \u2014 control recall did NOT degrade with distance (near 1.0, far 0.8); facts didn't sink deep enough. Lengthen the chain; do not score a degradation that isn't there.",
+  "token_metric": "estimated tokens (chars/4), identical proxy both arms",
+  "source": "demo/raw3/records.json (sealed)"
+}
