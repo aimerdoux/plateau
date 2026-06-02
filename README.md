@@ -107,9 +107,10 @@ I/O. See [`adapters/claude_code/`](adapters/claude_code/).
 pip install git+https://github.com/aimerdoux/plateau.git    # the core (so the hook can import plateau)
 ```
 ```
-/plugin marketplace add aimerdoux/plateau
+/plugin marketplace add https://github.com/aimerdoux/plateau
 /plugin install plateau@plateau
 ```
+(Use the full HTTPS URL — the `owner/repo` shorthand defaults to SSH and fails without a GitHub SSH key.)
 
 The hooks and `/plateau:*` commands activate automatically. The carried signal persists to
 `.plateau/signal.json` in the project. The hook calls bare `python3`, so install the core into
