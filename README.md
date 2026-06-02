@@ -112,8 +112,9 @@ pip install git+https://github.com/aimerdoux/plateau.git    # the core (so the h
 ```
 
 The hooks and `/plateau:*` commands activate automatically. The carried signal persists to
-`.plateau/signal.json` in the project. (The hook runs `python3`; install the core into the
-same interpreter Claude Code's hooks use.)
+`.plateau/signal.json` in the project. The hook calls bare `python3`, so install the core into
+that interpreter — **Python 3.9+ works**, including macOS's system `/usr/bin/python3`, so the
+plain `pip install` above is enough (no 3.10+ requirement).
 
 ## The condensation limit (stated plainly)
 

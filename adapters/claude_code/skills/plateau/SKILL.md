@@ -20,7 +20,7 @@ This adapter is **thin**: it does I/O at the step boundary and delegates every d
 The core package must be importable, then the plugin auto-wires the step boundary:
 
 ```bash
-pip install plateau          # when published; until then: pip install -e <path-to>/plateau
+pip install git+https://github.com/aimerdoux/plateau.git   # Python 3.9+ — macOS's system python3 works
 ```
 
 Enable this plugin in Claude Code. Its `hooks/hooks.json` then auto-installs:

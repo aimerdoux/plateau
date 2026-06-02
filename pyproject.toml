@@ -3,7 +3,7 @@ name = "plateau"
 version = "0.1.0"
 description = "Bounded, predictable context for long-horizon agents — emit a small re-grounded signal instead of carrying full history."
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.9"   # core is stdlib-only + defers annotations (from __future__); 28 tests pass on 3.9.6 (macOS system python3)
 license = { text = "Apache-2.0" }
 authors = [{ name = "Plateau contributors" }]
 keywords = ["agents", "context", "llm", "long-horizon", "memory", "continuity"]
