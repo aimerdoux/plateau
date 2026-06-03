@@ -6,6 +6,43 @@ An **external** loop that holds a small re-grounded signal on disk and spawns ea
 in-session `/plateau:run` (Option 2) hits. Folded into the core as the `plateau.agency`
 subpackage; it reuses `plateau.integrity.file_hash` / `plateau.signal` for hashing + the gate.
 
+## The three layers (prose contracts, handed down by path)
+
+The driver is the executable orchestrator, but the *delegation discipline* it enforces is written
+out as three prose contracts — one per layer of the depth-of-agency hierarchy. They ship with the
+package and are meant to be read top-down and handed down by path:
+
+| Layer | Doc | What it is |
+|---|---|---|
+| **PARENT** | [`PARENT_AGENT_MANUAL.md`](PARENT_AGENT_MANUAL.md) | Usable verbatim as a parent system prompt. Turns a one-line operator mission into N independent background orchestrators, then keeps the parent's context flat (O(1) per agent, independent of internal steps). |
+| **ORCHESTRATOR** | [`ORCHESTRATOR_PROMPT.md`](ORCHESTRATOR_PROMPT.md) | The bounded loop spawned by the parent. Picks one item, spawns one worker, gates the result, meters to disk, sheds — and returns to the parent EXACTLY ONCE. |
+| **WORKER** | [`BACKGROUND_AGENCY.md`](BACKGROUND_AGENCY.md) | The worker contract (Parts A/B/C): fresh `claude -p` per unit, sees only `signal + one subtask`, does all heavy I/O in-process, returns ONE line, writes detail to disk, then dies. |
+
+The law they all serve: **context lives at the bottom and dies there; only the small capped SIGNAL
+climbs.** `PARENT_AGENT_MANUAL.md` is the layer *above* the other two — it does not re-teach the
+orchestrator/worker contracts, it hands them down.
+
+## Case study — the live wavex-os run
+
+These contracts are not theory: the agency drove a real bounded QA-hardening run against
+[`wavex-os`](https://github.com/aimerdoux/wavex-os) and the parent never compacted.
+
+- **4 bounded orchestrators**, one per workstream — `connectors`, `fleet-observe`, `fleet-launch`,
+  `onboarding` — spawned once and run to completion.
+- **A live 19-agent sonnet fleet** of ephemeral workers underneath them, each fresh-and-discarded.
+- **3 PRs** emitted in `write` mode, never merged by the agency:
+  [`wavex-os#44`](https://github.com/aimerdoux/wavex-os/pull/44) (force devDeps so paperclip boots
+  under `NODE_ENV=production`), [`#45`](https://github.com/aimerdoux/wavex-os/pull/45) (gate
+  unauthenticated `/api/connectors/*` routes + harden env write),
+  [`#46`](https://github.com/aimerdoux/wavex-os/pull/46) (gate 4 unauthenticated control-plane +
+  inference-allocation endpoints).
+- **The parent stayed flat the whole run** — it spawned once per workstream, read disk meters /
+  findings on demand, and verified from one-line returns; the heavy reading and editing lived and
+  died in the workers.
+
+Full write-up (4 orchestrators, the fleet, the PRs, the bounded-parent footprint):
+`/Users/geniex/wavex-os/.plateau-agency/reports/AGENCY_RUN_REPORT.pdf`.
+
 ```
 plateau/agency/
   config.py     repo-agnostic config: auto-detect gate cmds + layout, JSON override, source fallback

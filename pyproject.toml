@@ -1,6 +1,6 @@
 [project]
 name = "plateau"
-version = "0.1.0"
+version = "0.2.0"
 description = "Bounded, predictable context for long-horizon agents — emit a small re-grounded signal instead of carrying full history."
 readme = "README.md"
 requires-python = ">=3.9"   # core is stdlib-only + defers annotations (from __future__); 28 tests pass on 3.9.6 (macOS system python3)
@@ -33,8 +33,13 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["plateau", "plateau.agency"]
-# ship the agency example override configs (JSON is not auto-included otherwise)
-artifacts = ["plateau/agency/configs/*.json"]
+# the agency layer ships its prose contracts (the parent/orchestrator/worker manuals are the
+# product, not just code) plus the example override configs — neither *.md nor *.json is
+# auto-included by hatchling, so list them as explicit artifacts.
+artifacts = [
+    "plateau/agency/*.md",
+    "plateau/agency/configs/*.json",
+]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

@@ -6,6 +6,43 @@ the task grows, and a stored fact stays one short line away.
 
 ![recall accuracy vs fact-distance: Plateau flat at 100%, full-history at ~18x the tokens](demo/recall_vs_distance3.png)
 
+## What's in the box
+
+Plateau ships three things that stack:
+
+1. **The bounded-context CORE** (`plateau/`, zero third-party deps) — the mechanism. Five pieces:
+   **signal** (the *gate*: a fact enters the carried signal only when a `Measurement` re-verifies
+   it against the live environment), **continuum** (emit / inflate / ground), **orchestrator** (the
+   bounded `serve_forever` / `should_continue` control loop), **integrity** (`file_hash`), and
+   **metrics** (arm curves, slope, decision rules). This is what keeps context flat.
+2. **The AGENCY layer** (`plateau/agency/`) — a bounded background QA driver that applies the core
+   one level up: a parent spawns orchestrators that spawn fresh, discarded workers, so even a
+   *parent* agent's context stays flat across an arbitrarily long mission. Console entry:
+   **`plateau-agency`**. It reuses the core's `file_hash` + `Measurement` — no duplicate hasher.
+3. **The [PARENT_AGENT_MANUAL](plateau/agency/PARENT_AGENT_MANUAL.md)** — usable verbatim as a
+   parent system prompt. It turns a one-line operator mission into N background orchestrators and
+   holds the parent's footprint at O(agents + resumes), independent of how many internal steps the
+   work takes. It is the top of the three-layer agency contract (parent → orchestrator → worker);
+   see [`plateau/agency/README.md`](plateau/agency/README.md).
+
+## 60-second quickstart
+
+```bash
+pip install -e .                    # core has zero third-party deps; Python 3.9+ (system python3 is fine)
+
+# 1) See the bounded loop run in plain Python, no agent framework:
+python examples/bare_loop.py
+
+# 2) Drive a bounded background QA run against any repo (audit mode = zero remote risk):
+plateau-agency --repo /path/to/your/repo --mode audit --max-steps 80
+#   watch it from disk:  tail -f <repo>/qa-artifacts/orch/*/kpis.jsonl
+```
+
+`plateau-agency` is the console entry point for `plateau.agency.driver:main`; `--mode audit` (the
+default) only ever reads (Read/Grep workers), so nothing touches git. See
+[`plateau/agency/README.md`](plateau/agency/README.md) for `--mode write` (path-scoped staging +
+gate + PR emission, never merges), the three layer contracts, and the live wavex-os case study.
+
 ## The honest headline (stated narrow and true)
 
 **Bounded context at no recall penalty — confirmed on real multi-step code, not just synthetic.**
@@ -178,7 +215,9 @@ signal alone (no amnesia). Sealed, recompute PASS. [readout](demo/driver_ab_read
 ## Layout
 
 ```
-plateau/        core: signal (gate), continuum (emit/inflate/ground), metrics, integrity
+plateau/        core: signal (gate), continuum (emit/inflate/ground), orchestrator, metrics, integrity
+plateau/agency/ bounded background QA driver (plateau-agency) + the 3 layer contracts
+                  (PARENT_AGENT_MANUAL.md, ORCHESTRATOR_PROMPT.md, BACKGROUND_AGENCY.md)
 examples/       bare_loop.py (host-free proof) + the continuum story
 demo/           pre-registered demos (recall + real-code C6), sealed raw, verdicts, FINDINGS.md
 adapters/       claude_code/ — installable Claude Code plugin (plugin.json, skill, hooks, commands)
