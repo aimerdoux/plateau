@@ -112,9 +112,12 @@ def gate_reply(signal: RelationalState, reply: str, cwd: str) -> tuple[Relationa
 
 # ---------------------------------------------------------------- worker backends
 def worker_claude_p(prompt: str, cwd: str) -> str:
-    """Real headless Claude Code — a fresh session that sees ONLY `prompt`. PAID."""
-    r = subprocess.run(["claude", "-p", prompt, "--output-format", "json"],
-                       cwd=cwd, capture_output=True, text=True, timeout=1800)
+    """Real headless Claude Code — a fresh session that sees ONLY `prompt`, piped via STDIN
+    (the control arm's prompt grows past ARG_MAX), running in `cwd` with write access so it can
+    actually build the layer. PAID."""
+    r = subprocess.run(
+        ["claude", "-p", "--output-format", "json", "--allowedTools", "Read", "Write", "Edit"],
+        input=prompt, cwd=cwd, capture_output=True, text=True, timeout=1800)
     try:
         return json.loads(r.stdout).get("result", r.stdout)
     except Exception:
