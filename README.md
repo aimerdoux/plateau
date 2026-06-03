@@ -143,7 +143,10 @@ python examples/bare_loop.py        # the whole loop in plain Python, no agent f
 `plateau` skill, `hooks/hooks.json`, and slash commands). Enable it and the step boundary is
 auto-wired: `UserPromptSubmit` inflates + re-grounds the carried signal and **injects it as
 `additionalContext`** — a focus/continuity aid that does **NOT** bound the session's context (Claude Code still carries the full transcript; a hook can only *append*. For real bounding see the driver `plateau.driver`); `Stop` gates queued
-facts and persists the bounded `.plateau/signal.json`. Commands: `/plateau:status`, `/plateau:gate`.
+facts and persists the bounded `.plateau/signal.json`. Commands: `/plateau:status`, `/plateau:gate`,
+and **`/plateau:run <task>`** — run a multi-step task as bounded subagents (each sees only the
+carried signal, not the transcript), the one command that actually bounds context inside a session
+([readout](demo/plateau_run_readout.md)).
 
 **Install in a fresh Claude Code session** (the invocation that worked in the live demo):
 

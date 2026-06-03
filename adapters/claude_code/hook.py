@@ -33,6 +33,8 @@ from plateau import (
 PLATEAU_DIR = os.environ.get("PLATEAU_DIR", ".plateau")
 SIGNAL = os.path.join(PLATEAU_DIR, "signal.json")
 PENDING = os.path.join(PLATEAU_DIR, "pending_facts.json")
+PENDING_CARRY = os.path.join(PLATEAU_DIR, "pending_carry.json")  # optional CARRY lessons
+LESS_CAP = 12  # bound the carried lessons so the signal can't grow unbounded
 
 
 def _load_blob() -> str:
@@ -80,10 +82,18 @@ def post() -> dict:
     after = {vf["claim"] for vf in new_signal.verified_facts}
     admitted = sorted(after - before)
     dropped = [t.claim for t in thoughts if t.claim not in after]
+    # carry CARRY lessons (decisions the next step needs) — bounded + deduped
+    carried = []
+    if os.path.exists(PENDING_CARRY):
+        for les in json.load(open(PENDING_CARRY)):
+            les = str(les).strip()[:200]
+            if les and les not in new_signal.lessons:
+                new_signal.lessons = (new_signal.lessons + [les])[-LESS_CAP:]
+                carried.append(les)
     _save_blob(emit(SelfState(signal=new_signal)))
     return {"admitted": admitted, "dropped_ungrounded": dropped,
-            "signal_path": SIGNAL,
-            "note": "only facts whose Measurement re-verified were admitted to the signal"}
+            "carried_lessons": carried, "signal_path": SIGNAL,
+            "note": "only facts whose Measurement re-verified were admitted; lessons are bounded"}
 
 
 def _render_carried(cs: dict, stale: list) -> str:

@@ -41,6 +41,11 @@ version control, as you prefer — it is just the bounded signal blob).
 
 - **`/plateau:status`** — show the current carried self-state and anything dropped as stale.
 - **`/plateau:gate`** — gate facts this session produced into the bounded signal and persist.
+- **`/plateau:run <task>`** — run a multi-step task as **bounded subagents**: each step is a fresh
+  subagent that sees only the carried signal (not the transcript), so the orchestrating session
+  stays lean and the gate keeps carried facts honest. The one command that actually bounds context
+  in a session (partial — the orchestrator thread still grows by signal+result per step; the
+  standalone `plateau.driver` is the fully-flat form).
 
 ## Proposing a fact (the gate)
 
