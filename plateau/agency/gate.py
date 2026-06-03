@@ -10,6 +10,8 @@ import re
 import subprocess
 from pathlib import Path
 
+from plateau.signal import Measurement
+
 from . import state
 
 # Phase 6.5 — ANY added-line hit REJECTS the change regardless of green tests.
@@ -55,9 +57,17 @@ def run(cmd, cwd, timeout=1200):
 # ------------------------------------------------------------ hash gate ----
 
 def verify_hash(repo, rel_path, claimed):
-    """Admit only if the file's current sha256 equals the claimed value."""
+    """Admit only if the file's current sha256 equals the claimed value.
+
+    Reuses the core's `plateau.signal.Measurement(kind="file_hash").reverify()` — the
+    canonical gate that re-reads the bytes and fails closed on a missing/changed file —
+    instead of a duplicate compare. `actual` (via the core's `file_hash`, or None when
+    missing) is still returned for the ledger.
+    TODO(converge): reuse plateau.signal/orchestrator for the wider gate loop too."""
     actual = state.sha256_file(Path(repo) / rel_path)
-    return actual is not None and actual == claimed, actual
+    admitted = Measurement(kind="file_hash", source=str(Path(repo) / rel_path),
+                           value=claimed).reverify()
+    return admitted, actual
 
 
 # --------------------------------------------------- diff-policy (6.5) -----

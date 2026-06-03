@@ -2,7 +2,7 @@
 operator-gated and not exercised here."""
 import subprocess
 
-from plateau_qa import pr
+from plateau.agency import pr
 
 
 def _git(args, cwd):

@@ -1,4 +1,4 @@
-"""Repo-agnostic configuration for plateau-qa.
+"""Repo-agnostic configuration for plateau.agency.
 
 A config is a plain dict. `load_config(repo, path)` = DEFAULTS, with repo facts
 auto-detected (package.json scripts, supabase dirs, a router file, source language),

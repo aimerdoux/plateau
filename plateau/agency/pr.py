@@ -36,7 +36,7 @@ def _title(item, agent):
 
 
 def _body(item, agent, facts, verdict_path):
-    out = ["Automated QA fix by plateau-qa (deterministically gate-verified).", "",
+    out = ["Automated QA fix by plateau.agency (deterministically gate-verified).", "",
            "**Item:** `%s` (kind %s, tier %s)" % (item["id"], item["kind"], item.get("tier"))]
     if agent.get("finding"):
         out += ["", "**Finding:** %s" % agent["finding"]]

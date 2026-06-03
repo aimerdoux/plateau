@@ -3,9 +3,10 @@
 Disk-backed, stdlib only. The driver process holds *only* what these helpers
 return; nothing here grows unbounded. Caps are enforced on every save.
 """
-import hashlib
 import json
 from pathlib import Path
+
+from plateau.integrity import file_hash
 
 # --- signal caps (faithful to the spec) ---
 LESSON_MAX = 12
@@ -17,15 +18,14 @@ TIERS = {1: "sec", 2: "core", 3: "ux", 4: "hardening"}
 
 
 def sha256_file(path):
-    """sha256:<hex> for a file's current bytes, or None if missing."""
-    p = Path(path)
-    if not p.exists():
+    """sha256:<hex> for a file's current bytes, or None if missing.
+
+    Reuses the core's canonical `plateau.integrity.file_hash` (the one
+    'sha256:'-prefixed measurement) instead of a duplicate hasher; only the
+    missing-file -> None contract that the agency call sites rely on stays local."""
+    if not Path(path).exists():
         return None
-    h = hashlib.sha256()
-    with open(p, "rb") as f:
-        for chunk in iter(lambda: f.read(65536), b""):
-            h.update(chunk)
-    return "sha256:" + h.hexdigest()
+    return file_hash(str(path))
 
 
 def load_json(path, default):

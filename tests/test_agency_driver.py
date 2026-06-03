@@ -4,8 +4,8 @@ import subprocess
 import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent          # plateau-qa/
-DRIVER = [sys.executable, "-m", "plateau_qa.driver"]
+ROOT = Path(__file__).resolve().parent.parent          # repo root
+DRIVER = [sys.executable, "-m", "plateau.agency.driver"]
 
 
 def _mkrepo(tmp_path):
@@ -23,7 +23,7 @@ def _run(args, tmp_path):
 def test_stub_loop_checkpoint_and_resume(tmp_path):
     repo = _mkrepo(tmp_path)
     rid = "PYTEST_%s" % tmp_path.name
-    rundir = ROOT / "plateau_qa" / "runs" / rid
+    rundir = ROOT / "plateau" / "agency" / "runs" / rid
     try:
         r = _run(["--repo", repo, "--stub", "--mode", "audit", "--max-steps", "2", "--run-id", rid], tmp_path)
         assert r.returncode == 0, r.stderr

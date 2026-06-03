@@ -1,28 +1,29 @@
-# plateau-qa — external bounded-context QA driver (Plateau Option-1)
+# plateau.agency — external bounded-context QA driver (Plateau Option-1)
 
 An **external** loop that holds a small re-grounded signal on disk and spawns each step as a
 **fresh `claude -p` process**. The orchestrator is this Python process — its only memory is
 `signal.json`, so it does not grow. That removes the in-session compaction ceiling that the
-in-session `/plateau:run` (Option 2) hits. Stdlib-only (Python ≥3.9), repo-agnostic.
+in-session `/plateau:run` (Option 2) hits. Folded into the core as the `plateau.agency`
+subpackage; it reuses `plateau.integrity.file_hash` / `plateau.signal` for hashing + the gate.
 
 ```
-plateau_qa/
+plateau/agency/
   config.py     repo-agnostic config: auto-detect gate cmds + layout, JSON override, source fallback
-  state.py      bounded signal (caps) + tiered coverage backlog + sha256 Measurement
-  gate.py       deterministic gates: hash verify, Phase-6.5 diff denylist, config gate cmds
+  state.py      bounded signal (caps) + tiered coverage backlog + core file_hash Measurement
+  gate.py       deterministic gates: hash verify (core Measurement), Phase-6.5 diff denylist, config gate cmds
   prompts.py    safety floor (system prompt) + per-step subtask + tool allowlists
   bootstrap.py  scan repo -> tiered coverage.json (routes/edge-fns/RLS, or generic modules)
-  driver.py     the loop, CLI, exits, KPIs, checkpoint/resume   (entry: plateau-qa / -m plateau_qa.driver)
+  driver.py     the loop, CLI, exits, KPIs, checkpoint/resume   (entry: plateau-agency / -m plateau.agency.driver)
   configs/      example override configs (wavex.json = parity for wavex-experience-architect)
 ```
 
 ## Install / run
 
 ```bash
-cd /Users/geniex/plateau-qa
-pip install -e .                       # then: plateau-qa --repo <path> ...
+cd /Users/geniex/bmacp-trunk/plateau
+pip install -e .                       # then: plateau-agency --repo <path> ...
 # or, no install:
-python3 -m plateau_qa.driver --repo <path> ...
+python3 -m plateau.agency.driver --repo <path> ...
 ```
 
 ## Repo-agnostic by config
@@ -36,8 +37,8 @@ RLS policies; non-web repos tier source modules by the same SEC/CORE keyword rul
 
 ```bash
 # wavex parity (reproduces SEC=86):
-plateau-qa --repo /Users/geniex/wavex-experience-architect \
-           --config plateau_qa/configs/wavex.json --mode audit --max-steps 80
+plateau-agency --repo /Users/geniex/wavex-experience-architect \
+           --config plateau/agency/configs/wavex.json --mode audit --max-steps 80
 ```
 
 ## Modes

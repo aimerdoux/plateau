@@ -1,7 +1,7 @@
 """config auto-detect + override + bootstrap tiering (web + source fallback + skipdirs)."""
 import json
 
-from plateau_qa import config, bootstrap
+from plateau.agency import config, bootstrap
 
 
 def _mkrepo(tmp_path, files):

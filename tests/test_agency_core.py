@@ -1,7 +1,7 @@
 """state caps/triage/dedupe + gate denylist/classify/command."""
 import json
 
-from plateau_qa import state, gate
+from plateau.agency import state, gate
 
 
 def test_enforce_caps_lessons():

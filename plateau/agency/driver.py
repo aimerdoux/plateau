@@ -90,6 +90,7 @@ def spawn_agent(prompt_text, mode, repo, max_turns=20):
     inner.setdefault("evidence", [])
     inner.setdefault("edited_files", [])
     inner.setdefault("carry", "")
+    inner["_usage"] = envelope.get("usage") if isinstance(envelope, dict) else None
     return inner
 
 
@@ -277,7 +278,7 @@ def main():
                 "gated_completions": gated_completions, "findings_repro": findings_repro,
                 "prs_open": prs_open, "stall": stall})
             print("CHECKPOINT step_budget. resume:")
-            print("  plateau-qa --repo %s --resume %s" % (repo, rp))
+            print("  plateau-agency --repo %s --resume %s" % (repo, rp))
             stop_reason = "step_budget_checkpoint"; break
         if elapsed > WALL_CLOCK_CEIL:
             stop_reason = "wall_clock_ceiling"; break
@@ -308,6 +309,7 @@ def main():
         # Phase 3 SPAWN (fresh context) -- Phase 4 parse one JSON object.
         artifact_dir = run_dir / str(step)
         artifact_dir.mkdir(parents=True, exist_ok=True)
+        ptext = ""
         if args.stub:
             agent = stub_agent(item, args.mode)
         else:
@@ -389,6 +391,9 @@ def main():
             "findings_with_repro": findings_repro, "picked_item": item["id"],
             "outcome": outcome, "stall_counter": stall,
             "resume_count": sig.get("resume_count", 0),
+            "orch_signal_tokens": max(1, len(state.compact_signal(sig)) // 4),
+            "worker_prompt_tokens": (max(1, len(ptext) // 4) if ptext else 0),
+            "worker_usage": agent.get("_usage"),
         })
         print("step %d | t=%ds | sec=%d/%d | gated=%d | PRs=%d | find(repro)=%d | last=%s:%s"
               % (step, round(elapsed), sec["covered"], sec["total"],
