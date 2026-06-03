@@ -162,6 +162,16 @@ including macOS's system `/usr/bin/python3`, so the plain `pip install` above is
 > demo (HTTPS, not the SSH shorthand), but the exact invocation is not captured in a sealed artifact;
 > re-run them on a fresh machine before relying on this section verbatim.
 
+## The real adapter (`plateau.driver`) — measured on live workers
+
+The CC hook only *surfaces* a signal. The **driver owns the message loop**, so it actually
+bounds context: each step a fresh headless `claude -p` worker sees only the inflated signal
+(not the transcript); a paired full-history control makes the bound **measured**. On a 6-layer
+dependent build with real workers, control context climbs **152 → 11,482 tok/step** while the
+bounded signal stays **172 → 460** (~2.7%, ~37×) at **6/6 completion parity** — and the
+signal-arm worker built the correct *dependent* layer (`l6` imports `l5`) from the compact
+signal alone (no amnesia). Sealed, recompute PASS. [readout](demo/driver_ab_readout.md).
+
 ## Layout
 
 ```
