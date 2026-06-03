@@ -1,0 +1,21 @@
+{
+  "_comment": "wavex-experience-architect parity config. Reproduces the original hardcoded tiering (SEC=86: 29 RLS policies + 37 money/crypto/admin edge fns + 20 /admin routes). The narrow patterns here override the broader generic defaults in config.DEFAULTS.",
+  "tiers": {
+    "sec_fn_exact": [
+      "create-checkout", "create-crypto-onramp", "authorize-agent-wallet-crypto",
+      "admin-withdraw-agent-funds", "pay-anyone", "verify-stripe-payment", "bridge-webhook"
+    ],
+    "sec_pattern": "admin|withdraw|wallet|crypto|onramp|stripe|payment|payout|kyc|webhook|transfer|fund|bank|charge",
+    "core_fn_exact": [
+      "process-booking-intent-payment", "create-booking", "real-time-booking",
+      "ai-concierge-chat-v2", "mobile-auth"
+    ],
+    "core_pattern": "book|checkout|concierge|auth|reserv",
+    "route_tier1": ["/admin"],
+    "route_tier2": ["/onboarding", "/rentals", "/auth", "/checkout", "/booking"]
+  },
+  "gate_commands": {
+    "page": ["npx", "playwright", "test", "e2e/onboarding.spec.ts", "e2e/rentals.spec.ts"],
+    "e2e": ["npx", "playwright", "test", "e2e/onboarding.spec.ts", "e2e/rentals.spec.ts"]
+  }
+}
