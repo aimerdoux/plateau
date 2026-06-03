@@ -1,7 +1,7 @@
 {
   "name": "plateau",
   "version": "0.1.0",
-  "description": "Bounded, predictable context for long Claude Code sessions — carry a small, re-grounded signal across steps instead of letting the transcript climb toward the context ceiling. A fact enters the carried signal only if it passes the gate (a Measurement that re-verifies against the repo now), so bounded context can't fill with stale or fabricated claims.",
+  "description": "Bounded, predictable context for long Claude Code sessions — carry a small, re-grounded signal across steps instead of letting the transcript climb toward the context ceiling. A fact enters the carried signal only if it passes the gate (a Measurement that re-verifies against the repo now), so bounded context can't fill with stale or fabricated claims. While enabled, a SessionStart hook also loads the parent-agent delegation discipline as standing context, so long-horizon sessions automatically operate as a bounded parent that delegates to background orchestrators.",
   "author": { "name": "Plateau contributors" },
   "homepage": "https://github.com/aimerdoux/plateau",
   "keywords": ["context", "long-horizon", "memory", "continuity", "agents"]
