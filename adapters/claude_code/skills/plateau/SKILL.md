@@ -27,7 +27,8 @@ Enable this plugin in Claude Code. Its `hooks/hooks.json` then auto-installs:
 
 - **`UserPromptSubmit` → `hook.py pre --cc`** — inflates the persisted signal, re-grounds it
   against the current repo, and **injects the carried self-state into the step as
-  `additionalContext`** (so the model sees the bounded signal instead of the full transcript).
+  `additionalContext`** — a focus aid. This does **NOT** bound context (a hook can only append;
+  Claude Code carries the full transcript). Real context bounding is the driver, `plateau.driver`.
   Facts reality no longer supports are dropped as **stale** and flagged.
 - **`Stop` → `hook.py post --cc`** — gates any facts queued in `.plateau/pending_facts.json`,
   folds the admitted ones into the signal, and persists the bounded blob to

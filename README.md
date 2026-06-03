@@ -142,7 +142,7 @@ python examples/bare_loop.py        # the whole loop in plain Python, no agent f
 `adapters/claude_code/` is an installable **Claude Code plugin** (`.claude-plugin/plugin.json`, a
 `plateau` skill, `hooks/hooks.json`, and slash commands). Enable it and the step boundary is
 auto-wired: `UserPromptSubmit` inflates + re-grounds the carried signal and **injects it as
-`additionalContext`** (the model sees the bounded signal, not the full transcript); `Stop` gates queued
+`additionalContext`** — a focus/continuity aid that does **NOT** bound the session's context (Claude Code still carries the full transcript; a hook can only *append*. For real bounding see the driver `plateau.driver`); `Stop` gates queued
 facts and persists the bounded `.plateau/signal.json`. Commands: `/plateau:status`, `/plateau:gate`.
 
 **Install in a fresh Claude Code session** (the invocation that worked in the live demo):
