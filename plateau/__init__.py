@@ -36,6 +36,15 @@ from .metrics import (
     control_leaks,
     early_warning,
 )
+from .orchestrator import (
+    LoopOptions,
+    StepContext,
+    StepResult,
+    serve_forever,
+    should_continue,
+    context_proven_bounded,
+    default_classify_error,
+)
 
 __version__ = "0.1.0"
 
@@ -44,4 +53,6 @@ __all__ = [
     "gate", "apply_gate", "set_ground_root", "ground_root",
     "emit", "inflate", "ground", "Inflated", "Grounding",
     "ArmCurve", "slope", "decide", "control_leaks", "early_warning",
+    "LoopOptions", "StepContext", "StepResult", "serve_forever",
+    "should_continue", "context_proven_bounded", "default_classify_error",
 ]
