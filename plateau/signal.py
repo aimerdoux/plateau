@@ -22,6 +22,7 @@ root (default: current working directory) — no host-specific paths are baked i
 
 from __future__ import annotations
 
+import json
 import os
 from dataclasses import dataclass, field
 from typing import Literal, Optional
@@ -53,18 +54,42 @@ class Measurement:
     def reverify(self) -> bool:
         """Re-read reality and report whether the recorded value still holds.
 
-        file_hash is the implemented live re-read. Everything else fails CLOSED
-        (returns False) until wired — a gate must never admit on an unverifiable
-        kind. 'operator' feel is real but not filesystem-checkable, so it too fails
-        closed at this layer."""
+        Three live kinds, all file-backed and integrity-bound; every other kind fails
+        CLOSED (a gate must never admit on an unverifiable kind):
+
+          file_hash    — the file's bytes still hash to `value` (the canonical measurement).
+          test_result  — `value` is the sha256 of a JSON result artifact: the file's bytes
+                         still match it AND the artifact records ``normalized_pass is True``.
+          exit_code    — same hash binding, AND the artifact records ``exit_code == 0`` (success).
+
+        The two result kinds bind the artifact's HASH first, so the file cannot be fabricated
+        or edited after the claim — exactly the file_hash guarantee — and only then assert that
+        the recorded run succeeded. They deliberately DO NOT execute `source` as a command:
+        GATE measurements originate in untrusted sub-agent replies, so running them would be an
+        injection vector. The gate certifies a recorded, UNCHANGED success artifact; actually
+        re-running the test for TRUTH is the validator's job, not the gate's. 'operator' and
+        'oracle_score' are not filesystem-checkable here, so they fail closed."""
+        if not self.source:
+            return False
+        p = self.source if os.path.isabs(self.source) else os.path.join(_GROUND_ROOT, self.source)
+        if not os.path.isfile(p):   # missing OR a directory ⇒ fail closed, never crash
+            return False
         if self.kind == "file_hash":
-            if not self.source:
-                return False
-            p = self.source if os.path.isabs(self.source) else os.path.join(_GROUND_ROOT, self.source)
-            if not os.path.isfile(p):   # missing OR a directory ⇒ fail closed, never crash
-                return False
             return file_hash(p) == self.value
-        # operator / test_result / oracle_score / exit_code: fail closed until wired
+        if self.kind in ("test_result", "exit_code"):
+            if file_hash(p) != self.value:        # integrity first: exact, unchanged bytes
+                return False
+            try:
+                with open(p) as f:
+                    data = json.load(f)
+            except (OSError, ValueError):
+                return False                      # unreadable / not JSON ⇒ fail closed
+            if not isinstance(data, dict):
+                return False
+            if self.kind == "test_result":
+                return data.get("normalized_pass") is True
+            return data.get("exit_code") == 0     # exit_code: success (0) only
+        # operator / oracle_score: not filesystem-checkable here ⇒ fail closed
         return False
 
 

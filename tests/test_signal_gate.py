@@ -3,6 +3,7 @@ ONLY if its grounding re-verifies against reality now."""
 
 from __future__ import annotations
 
+import json
 import os
 
 from plateau import (
@@ -78,3 +79,61 @@ def test_empty_or_directory_source_fails_closed(tmp_path):
     res = gate([Thought("ungrounded-empty-source",
                         Measurement("file_hash", "", ""))])
     assert res.admitted == []
+
+
+# ── integrity-bound success kinds: test_result / exit_code ───────────────────────
+# A result artifact earns a seat only if its bytes are UNCHANGED since the claim
+# (hash binding) AND it records a success. No command is ever executed by the gate.
+
+def _result_measurement(tmp_path, kind, *, normalized_pass=True, exit_code=0, name="result.json"):
+    """Write a deterministic result.json and return a Measurement bound to its hash."""
+    p = tmp_path / name
+    p.write_text(json.dumps({"repo": "demo", "cmd": "pytest",
+                             "exit_code": exit_code, "normalized_pass": normalized_pass}))
+    set_ground_root(str(tmp_path))
+    return Measurement(kind=kind, source=name, value=file_hash(str(p))), p
+
+
+def test_test_result_pass_is_admitted(tmp_path):
+    m, _ = _result_measurement(tmp_path, "test_result", normalized_pass=True)
+    assert m.reverify() is True
+    res = gate([Thought("milestone tests pass", m)])
+    assert len(res.admitted) == 1 and res.dropped == []
+
+
+def test_test_result_fail_is_dropped(tmp_path):
+    m, _ = _result_measurement(tmp_path, "test_result", normalized_pass=False)
+    assert m.reverify() is False
+
+
+def test_exit_code_zero_is_admitted(tmp_path):
+    m, _ = _result_measurement(tmp_path, "exit_code", exit_code=0)
+    assert m.reverify() is True
+
+
+def test_exit_code_nonzero_is_dropped(tmp_path):
+    m, _ = _result_measurement(tmp_path, "exit_code", exit_code=1)
+    assert m.reverify() is False
+
+
+def test_result_kind_tampered_artifact_is_dropped(tmp_path):
+    # integrity first: editing the result file after the claim breaks the hash → drop,
+    # even when the edit keeps the verdict "pass". The gate certifies UNCHANGED bytes.
+    m, p = _result_measurement(tmp_path, "test_result", normalized_pass=True)
+    p.write_text(json.dumps({"exit_code": 0, "normalized_pass": True, "tampered": 1}))
+    assert m.reverify() is False
+
+
+def test_result_kind_missing_file_fails_closed(tmp_path):
+    set_ground_root(str(tmp_path))
+    assert Measurement("test_result", "nope.json", "sha256:" + "0" * 64).reverify() is False
+    assert Measurement("exit_code", "nope.json", "sha256:" + "0" * 64).reverify() is False
+
+
+def test_result_kind_malformed_json_fails_closed(tmp_path):
+    # hash matches the bytes, but the body isn't JSON → semantic check fails closed (no crash).
+    p = tmp_path / "bad.json"
+    p.write_text("not json {")
+    set_ground_root(str(tmp_path))
+    m = Measurement("test_result", "bad.json", file_hash(str(p)))
+    assert m.reverify() is False
