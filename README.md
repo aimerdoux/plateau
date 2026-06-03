@@ -1,29 +1,66 @@
-# Plateau
+```
+            ██████╗ ██╗      █████╗ ████████╗███████╗ █████╗ ██╗   ██╗
+            ██╔══██╗██║     ██╔══██╗╚══██╔══╝██╔════╝██╔══██╗██║   ██║
+            ██████╔╝██║     ███████║   ██║   █████╗  ███████║██║   ██║
+            ██╔═══╝ ██║     ██╔══██║   ██║   ██╔══╝  ██╔══██║██║   ██║
+            ██║     ███████╗██║  ██║   ██║   ███████╗██║  ██║╚██████╔╝
+            ╚═╝     ╚══════╝╚═╝  ╚═╝   ╚═╝   ╚══════╝╚═╝  ╚═╝ ╚═════╝
+```
 
-**A bounded-context tool for long-horizon LLM agents.** Instead of replaying the whole
-transcript every step, an agent carries a small, re-grounded signal — so context stays flat as
-the task grows, and a stored fact stays one short line away.
+# Plateau — bounded context for long-horizon agents
 
-![recall accuracy vs fact-distance: Plateau flat at 100%, full-history at ~18x the tokens](demo/recall_vs_distance3.png)
+**Carry a small re-grounded signal instead of replaying the whole transcript — so a parent agent's footprint stays flat as the task grows, and a stored fact stays one short line away.**
 
-## What's in the box
+`66× lower context slope · footprint law O(agents+resumes), independent of step count · local-first · recompute-verifiable · null results published`
 
-Plateau ships three things that stack:
+[![License: Apache-2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
+[![Python 3.9+](https://img.shields.io/badge/python-3.9%2B-blue.svg)](pyproject.toml)
+[![tests: 71 passing](https://img.shields.io/badge/tests-71_passing-brightgreen.svg)](tests/)
+[![core deps: zero](https://img.shields.io/badge/core_deps-zero-brightgreen.svg)](pyproject.toml)
 
-1. **The bounded-context CORE** (`plateau/`, zero third-party deps) — the mechanism. Five pieces:
-   **signal** (the *gate*: a fact enters the carried signal only when a `Measurement` re-verifies
-   it against the live environment), **continuum** (emit / inflate / ground), **orchestrator** (the
-   bounded `serve_forever` / `should_continue` control loop), **integrity** (`file_hash`), and
-   **metrics** (arm curves, slope, decision rules). This is what keeps context flat.
-2. **The AGENCY layer** (`plateau/agency/`) — a bounded background QA driver that applies the core
-   one level up: a parent spawns orchestrators that spawn fresh, discarded workers, so even a
-   *parent* agent's context stays flat across an arbitrarily long mission. Console entry:
-   **`plateau-agency`**. It reuses the core's `file_hash` + `Measurement` — no duplicate hasher.
-3. **The [PARENT_AGENT_MANUAL](plateau/agency/PARENT_AGENT_MANUAL.md)** — usable verbatim as a
-   parent system prompt. It turns a one-line operator mission into N background orchestrators and
-   holds the parent's footprint at O(agents + resumes), independent of how many internal steps the
-   work takes. It is the top of the three-layer agency contract (parent → orchestrator → worker);
-   see [`plateau/agency/README.md`](plateau/agency/README.md).
+> **Cheaper, not smarter.** Plateau is an efficiency tool: bounded context at no recall penalty.
+> It does not make an agent more capable — and we publish the null results that prove it (read
+> [What Plateau does NOT do](#what-plateau-does-not-do-read-this-first)).
+
+---
+
+## 30-second idea
+
+A long-running agent's scarcest resource is its context window. The naive loop carries the full
+transcript forward, so context grows every step until the window fills and the agent degrades.
+Plateau replaces *carry everything* with *carry a small re-grounded signal*: each step **emits** a
+compact state, the next step **inflates** that instead of the transcript and **grounds** it — every
+carried fact is re-checked against the live environment, and anything reality no longer supports is
+dropped. A fact may enter the signal **only** if a `Measurement` re-verifies it right now; the
+model's own assertion is never a measurement.
+
+The result is a **footprint law**: a parent agent's carried context is `O(agents + resumes)`,
+independent of how many internal steps `N` the work takes.
+
+```
+   ┌─────────────────────────────────────────────────────────────────┐
+   │ PARENT          carries SIGNAL only (a few hundred–~1.7k tok/step)│
+   │                 mission in → N orchestrators out → verify returns │
+   └───────────────┬─────────────────────────────────────────────────┘
+                   │  spawn once per workstream, read disk on demand
+   ┌───────────────▼─────────────────────────────────────────────────┐
+   │ ORCHESTRATOR    bounded loop: pick one → spawn one worker → gate  │
+   │                 → meter to disk → shed → return to parent ONCE    │
+   └───────────────┬─────────────────────────────────────────────────┘
+                   │  fresh `claude -p` per step, sees signal + 1 subtask
+   ┌───────────────▼─────────────────────────────────────────────────┐
+   │ WORKER          does the heavy reading (millions of tok),         │
+   │                 returns ONE line, writes detail to disk, then DIES│
+   └─────────────────────────────────────────────────────────────────┘
+
+         context lives at the bottom and dies there;
+         only the small capped SIGNAL climbs.
+```
+
+This measures **context efficiency** and **recall** — nothing about understanding, coherence, or any
+inner state.
+
+---
 
 ## 60-second quickstart
 
@@ -36,70 +73,102 @@ python examples/bare_loop.py
 # 2) Drive a bounded background QA run against any repo (audit mode = zero remote risk):
 plateau-agency --repo /path/to/your/repo --mode audit --max-steps 80
 #   watch it from disk:  tail -f <repo>/qa-artifacts/orch/*/kpis.jsonl
+
+# 3) Print the live-run proof numbers (sourced from the sealed agency report):
+python -m plateau.agency.bench_summary
 ```
 
 `plateau-agency` is the console entry point for `plateau.agency.driver:main`; `--mode audit` (the
 default) only ever reads (Read/Grep workers), so nothing touches git. See
 [`plateau/agency/README.md`](plateau/agency/README.md) for `--mode write` (path-scoped staging +
-gate + PR emission, never merges), the three layer contracts, and the live wavex-os case study.
+gate + PR emission, **never merges**), the three layer contracts, and the live wavex-os case study.
 
-## The honest headline (stated narrow and true)
+---
 
-**Bounded context at no recall penalty — confirmed on real multi-step code, not just synthetic.**
+## What's in the box
 
-On a strictly serial ≥5-layer feature built on this repo (the `demo6b` run, isolation-clean), the
-full-history arm's context climbed **365 → 37,405 tokens** over six dependent steps (slope
-**6,860 tok/step**), while Plateau stayed bounded **508 → 1,075** (slope **103 tok/step ≈ 1.5%** of
-full-history — a **66.6× lower** context-growth slope). **Both arms reached PASS with zero rework**
-(full-history 32/32 tests, Plateau 36/36): completion parity. Sealed write-once, recompute PASS.
-[verdict](demo/verdict6b.json) · [readout](demo/demo6b_readout.md) · all numbers in [`RESULTS.md`](RESULTS.md).
+Plateau ships three things that stack:
 
-**Cheaper on time too, not just tokens.** The thing that keeps a bounded context honest — re-grounding
-every carried fact each step — is sub-millisecond for the shipped gate: a `file_hash` re-ground costs
-**~13 µs/fact** (marginal **0.0114 ms/fact**, linear), so re-grounding a 50-fact signal takes **0.59 ms
-per step** (gatebench, sealed; classification GATE-CHEAP). The validation overhead is negligible next to
-the token savings.
+1. **The bounded-context CORE** (`plateau/`, zero third-party deps) — the mechanism. Five pieces:
+   **signal** (the *gate*: a fact enters the carried signal only when a `Measurement` re-verifies it
+   against the live environment), **continuum** (emit / inflate / ground), **orchestrator** (the
+   bounded `serve_forever` / `should_continue` control loop), **integrity** (`file_hash`), and
+   **metrics** (arm curves, slope, decision rules). This is what keeps context flat.
+2. **The AGENCY layer** (`plateau/agency/`) — a bounded background QA driver that applies the core
+   one level up: a parent spawns orchestrators that spawn fresh, discarded workers, so even a
+   *parent* agent's context stays flat across an arbitrarily long mission. Console entry:
+   **`plateau-agency`**. It reuses the core's `file_hash` + `Measurement` — no duplicate hasher.
+3. **The [PARENT_AGENT_MANUAL](plateau/agency/PARENT_AGENT_MANUAL.md)** — usable verbatim as a
+   parent system prompt. It turns a one-line operator mission into N background orchestrators and
+   holds the parent's footprint at O(agents + resumes), independent of how many internal steps the
+   work takes. It is the top of the three-layer agency contract (parent → orchestrator → worker);
+   see [`plateau/agency/README.md`](plateau/agency/README.md).
 
-That is the whole claim: **cheaper, not smarter.** Read the next section before believing more.
+---
 
-## What Plateau does NOT do (read this first — it's the credibility)
+## Proof
 
-- **Not a recall *advantage* over full history.** That is the result we went looking for and did
-  **not** get. On the head-to-head recall task: `demo2` came out **NULL (near-miss)** — Plateau missed
-  its own pre-registered 0.70 far-recall floor by one query — and `demo3`, with the confounds removed,
-  came out **UNSCORABLE** because full-history recalled facts *well* from a ~2,000-token transcript
-  (far recall 0.80, degrading only 0.20, under our 0.25 anti-rig margin). We publish the NULL/UNSCORABLE
-  rather than lengthen the chain until the baseline breaks. [demo2](demo/verdict2.json) · [demo3](demo/verdict3.json)
-- **Not a capability or autonomy boost.** In the 3-arm real-workload run (`demo4`), the autonomy arm
-  **tied** the efficiency arm (same steps, same zero errors) → **AUTONOMY NULL**. Plateau is an
-  efficiency tool at this scale, not a "makes the agent smarter" tool. [demo4](demo/verdict4.json)
-- **Not flat-forever recall.** The carried signal is bounded, so past the point where more distinct
-  facts must be live than it can hold, recall must fall and real context has to be added back. Plateau
-  bounds and re-grounds context; it does not abolish the need for context.
+Plateau's headline proof is **a real multi-hour autonomous run** — a category benchmark suites don't
+cover — backed by sealed, recompute-verifiable demos. Every number below is sourced.
 
-So the defensible claim is **bounded context at no recall cost**, and nothing stronger.
+### A real multi-hour autonomous run (`wavex-os`)
 
-## The integrity anchor (why you can trust — or distrust — these numbers)
+The agency drove four independent QA missions against a live repo in one session and **the parent
+never compacted its own context.** Sourced from the on-disk meters (`*.jsonl` + `.status`), live
+`gh pr view`, and the live fleet API — written up in
+[`AGENCY_RUN_REPORT.md`](BENCHMARKS.md#1-the-bounded-parent-run) (full table in [`BENCHMARKS.md`](BENCHMARKS.md)).
+
+| Metric | Value | Why it matters |
+|---|--:|---|
+| Parent compactions over the run | **0** | Footprint stayed flat for a ~3h envelope |
+| Parent-carried signal tokens (all steps, all missions) | **76,030** | The only thing the parent held; per-step 300–1,700 tok |
+| Worker context that **bypassed** the parent (cache_read + input) | **40.39M** | Deep reading that never touched parent context |
+| Bypass : signal ratio | **≈ 531 : 1** | 40,385,667 ÷ 76,030 — the bound, quantified, **for this run** |
+| Peak single-step cache_read (discarded with its worker) | **7.29M** | One worker alone dwarfed the entire parent footprint |
+| Bounded orchestrators | **4** | `connectors` · `fleet-observe` · `fleet-launch` · `onboarding` |
+| PRs emitted | **3** | **opened & `OPEN` — never merged, by design** ([#44](https://github.com/aimerdoux/wavex-os/pull/44)/[#45](https://github.com/aimerdoux/wavex-os/pull/45)/[#46](https://github.com/aimerdoux/wavex-os/pull/46)) |
+
+> **Footprint law, observed.** `PARENT_TURNS = O(agents + resumes)`, independent of `N`, is a
+> **design property** of the parent→orchestrator→worker contract. It is **corroborated** by this run
+> — 0 compactions while 40.39M worker tokens flowed underneath — not proven by a swept-`N`
+> experiment. The token-*slope* curve is proven separately and controlled below (demo6b / driver A/B).
+> The 531:1 ratio is **observed for this one run**, not a guaranteed constant.
+
+Beneath those 4 orchestrators, `fleet-launch` ignited a **live 19-agent Sonnet fleet** inside
+Paperclip: **500 issues / 439 done (88%) across 2,499 heartbeat runs (83% success)**, 70% of
+failures upstream Claude rate-limits, not agent logic. (These are the **live-API-authoritative**
+counts; the run brief's round estimates were ~441 done / ~2,482 runs — we publish the API numbers,
+not the estimate. Source: [`FLEET_REPORT.md`](BENCHMARKS.md#2-the-19-agent-fleet-beneath-it).)
+
+### Bounded context at no recall penalty (sealed demos)
+
+The bound costs nothing — completion parity holds. This is Plateau's "accuracy preserved" evidence.
+
+| benchmark | what it proves | result |
+|---|---|---|
+| **demo6b** (real code) | bounded context on a serial ≥5-layer feature | full-history **365→37,405** (slope 6,860) vs Plateau **508→1,075** (slope 103) = **66.6× lower slope**, at **32/32 vs 36/36** tests — completion parity, zero rework. Sealed, recompute PASS. |
+| **driver A/B** (live workers) | the real adapter bounds context on `claude -p` workers | control **152→11,482** (slope 2,100) vs signal **172→460** (slope 57, ~37×) at **6/6 parity** — and the signal-arm worker built the correct *dependent* layer (`l6` imports `l5`) from the compact signal alone (no amnesia). |
+| **gatebench** (time + disk) | re-grounding is sub-millisecond | `file_hash` re-ground **~13 µs/fact** (marginal 0.0114 ms/fact, linear) → a 50-fact signal re-grounds in **0.59 ms/step**. Classification GATE-CHEAP — cheaper on time, not just tokens. |
+
+Full numbers, sealed paths, and one-line re-verify commands: **[`BENCHMARKS.md`](BENCHMARKS.md)** and
+[`RESULTS.md`](RESULTS.md).
+
+### The integrity anchor (why you can trust — or distrust — these numbers)
 
 Every result is pre-registered, sealed write-once before scoring, and scored by a locked rule —
 *including where the rule denies us a win*. The reason that's worth anything: **the apparatus caught
-a fabricated PASS produced by the system's own tooling.** A trajectory-geometry result appeared in the
-logs with a "recompute PASS" note; the verification glob had never actually scanned the manifest — the
-green was empty. Applying the project's own rule (*a claim is a thought until it re-grounds against the
-sealed artifacts*) exposed the false pass; the number only survived after an independent fresh-process
-recompute. A later deliberate tamper drill was caught immediately, naming the exact file. Full story:
-[`examples/continuum_story.md`](examples/continuum_story.md). Integrity model: [`INTEGRITY.md`](INTEGRITY.md).
+a fabricated PASS produced by the system's own tooling.** A trajectory-geometry result appeared in
+the logs with a "recompute PASS" note; the verification glob had never actually scanned the manifest
+— the green was empty. Applying the project's own rule (*a claim is a thought until it re-grounds
+against the sealed artifacts*) exposed the false pass; the number only survived after an independent
+fresh-process recompute. A later deliberate tamper drill was caught immediately, naming the exact
+file. Full story: [`examples/continuum_story.md`](examples/continuum_story.md). Integrity model:
+[`INTEGRITY.md`](INTEGRITY.md).
 
-The same discipline forces **clean re-runs when a confound is found, rather than arguing around it**:
-- `demo6` → **`demo6b`** (raw6 → raw6b): a template-purity issue was fixed and the real-code efficiency
-  result re-run clean; demo6b is the run of record, demo6 retained as the predecessor.
-- `c9` → **`c9b`**: the correspondence-reload run's subagent prompt *filenames* leaked the condition;
-  re-run with opaque random-token filenames (a private cell→condition map the subagent never sees), and
-  the verdict reproduced **more cleanly**. The leaky `c9/` is **kept immutable** so the supersession is
-  auditable.
+<details>
+<summary><b>Re-verify anything yourself</b> (the agent is not trusted)</summary>
 
-**Re-verify anything yourself** (the agent is not trusted). The demos ship in this repo and are
-self-contained; run from the repo root:
+The demos ship in this repo and are self-contained; run from the repo root:
 
 ```bash
 DEMO6_RAW=demo/raw6b DEMO6_VERDICT=demo/verdict6b.json python demo/recompute_demo6.py  # headline real-code result → PASS
@@ -114,37 +183,75 @@ python -m experiments.recompute                    # sealed-integrity verify (C3
 python -m experiments.continuum.c9b_run recompute  # C9 correspondence verdict, fresh process → PASS
 ```
 
-## What else is validated (sealed)
+The same discipline forces **clean re-runs when a confound is found, rather than arguing around it**:
+`demo6 → demo6b` (template-purity fix, real-code result re-run clean) and `c9 → c9b` (subagent
+prompt *filenames* leaked the condition; re-run with opaque random-token filenames, verdict
+reproduced more cleanly). The leaky predecessors are **kept immutable** so the supersession is
+auditable.
+</details>
 
-Beyond the efficiency headline, three continuum cycles probe the mechanism (full table + re-verify
-commands in [`RESULTS.md`](RESULTS.md)):
+---
 
-- **C3 — WIN.** Same bounded-context-at-parity result on a synthetic dependent chain: control slope
-  22.9 vs signal 0.285, CI excludes zero. Sealed at `reports/continuum/c3_10/verdict.json` (parent tree).
-- **C4 — WIN.** The carried-signal state trajectory occupies fewer effective dimensions than cold-start
-  scatter (participation ratio ~2.3–2.65 vs ~4.7–4.8), replicated across two independent runs — a
-  *necessary, not sufficient* structural condition, silent on phenomenality.
-- **C9 — CORRESPONDENCE-DOMINATES.** Reload continuity is governed by **correspondence** (state-match
-  across the gap), **not cadence** (gap duration): a vertical boundary, HIGH-correspondence mean
-  corr **0.975** vs BROKEN **0.048**, flat across gap size, with the carried signal shown load-bearing
-  (`perf_gap 1.0`). Clean run of record is `c9b`, sealed at `reports/continuum/c9b/raw/verdict.json` (parent tree).
-- **C7 — NULL (relational direction alive but unproven).** Tested whether an agent can faithfully
-  traverse an *opaque* symbolic index. Both arms proposed **0/48** non-existent edges (rejection 0.0) —
-  *perfect* faithful traversal, including the opaque-symbol arm, with the scramble control confirming it
-  genuinely dereferenced the real symbols. NULL is a **tie at the faithful ceiling** (the challenger
-  can't beat a perfect text incumbent), **not** confabulation. Faithful traversal of relational
-  structure *is* achievable here; a sharper test needs a regime where text itself confabulates. Sealed at
-  `reports/continuum/c7/raw/verdict.json`; details in [`RESULTS.md`](RESULTS.md).
+## What Plateau does NOT do (read this first)
 
-> Naming note: the theory preprint labels the reload-correspondence experiment **C11** and reserves
-> **C9** for a different (unrun) rate–distortion-knee sweep. The repo ran it under the label "C9". See
-> [`RECONCILE.md`](RECONCILE.md) (FLAG C9-1) — the operator decides the final labeling.
+This section is the credibility. These are results we went looking for and did **not** get.
 
-## The idea
+- **Not "3 PRs merged to main."** The 3 wavex-os PRs were **emitted in write mode and never merged
+  by the agency** — by design. The driver is code-enforced to never merge, never force-push, never
+  push to `main`; that safety property is a selling point, not a limitation. "Emitted, never merged"
+  is the honest claim.
+- **Not a recall *advantage* over full history.** On the head-to-head recall task: `demo2` came out
+  **NULL (near-miss)** — Plateau missed its own pre-registered 0.70 far-recall floor by one query —
+  and `demo3`, confounds removed, came out **UNSCORABLE** because full-history recalled facts *well*
+  from a ~2,000-token transcript (far recall 0.80, degrading only 0.20, under our 0.25 anti-rig
+  margin). We publish the NULL/UNSCORABLE rather than lengthen the chain until the baseline breaks.
+  [demo2](demo/verdict2.json) · [demo3](demo/verdict3.json)
+- **Not a capability or autonomy boost.** In the 3-arm real-workload run (`demo4`), the autonomy arm
+  **tied** the efficiency arm (same steps, same zero errors) → **AUTONOMY NULL**. Plateau is an
+  efficiency tool at this scale, not a "makes the agent smarter" tool. [demo4](demo/verdict4.json)
+- **Not flat-forever recall.** The carried signal is bounded, so past the point where more distinct
+  facts must be live than it can hold, recall must fall and real context has to be added back.
+  Plateau bounds and re-grounds context; it does not abolish the need for context.
+- **Not "we compress better than Headroom."** Different mechanism (see below). Plateau wins on
+  footprint law / local / recompute-verifiable / published-nulls — not on per-payload compression.
 
-A long-running agent's scarcest resource is its context window. The naive loop carries the full
-transcript forward, so context grows every step until the window fills and the agent degrades. Plateau
-replaces *carry everything* with *carry a small re-grounded signal*:
+So the defensible claim is **bounded context at no recall cost**, and nothing stronger.
+
+---
+
+## When to use · when to skip
+
+| Use Plateau when… | Skip Plateau when… |
+|---|---|
+| an agent runs **hundreds of dependent steps** and the parent's context saturates | your task fits comfortably in **one context window** — you don't need this |
+| you want a **parent** agent to delegate a long mission and stay flat (O(agents+resumes)) | you need a recall or capability *advantage* over full history — Plateau doesn't give one |
+| you want each carried fact **re-grounded** against the live repo, not taken on the model's word | the live task genuinely needs more distinct facts live than the signal holds (add context back) |
+| you want results that are **local-first and recompute-verifiable** | you want a hosted, managed service — Plateau is a library + prompt contracts |
+
+---
+
+## Compared to
+
+Plateau and per-payload compressors solve *different* problems and **stack**. This table is honest
+about where each wins.
+
+| | What it bounds | Mechanism | Local | Recompute-verifiable | Publishes nulls |
+|---|---|---|:--:|:--:|:--:|
+| **Plateau** | Parent footprint across N steps — O(agents+resumes) | Signal gate + spawn / discard | ✅ | ✅ | ✅ |
+| Per-payload compressors (e.g. Headroom) | Per-payload tokens the agent *reads* | Compression (multi-algo) | ✅ | partial (eval suite) | partial |
+| Provider-native compaction | Conversation history | Provider-native | ❌ | ❌ | ❌ |
+
+**Complementary, not competing.** A per-payload compressor like **Headroom is excellent at
+compressing what a single agent reads** — and you can run it *inside a Plateau worker* to shrink that
+worker's payload, while Plateau bounds what the *parent* carries across the whole mission. They
+stack: compress the payload at the bottom, bound the footprint at the top.
+
+---
+
+## The mechanism, in detail
+
+<details>
+<summary><b>The signal loop (emit / inflate / ground / gate)</b></summary>
 
 - At each step you **emit** a compact `RelationalState` — `open_goals`, `stance`, `lessons`,
   `pointers`, and gated `verified_facts`.
@@ -155,37 +262,59 @@ replaces *carry everything* with *carry a small re-grounded signal*:
 The catch that keeps a bounded context *honest*: a fact may enter the signal only if it passes **the
 gate** — backed by a `Measurement` that re-verifies right now. A model's own assertion is never a
 measurement. Bounded context is cheap; the gate is what stops it from filling with confident
-fabrications. This measures **context efficiency** and **recall** — nothing about understanding,
-coherence, or any inner state.
+fabrications.
 
-## What you can expect
-
-- **Cheaper bounded context on long, dependent tasks** — the full-history arm climbs toward the
-  window ceiling; Plateau stays roughly flat.
-- **The gate drops facts that can't re-verify** — so the carried signal won't quietly fill with
+What you can expect:
+- **Cheaper bounded context on long, dependent tasks** — full-history climbs toward the window
+  ceiling; Plateau stays roughly flat.
+- **The gate drops facts that can't re-verify** — the carried signal won't quietly fill with
   confident-but-stale claims.
-- **No magic on incompressible state** — if the live task genuinely needs more distinct facts than
-  the signal holds, you must add context back. Plateau bounds; it does not abolish.
+- **No magic on incompressible state** — if the task genuinely needs more distinct facts than the
+  signal holds, you must add context back. Plateau bounds; it does not abolish.
+</details>
 
-## Quickstart
+<details>
+<summary><b>What else is validated (sealed continuum cycles C3 / C4 / C9 / C7)</b></summary>
 
-```bash
-pip install -e .
-python examples/bare_loop.py        # the whole loop in plain Python, no agent framework
-```
+Beyond the efficiency headline, four continuum cycles probe the mechanism (full table + re-verify
+commands in [`RESULTS.md`](RESULTS.md)). **Four published nulls/ties** (C7 plus demo2/demo3/demo4)
+are the integrity signal — we don't cherry-pick.
+
+- **C3 — WIN.** Bounded-context-at-parity on a synthetic dependent chain: control slope 22.9 vs
+  signal 0.285, CI excludes zero. Sealed at `reports/continuum/c3_10/verdict.json` (parent tree).
+- **C4 — WIN.** The carried-signal state trajectory occupies fewer effective dimensions than
+  cold-start scatter (participation ratio ~2.3–2.65 vs ~4.7–4.8), replicated across two runs — a
+  *necessary, not sufficient* structural condition, silent on phenomenality.
+- **C9 — CORRESPONDENCE-DOMINATES.** Reload continuity is governed by **correspondence** (state-match
+  across the gap), **not cadence** (gap duration): HIGH-correspondence mean corr **0.975** vs BROKEN
+  **0.048**, flat across gap size, carried signal load-bearing (`perf_gap 1.0`). Clean run of record
+  is `c9b`, sealed at `reports/continuum/c9b/raw/verdict.json` (parent tree).
+- **C7 — NULL (relational direction alive but unproven).** Both arms proposed **0/48** non-existent
+  edges (rejection 0.0) — *perfect* faithful traversal, including the opaque-symbol arm, with the
+  scramble control confirming genuine dereference. NULL is a **tie at the faithful ceiling**, **not**
+  confabulation. Sealed at `reports/continuum/c7/raw/verdict.json`; details in [`RESULTS.md`](RESULTS.md).
+
+> Naming note: the theory preprint labels the reload-correspondence experiment **C11** and reserves
+> **C9** for a different (unrun) rate–distortion-knee sweep. The repo ran it under the label "C9". See
+> [`RECONCILE.md`](RECONCILE.md) (FLAG C9-1) — the operator decides the final labeling.
+</details>
+
+---
 
 ## Claude Code plugin
 
 `adapters/claude_code/` is an installable **Claude Code plugin** (`.claude-plugin/plugin.json`, a
 `plateau` skill, `hooks/hooks.json`, and slash commands). Enable it and the step boundary is
 auto-wired: `UserPromptSubmit` inflates + re-grounds the carried signal and **injects it as
-`additionalContext`** — a focus/continuity aid that does **NOT** bound the session's context (Claude Code still carries the full transcript; a hook can only *append*. For real bounding see the driver `plateau.driver`); `Stop` gates queued
-facts and persists the bounded `.plateau/signal.json`. Commands: `/plateau:status`, `/plateau:gate`,
-and **`/plateau:run <task>`** — run a multi-step task as bounded subagents (each sees only the
-carried signal, not the transcript), the one command that actually bounds context inside a session
-([readout](demo/plateau_run_readout.md)).
+`additionalContext`** — a focus/continuity aid that does **NOT** bound the session's context (Claude
+Code still carries the full transcript; a hook can only *append*. For real bounding see the driver
+`plateau.driver`); `Stop` gates queued facts and persists the bounded `.plateau/signal.json`.
+Commands: `/plateau:status`, `/plateau:gate`, and **`/plateau:run <task>`** — run a multi-step task
+as bounded subagents (each sees only the carried signal, not the transcript), the one command that
+actually bounds context inside a session ([readout](demo/plateau_run_readout.md)).
 
-**Install in a fresh Claude Code session** (the invocation that worked in the live demo):
+<details>
+<summary><b>Install in a fresh Claude Code session</b></summary>
 
 ```bash
 pip install git+https://github.com/aimerdoux/plateau.git    # the core, so the hook can import plateau
@@ -194,23 +323,16 @@ pip install git+https://github.com/aimerdoux/plateau.git    # the core, so the h
 /plugin marketplace add https://github.com/aimerdoux/plateau
 /plugin install plateau@plateau
 ```
-Use the **full HTTPS URL** — the `owner/repo` shorthand defaults to SSH and fails without a GitHub SSH
-key. The hook calls bare `python3`, so install the core into that interpreter — **Python 3.9+ works**,
-including macOS's system `/usr/bin/python3`, so the plain `pip install` above is enough.
+Use the **full HTTPS URL** — the `owner/repo` shorthand defaults to SSH and fails without a GitHub
+SSH key. The hook calls bare `python3`, so install the core into that interpreter — **Python 3.9+
+works**, including macOS's system `/usr/bin/python3`.
 
 > `[VERIFY: install path tested on a clean machine]` — these are the commands that worked in the live
 > demo (HTTPS, not the SSH shorthand), but the exact invocation is not captured in a sealed artifact;
 > re-run them on a fresh machine before relying on this section verbatim.
+</details>
 
-## The real adapter (`plateau.driver`) — measured on live workers
-
-The CC hook only *surfaces* a signal. The **driver owns the message loop**, so it actually
-bounds context: each step a fresh headless `claude -p` worker sees only the inflated signal
-(not the transcript); a paired full-history control makes the bound **measured**. On a 6-layer
-dependent build with real workers, control context climbs **152 → 11,482 tok/step** while the
-bounded signal stays **172 → 460** (~2.7%, ~37×) at **6/6 completion parity** — and the
-signal-arm worker built the correct *dependent* layer (`l6` imports `l5`) from the compact
-signal alone (no amnesia). Sealed, recompute PASS. [readout](demo/driver_ab_readout.md).
+---
 
 ## Layout
 
@@ -218,23 +340,26 @@ signal alone (no amnesia). Sealed, recompute PASS. [readout](demo/driver_ab_read
 plateau/        core: signal (gate), continuum (emit/inflate/ground), orchestrator, metrics, integrity
 plateau/agency/ bounded background QA driver (plateau-agency) + the 3 layer contracts
                   (PARENT_AGENT_MANUAL.md, ORCHESTRATOR_PROMPT.md, BACKGROUND_AGENCY.md)
+                  + bench_summary.py (prints the sourced wavex-os run metrics)
 examples/       bare_loop.py (host-free proof) + the continuum story
 demo/           pre-registered demos (recall + real-code C6), sealed raw, verdicts, FINDINGS.md
 adapters/       claude_code/ — installable Claude Code plugin (plugin.json, skill, hooks, commands)
 paper/          The Integrator — theory-and-methods preprint (draft)
+BENCHMARKS.md   the live wavex-os run + sealed demos, every number sourced
 RESULTS.md      every sealed cycle, its verdict, and a one-line re-verify command
 RECONCILE.md    paper ↔ sealed reconciliation (flag-only)
-tests/          core has zero third-party deps
+tests/          71 tests; core has zero third-party deps
 ```
 
 ## The paper
 
 The mechanism is formalized in **[*The Integrator: A Free-Energy Filtering Account of Compressed-State
 Continuity in Long-Running Agents*](paper/the-integrator-2026-06-02.pdf)** — a theory-and-methods
-preprint casting the loop as a recursive Bayesian filter (predict = reasoning, update = the gate) plus a
-compression projection Π. It is a **draft**: its empirical figures (C3/C4/C6) are operator-supplied and
-reconciled to the sealed artifacts in [`RECONCILE.md`](RECONCILE.md); the forward program is
-pre-registered, not yet run. The account is functional and **silent on phenomenality** by construction.
+preprint casting the loop as a recursive Bayesian filter (predict = reasoning, update = the gate)
+plus a compression projection Π. It is a **draft**: its empirical figures (C3/C4/C6) are
+operator-supplied and reconciled to the sealed artifacts in [`RECONCILE.md`](RECONCILE.md); the
+forward program is pre-registered, not yet run. The account is functional and **silent on
+phenomenality** by construction.
 
 ## License
 
