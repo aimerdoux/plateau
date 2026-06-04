@@ -1,0 +1,17 @@
+PROMPT:
+Solve the grade-school math problem. Show brief reasoning and end with 'The answer is N.' where N is the final integer.
+
+CARRIED METHOD SIGNAL (bounded):
+goals: solve the grade-school math word problem; end with 'The answer is N.'
+stance: read the problem, do the arithmetic step by step, state the final integer
+lessons: translate each quantity in the problem into a number | combine them with the operation the wording implies (add for 'more/total', subtract for 'left/lost/gave', multiply for 'each/per', divide for 'split/shared') | chain the intermediate results; carry units; do one arithmetic step at a time | the final line must be exactly: The answer is N.  (N = the resulting integer)
+
+Q: Mike plays ping pong for 40 minutes.  In the first 20 minutes, he scores 4 points.  In the second 20 minutes, he scores 25% more points.  How many total points did he score?
+A:
+
+=== REPLY ===
+First 20 minutes: 4 points.
+Second 20 minutes: 25% more than 4 → 4 × 1.25 = 5 points.
+Total: 4 + 5 = 9.
+
+The answer is 9.

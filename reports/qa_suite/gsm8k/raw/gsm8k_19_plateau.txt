@@ -1,0 +1,17 @@
+PROMPT:
+Solve the grade-school math problem. Show brief reasoning and end with 'The answer is N.' where N is the final integer.
+
+CARRIED METHOD SIGNAL (bounded):
+goals: solve the grade-school math word problem; end with 'The answer is N.'
+stance: read the problem, do the arithmetic step by step, state the final integer
+lessons: translate each quantity in the problem into a number | combine them with the operation the wording implies (add for 'more/total', subtract for 'left/lost/gave', multiply for 'each/per', divide for 'split/shared') | chain the intermediate results; carry units; do one arithmetic step at a time | the final line must be exactly: The answer is N.  (N = the resulting integer)
+
+Q: Marissa is hiking a 12-mile trail. She took 1 hour to walk the first 4 miles, then another hour to walk the next two miles. If she wants her average speed to be 4 miles per hour, what speed (in miles per hour) does she need to walk the remaining distance?
+A:
+
+=== REPLY ===
+Total time allowed for a 4 mph average over 12 miles: 12 ÷ 4 = 3 hours.
+Time already used: 1 + 1 = 2 hours, covering 4 + 2 = 6 miles.
+Remaining: 12 − 6 = 6 miles in 3 − 2 = 1 hour → 6 ÷ 1 = 6 mph.
+
+The answer is 6.

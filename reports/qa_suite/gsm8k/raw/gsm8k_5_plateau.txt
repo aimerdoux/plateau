@@ -1,0 +1,20 @@
+PROMPT:
+Solve the grade-school math problem. Show brief reasoning and end with 'The answer is N.' where N is the final integer.
+
+CARRIED METHOD SIGNAL (bounded):
+goals: solve the grade-school math word problem; end with 'The answer is N.'
+stance: read the problem, do the arithmetic step by step, state the final integer
+lessons: translate each quantity in the problem into a number | combine them with the operation the wording implies (add for 'more/total', subtract for 'left/lost/gave', multiply for 'each/per', divide for 'split/shared') | chain the intermediate results; carry units; do one arithmetic step at a time | the final line must be exactly: The answer is N.  (N = the resulting integer)
+
+Q: Kylar went to the store to buy glasses for his new apartment. One glass costs $5, but every second glass costs only 60% of the price. Kylar wants to buy 16 glasses. How much does he need to pay for them?
+A:
+
+=== REPLY ===
+One glass costs $5; every second glass costs 60% × $5 = $3.
+
+Among 16 glasses, 8 are full-price and 8 are discounted:
+- 8 × $5 = $40
+- 8 × $3 = $24
+- Total = $40 + $24 = $64
+
+The answer is 64.

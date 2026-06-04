@@ -1,0 +1,19 @@
+PROMPT:
+Solve the grade-school math problem. Show brief reasoning and end with 'The answer is N.' where N is the final integer.
+
+CARRIED METHOD SIGNAL (bounded):
+goals: solve the grade-school math word problem; end with 'The answer is N.'
+stance: read the problem, do the arithmetic step by step, state the final integer
+lessons: translate each quantity in the problem into a number | combine them with the operation the wording implies (add for 'more/total', subtract for 'left/lost/gave', multiply for 'each/per', divide for 'split/shared') | chain the intermediate results; carry units; do one arithmetic step at a time | the final line must be exactly: The answer is N.  (N = the resulting integer)
+
+Q: Two trains leave San Rafael at the same time. They begin traveling westward, both traveling for 80 miles. The next day, they travel northwards, covering 150 miles. What's the distance covered by each train in the two days?
+A:
+
+=== REPLY ===
+Each train travels the same distance, so I just add the two legs:
+
+- Day 1 (westward): 80 miles
+- Day 2 (northward): 150 miles
+- Per train: 80 + 150 = 230 miles
+
+The answer is 230.

@@ -1,0 +1,32 @@
+PROMPT:
+Solve each grade-school math problem. Show brief reasoning and end with 'The answer is N.' where N is the final integer.
+
+Q: There are 15 trees in the grove. Grove workers will plant trees today. After they are done there will be 21 trees. How many trees did the workers plant today?
+A: There were 15 trees originally and 21 after, so they planted 21 - 15 = 6 trees. The answer is 6.
+
+Q: If there are 3 cars in the parking lot and 2 more cars arrive, how many cars are in the parking lot?
+A: There are 3 cars to start and 2 arrive, so 3 + 2 = 5 cars. The answer is 5.
+
+Q: Leah had 32 chocolates and her sister had 42. If they ate 35, how many pieces do they have left in total?
+A: Together they had 32 + 42 = 74 chocolates. After eating 35, 74 - 35 = 39 are left. The answer is 39.
+
+Q: Jason had 20 lollipops. He gave Denny some. Now Jason has 12. How many lollipops did Jason give to Denny?
+A: Jason went from 20 to 12 lollipops, so he gave away 20 - 12 = 8. The answer is 8.
+
+Q: Shawn has five toys. For Christmas he got two toys each from his mom and dad. How many toys does he have now?
+A: He starts with 5 toys. Two from mom and two from dad is 2 + 2 = 4 more, so 5 + 4 = 9. The answer is 9.
+
+Q: There were nine computers in the server room. Five more were installed each day from monday to thursday. How many computers are now in the server room?
+A: Monday to Thursday is 4 days, 5 each day is 4 * 5 = 20 added to the original 9, so 9 + 20 = 29. The answer is 29.
+
+Q: Michael had 58 golf balls. On tuesday he lost 23, on wednesday he lost 2 more. How many golf balls did he have at the end of wednesday?
+A: He lost 23 then 2 more, 23 + 2 = 25 lost, so 58 - 25 = 33 remain. The answer is 33.
+
+Q: Olivia has $23. She bought five bagels for $3 each. How much money does she have left?
+A: Five bagels at $3 each cost 5 * 3 = 15 dollars, so 23 - 15 = 8 dollars are left. The answer is 8.
+
+Q: Charlie wants to sell beeswax candles.  For every pound of beeswax, he can make 10 tapered candles.  One pound of beeswax and the wicks cost $10.00 in supplies.   If he sells each candle for $2.00 each, what is his net profit if he makes and sells 20 candles?
+A:
+
+=== REPLY ===
+A: To make 20 candles he needs 2 pounds of beeswax (10 candles per pound), so supplies cost 2 * $10.00 = $20.00. Selling 20 candles at $2.00 each brings in 20 * 2 = $40.00. Net profit is 40 - 20 = $20.00. The answer is 20.

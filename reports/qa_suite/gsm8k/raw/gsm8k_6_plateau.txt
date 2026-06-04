@@ -1,0 +1,18 @@
+PROMPT:
+Solve the grade-school math problem. Show brief reasoning and end with 'The answer is N.' where N is the final integer.
+
+CARRIED METHOD SIGNAL (bounded):
+goals: solve the grade-school math word problem; end with 'The answer is N.'
+stance: read the problem, do the arithmetic step by step, state the final integer
+lessons: translate each quantity in the problem into a number | combine them with the operation the wording implies (add for 'more/total', subtract for 'left/lost/gave', multiply for 'each/per', divide for 'split/shared') | chain the intermediate results; carry units; do one arithmetic step at a time | the final line must be exactly: The answer is N.  (N = the resulting integer)
+
+Q: Toulouse has twice as many sheep as Charleston. Charleston has 4 times as many sheep as Seattle. How many sheep do Toulouse, Charleston, and Seattle have together if Seattle has 20 sheep?
+A:
+
+=== REPLY ===
+Seattle has 20 sheep.
+Charleston has 4 × 20 = 80 sheep.
+Toulouse has 2 × 80 = 160 sheep.
+Together: 20 + 80 + 160 = 260.
+
+The answer is 260.

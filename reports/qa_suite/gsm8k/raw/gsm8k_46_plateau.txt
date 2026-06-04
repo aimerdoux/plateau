@@ -1,0 +1,20 @@
+PROMPT:
+Solve the grade-school math problem. Show brief reasoning and end with 'The answer is N.' where N is the final integer.
+
+CARRIED METHOD SIGNAL (bounded):
+goals: solve the grade-school math word problem; end with 'The answer is N.'
+stance: read the problem, do the arithmetic step by step, state the final integer
+lessons: translate each quantity in the problem into a number | combine them with the operation the wording implies (add for 'more/total', subtract for 'left/lost/gave', multiply for 'each/per', divide for 'split/shared') | chain the intermediate results; carry units; do one arithmetic step at a time | the final line must be exactly: The answer is N.  (N = the resulting integer)
+
+Q: Candice put 80 post-it notes in her purse before she headed out to her job at the coffee shop.  On her way, she stopped off at the store and purchased a package of Post-it notes;  At work, she placed a single Post-it note on each of 220 different cups of coffee.  If she had 23 post-it notes remaining overall, how many Post-it notes were in the package that she purchased?
+A:
+
+=== REPLY ===
+Candice started with 80 notes and bought a package of P notes, giving her 80 + P total. She used 220 (one per cup) and had 23 left:
+
+80 + P − 220 = 23
+P = 23 + 220 − 80 = 163
+
+Check: 80 + 163 = 243; 243 − 220 = 23. ✓
+
+The answer is 163.

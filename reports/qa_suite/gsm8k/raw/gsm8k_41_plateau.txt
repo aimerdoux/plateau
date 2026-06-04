@@ -1,0 +1,15 @@
+PROMPT:
+Solve the grade-school math problem. Show brief reasoning and end with 'The answer is N.' where N is the final integer.
+
+CARRIED METHOD SIGNAL (bounded):
+goals: solve the grade-school math word problem; end with 'The answer is N.'
+stance: read the problem, do the arithmetic step by step, state the final integer
+lessons: translate each quantity in the problem into a number | combine them with the operation the wording implies (add for 'more/total', subtract for 'left/lost/gave', multiply for 'each/per', divide for 'split/shared') | chain the intermediate results; carry units; do one arithmetic step at a time | the final line must be exactly: The answer is N.  (N = the resulting integer)
+
+Q: The great dragon, Perg, sat high atop mount Farbo, breathing fire upon anything within a distance of 1000 feet.  Polly could throw the gold javelin, the only known weapon that could sleigh the dragon, for a distance of 400 feet, well within the reach of the dragon's flames.  But when Polly held the sapphire gemstone, she could throw the javelin three times farther than when not holding the gemstone. If holding the gemstone, how far outside of the reach of the dragon's flames could Polly stand and still hit the dragon with the gold javelin?
+A:
+
+=== REPLY ===
+Polly's normal throw: 400 feet. With the gemstone, three times farther: 400 × 3 = 1200 feet. The dragon's flames reach 1000 feet. Standing distance beyond the flames while still hitting: 1200 − 1000 = 200 feet.
+
+The answer is 200.

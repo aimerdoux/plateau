@@ -148,27 +148,61 @@ Source: `reports/continuum/gatebench/raw/results.json` (sealed) + the recompute 
 
 ---
 
-## 5. Can the literal QA suites (GSM8K / TruthfulQA / SQuAD / BFCL) run through Plateau today?
+## 5. The literal QA suites (GSM8K / TruthfulQA) — now BUILT and RUN, accuracy preserved under collapse
 
-**No — not with the existing harness, and this file does not fabricate scores for them.**
+**This is now measured, not deferred.** The harness exists (`experiments/qa_suite/`), the runs are PAID
+`claude -p`, and every item is logged. Earlier revisions of this file said the QA suites were an un-built
+~1–2-day task; that is **superseded** — they are built and the real numbers are below.
 
-I checked: there is **no GSM8K / TruthfulQA / SQuAD / BFCL / MMLU wiring anywhere** in `experiments/`,
-`plateau/plateau/`, or `harness/` (grep returned nothing). Plateau's harness scores **task completion**
-(`expect_file` existence + pytest pass), not question-answering accuracy. Driving a literal QA suite
-through Plateau's collapse mechanism would require **building a new eval harness**:
+### 5a. The measured table (PAID, `claude -p`, per-item logs sealed)
 
-1. a QA adapter that turns each benchmark item into a Plateau `Task`/`Step` whose `expect_file` is the
-   model's answer, scored against the gold label (not file-existence);
-2. a dataset loader + the suite's official scorer (exact-match / F1 / MC1 / AST-match for BFCL);
-3. a control-vs-signal split so the *retention-under-bounded-context* delta is what's measured — i.e.
-   accuracy with full QA context vs accuracy with only the Plateau blob.
+Both arms hit the **same** `claude -p` backend, same question, same suite-standard scorer. The ONLY
+difference is the conditioning payload: full few-shot exemplars (baseline) vs those exemplars run through
+Plateau's **real** collapse path (`emit → inflate → _render`, the production driver's) into a bounded
+signal blob (plateau). Compression % is per-arm payload token size, measured once (constant per arm).
 
-That is a **separate harness-build task** (honest estimate: **~1–2 focused engineering days** for one
-suite end-to-end with sealing — most of it the per-suite scorer + a payload-compression analogue so the
-comparison to headroom is apples-to-apples; each additional suite ~half a day). Per the run contract I
-did **not** build or fake it. **Plateau's native quality benchmark is the collapse-A/B (§1) + demo6b
-pytest parity (§2) + C3 (§3)** — quality-retention measured by completion/test parity under bounded
-context.
+| suite | metric | baseline acc | Plateau acc | Δ | compression | N scored | verdict |
+|---|---|--:|--:|--:|--:|--:|---|
+| **GSM8K** | exact-match (final integer) | **0.96** (48/50) | **0.96** (48/50) | **0.000** | **63.3%** (472→173 tok) | 50 | accuracy **held** under 63% cut |
+| **TruthfulQA MC1** | single-correct option pick | **0.667** (22/33) | **0.697** (23/33) | **+0.030** | **59.8%** (338→136 tok) | 33\* | accuracy **held (↑ within noise)** under 60% cut |
+
+\*TruthfulQA scored **N=33**, not 50: the resumed paid run hit its **token budget guard** (this resume
+was hard-capped at ~1.5 M billed-new tokens; GSM8K consumed ~0.60 M, TruthfulQA ~0.88 M) and stopped
+**cleanly** with 33 items fully scored on *both* arms. The single half-finished item (one arm only) was
+**dropped from the log and the score** — the two arms are compared on the identical 33-item set. This is
+a real partial, explicitly labelled; it is **not** padded to 50 or extrapolated.
+
+- **GSM8K reproduce:** `PYTHONPATH=<repo>/plateau python -m experiments.qa_suite.run --suite gsm8k --n 50 --go`
+  · log [`reports/qa_suite/gsm8k/items.jsonl`](../reports/qa_suite/gsm8k/items.jsonl)
+  · verdict [`reports/qa_suite/gsm8k/verdict.json`](../reports/qa_suite/gsm8k/verdict.json)
+  · raw prompts+replies under `reports/qa_suite/gsm8k/raw/` (sealed per item).
+- **TruthfulQA reproduce:** `PYTHONPATH=<repo>/plateau python -m experiments.qa_suite.run --suite truthfulqa --n 50 --go`
+  · log [`reports/qa_suite/truthfulqa/items.jsonl`](../reports/qa_suite/truthfulqa/items.jsonl)
+  · verdict [`reports/qa_suite/truthfulqa/verdict.json`](../reports/qa_suite/truthfulqa/verdict.json).
+- **Real cost (this resume, from `claude -p` response JSON):** GSM8K 66 calls / **600,647** billed-new
+  tok / ~$10.96; TruthfulQA 67 calls / **883,184** billed-new tok / ~$11.38 (cache_read dominates the
+  raw total but is the same cached bytes re-read, not newly-billed context — both verdicts record the
+  full breakdown). The 11 GSM8K items recovered from the interrupted prior run were **reused, not
+  re-paid**.
+
+### 5b. The two suites deliberately NOT run — and exactly why (no invented scores)
+
+| suite | why it is NOT a fair Plateau mapping | status |
+|---|---|---|
+| **SQuAD v2** | the conditioning context *is the passage that contains the answer span*; collapsing it deletes the bytes the answer is read from — that is compressing the **answer**, not a redundant few-shot prior. Forcing it would manufacture a misleading F1 drop. | **documented, not run** |
+| **BFCL** | the conditioning context *is the tool/function schema* the call must match argument-for-argument; collapsing it removes the names the answer needs — again compressing the answer substrate, not a prior. | **documented, not run** |
+
+The runner refuses these with a logged reason (`experiments/qa_suite/run.py::SKIPPED`) rather than
+emitting a fabricated number. This is the same discipline as the published nulls (§nulls below): the
+mapping is run **only where it is honest**.
+
+### 5c. What this adds to the native evidence
+
+The QA table is the **single-prompt** analogue of accuracy-preserved-under-compression; the collapse-A/B
+(§1), demo6b pytest parity (§2), and C3 (§3) remain Plateau's **multi-step** quality-retention evidence
+(completion/test parity under bounded *working* context). Together: Plateau preserves task quality both
+when it collapses a **conditioning context** for one answer (§5) and when it collapses a **growing
+transcript** across a long build (§1–3).
 
 ---
 
@@ -193,8 +227,9 @@ under context reduction — at two different layers of the stack.**
 
 | claim | headroom (published) | Plateau (reproduced here) |
 |---|---|---|
-| Quality held flat under reduction | GSM8K **0.870 → 0.870**; TruthfulQA **0.530 → 0.560** | collapse A/B **completion 1.0 → 1.0** (§1b); demo6b **32/32 & 36/36 tests** (§2); C3 **1.0/1.0** (§3) |
-| Reduction achieved at that quality | SQuAD v2 **@ 19 %** compression; BFCL **@ 32 %** compression | **~99.7 % context cut** at the wall (694 vs 218,094 tok, §1b); slope cut to **1.5 %** (demo6b) / **1.2 %** (C3) of full-history |
+| Quality held flat under reduction — **literal QA suites** | GSM8K **0.870 → 0.870**; TruthfulQA **0.530 → 0.560** | **GSM8K 0.96 → 0.96** (Δ 0.0, N=50); **TruthfulQA MC1 0.667 → 0.697** (Δ +0.030, N=33) — measured on Plateau's own collapse path (§5a) |
+| Quality held flat under reduction — **multi-step builds** | (n/a — headroom is single-prompt) | collapse A/B **completion 1.0 → 1.0** (§1b); demo6b **32/32 & 36/36 tests** (§2); C3 **1.0/1.0** (§3) |
+| Reduction achieved at that quality | SQuAD v2 **@ 19 %** compression; BFCL **@ 32 %** compression | **QA conditioning context cut 63.3 % (GSM8K) / 59.8 % (TruthfulQA)** at held accuracy (§5a); **~99.7 % working-context cut** at the wall (694 vs 218,094 tok, §1b); slope cut to **1.5 %** (demo6b) / **1.2 %** (C3) |
 | Real-workload savings | **92 / 92 / 73 / 47 %** | live bounded-parent run: **0 compactions**, bypass:signal **≈531:1** (BENCHMARKS.md §1) |
 
 ### Where Plateau is stronger, and where the comparison does **not** map
@@ -207,12 +242,19 @@ task-completion while *preventing the session from collapsing at all*. The slope
 is something headroom does not report — Plateau shows the bounded arm's context **does not grow** with
 task length, which is the property that matters for long-horizon agents.
 
-**Where the comparison does NOT map — stated honestly:**
-- **Different quality instrument.** headroom reports **standard QA accuracy** on named public suites;
-  Plateau reports **completion/test parity** on multi-step builds. They both mean "quality preserved,"
-  but they are **not the same number** and should not be quoted as if interchangeable. Plateau has **not**
-  run GSM8K/TruthfulQA/SQuAD/BFCL (§5) — so on headroom's *literal* benchmark rows Plateau has **no
-  comparable score yet**, only its native completion-parity evidence.
+**Where the comparison does — and does NOT — map, stated honestly:**
+- **Now there IS a literal-suite comparison.** Plateau has run **GSM8K (N=50) and TruthfulQA MC1
+  (N=33)** through its real collapse path (§5a): **0.96 → 0.96** and **0.667 → 0.697** at **63 % / 60 %**
+  conditioning-context compression. These sit on headroom's *own* axis (standard-suite accuracy under
+  payload reduction) and are directly comparable to headroom's GSM8K 0.870→0.870 / TruthfulQA
+  0.530→0.560 rows — same kind of number, both "accuracy held under compression." **SQuAD v2 and BFCL
+  remain un-run on purpose** (§5b): their conditioning context *is* the answer substrate, so a Plateau
+  collapse there would compress the answer, not a prior — no fair mapping, no invented score.
+- **Still a different quality instrument for the multi-step claim.** Plateau's *native* evidence (§1–3)
+  is **completion/test parity** on multi-step builds, not graded QA accuracy. The QA table (§5) is the
+  single-prompt bridge to headroom's instrument; the collapse-A/B / demo6b / C3 results are a
+  **different, complementary** measurement (collapse avoidance across a session) and should not be
+  quoted as if they were QA accuracy.
 - **Different baseline.** headroom's "0.870 → 0.870" is *the same model* with a compressed prompt.
   Plateau's "1.0 → 1.0" is *full-transcript vs bounded-blob* — a harder reduction but a **coarser quality
   metric** (binary completion / test pass, not graded accuracy). A 1.0 → 1.0 on a task the model finds
@@ -225,15 +267,19 @@ task length, which is the property that matters for long-horizon agents.
 ### BOTTOM LINE
 
 On the shared axis — **quality preserved under context reduction** — Plateau's reproduced evidence is
-**real and strong at its own layer**: bounded working-context at **completion/test parity** with a
-**~99.7 % context cut** at the collapse wall (§1b), a **66.6× / 80.4× flatter growth slope** at full test
-parity (§2/§3, CI-excludes-zero), and a **GATE-CHEAP** (~13 µs/fact) cost of preserving it (§4). Against
-headroom's published table, **Plateau's reduction magnitude is far larger and operates at the session
-layer headroom does not touch**, but Plateau **cannot yet quote a GSM8K/TruthfulQA-style accuracy number**
-— its quality instrument is completion/test parity, and the literal QA suites are an un-built, ~1–2-day
-harness task (§5). The two are **best read as complementary layers of the same idea**, not as a
-single-number horse race; quoting Plateau's "1.0 → 1.0" *as if* it were headroom's "0.870 → 0.870" would
-be the one dishonest move, and this file refuses it.
+**real and strong at two layers now**. (1) On headroom's *own* instrument: **GSM8K 0.96 → 0.96** and
+**TruthfulQA MC1 0.667 → 0.697** with the conditioning context cut **~60–63 %** (§5a), measured PAID
+through Plateau's real collapse path — accuracy held (or nudged up within noise) under compression, the
+literal headroom-style claim, earned not asserted. (2) At its native session layer: bounded
+working-context at **completion/test parity** with a **~99.7 % context cut** at the collapse wall (§1b),
+a **66.6× / 80.4× flatter growth slope** at full test parity (§2/§3, CI-excludes-zero), and a
+**GATE-CHEAP** (~13 µs/fact) cost of preserving it (§4). Against headroom's published table, Plateau now
+shows **comparable accuracy-held-under-compression on the literal suites** *and* a **far larger reduction
+at the session layer headroom does not touch**. The honest caveats remain: TruthfulQA is **N=33 not 50**
+(budget-capped, labelled), SQuAD/BFCL are **un-run by design** (§5b), and the multi-step "1.0 → 1.0"
+parity is a **coarser instrument** than graded QA accuracy and must not be quoted *as if* it were
+headroom's "0.870 → 0.870". The two systems are **best read as complementary layers of the same idea**;
+this file shows where they meet (§5) and where they do not (§1–3), and invents nothing.
 
 ---
 

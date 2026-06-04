@@ -140,12 +140,40 @@ failures upstream Claude rate-limits, not agent logic. (These are the **live-API
 counts; the run brief's round estimates were ~441 done / ~2,482 runs — we publish the API numbers,
 not the estimate. Source: [`FLEET_REPORT.md`](BENCHMARKS.md#2-the-19-agent-fleet-beneath-it).)
 
+### Accuracy preserved under compression — measured on standard QA suites (PAID `claude -p`)
+
+This is the headroom-style table, **truthful and earned**: Plateau's real collapse (`emit → inflate →
+_render`, the production driver's path) compresses the conditioning context, and we measure whether
+standard-suite accuracy holds. Both arms hit the **same** `claude -p` backend, same question, same
+suite-standard scorer; the **only** difference is the conditioning payload — full few-shot exemplars
+(baseline) vs the bounded Plateau signal (plateau). Every number traces to a per-item log on disk.
+
+| suite | metric | baseline → Plateau@cut | compression | N | log |
+|---|---|---|--:|--:|---|
+| **GSM8K** | exact-match (final integer) | **0.96 → 0.96** (48/50 → 48/50, Δ 0.0) | **63.3%** (472 → 173 payload tok) | 50 | [`gsm8k/items.jsonl`](reports/qa_suite/gsm8k/items.jsonl) |
+| **TruthfulQA** MC1 | single-correct option pick | **0.667 → 0.697** (22/33 → 23/33, Δ +0.030) | **59.8%** (338 → 136 payload tok) | 33\* | [`truthfulqa/items.jsonl`](reports/qa_suite/truthfulqa/items.jsonl) |
+
+\*TruthfulQA ran **N=33** (not 50): the run hit its token budget guard and stopped cleanly with 33
+items fully scored on **both** arms — a real partial, never a padded number. The two arms are compared
+on the identical 33-item set. **SQuAD v2 and BFCL are deliberately NOT run** — their conditioning
+context *is* the answer substrate (the passage the span is read from / the schema the call must match),
+so collapsing it would compress the answer, not a redundant prior; faking an F1/AST drop there would be
+dishonest, so they are documented-and-skipped (see [`QUALITY_BENCHMARKS.md`](QUALITY_BENCHMARKS.md) §5).
+
+- Reproduce: `PYTHONPATH=<repo>/plateau python -m experiments.qa_suite.run --suite gsm8k --n 50 --go`
+  (swap `--suite truthfulqa`). Sealed verdicts: `reports/qa_suite/{gsm8k,truthfulqa}/verdict.json`.
+- **Read it correctly:** accuracy is **held (GSM8K) or nudged up within noise (TruthfulQA)** while the
+  conditioning payload is cut **~60–63%** — the literal "accuracy preserved under compression" claim,
+  now measured on Plateau's own collapse path rather than asserted.
+
 ### Bounded context at no recall penalty (sealed demos)
 
-The bound costs nothing — completion parity holds. This is Plateau's "accuracy preserved" evidence.
+Beyond the single-prompt QA table above, Plateau's native axis is **completion / test parity across a
+multi-step build** when the full transcript is replaced by the bounded blob — the bound costs nothing.
 
 | benchmark | what it proves | result |
 |---|---|---|
+| **collapse A/B** (live `claude -p`) | bounded context survives the window wall a full-history arm hits | control (full history) **168→195,685** tok, **collapses at step 9 (over budget)**; signal (Plateau) **192→699** tok, slope **55.8** — **completion 1.0 vs 1.0**, a **99.6% context cut** at the wall. Verdict WIN. |
 | **demo6b** (real code) | bounded context on a serial ≥5-layer feature | full-history **365→37,405** (slope 6,860) vs Plateau **508→1,075** (slope 103) = **66.6× lower slope**, at **32/32 vs 36/36** tests — completion parity, zero rework. Sealed, recompute PASS. |
 | **driver A/B** (live workers) | the real adapter bounds context on `claude -p` workers | control **152→11,482** (slope 2,100) vs signal **172→460** (slope 57, ~37×) at **6/6 parity** — and the signal-arm worker built the correct *dependent* layer (`l6` imports `l5`) from the compact signal alone (no amnesia). |
 | **gatebench** (time + disk) | re-grounding is sub-millisecond | `file_hash` re-ground **~13 µs/fact** (marginal 0.0114 ms/fact, linear) → a 50-fact signal re-grounds in **0.59 ms/step**. Classification GATE-CHEAP — cheaper on time, not just tokens. |
@@ -212,8 +240,12 @@ This section is the credibility. These are results we went looking for and did *
 - **Not flat-forever recall.** The carried signal is bounded, so past the point where more distinct
   facts must be live than it can hold, recall must fall and real context has to be added back.
   Plateau bounds and re-grounds context; it does not abolish the need for context.
-- **Not "we compress better than Headroom."** Different mechanism (see below). Plateau wins on
-  footprint law / local / recompute-verifiable / published-nulls — not on per-payload compression.
+- **Not "we compress better than Headroom."** Different mechanism (see below). Plateau now *does*
+  have measured accuracy-preserved-under-compression numbers on its own collapse path (GSM8K
+  0.96→0.96 @ 63.3% cut, TruthfulQA 0.667→0.697 @ 59.8% cut, in Proof above) — but that is Plateau
+  collapsing a **conditioning context**, not a head-to-head beating Headroom on per-payload
+  compression. Plateau wins on footprint law / local / recompute-verifiable / published-nulls; the QA
+  table proves accuracy *holds* under its collapse, not that it out-compresses a dedicated compressor.
 
 So the defensible claim is **bounded context at no recall cost**, and nothing stronger.
 

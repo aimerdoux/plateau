@@ -1,0 +1,17 @@
+PROMPT:
+Solve the grade-school math problem. Show brief reasoning and end with 'The answer is N.' where N is the final integer.
+
+CARRIED METHOD SIGNAL (bounded):
+goals: solve the grade-school math word problem; end with 'The answer is N.'
+stance: read the problem, do the arithmetic step by step, state the final integer
+lessons: translate each quantity in the problem into a number | combine them with the operation the wording implies (add for 'more/total', subtract for 'left/lost/gave', multiply for 'each/per', divide for 'split/shared') | chain the intermediate results; carry units; do one arithmetic step at a time | the final line must be exactly: The answer is N.  (N = the resulting integer)
+
+Q: Kyle bought last year's best-selling book for $19.50. This is with a 25% discount from the original price. What was the original price of the book?
+A:
+
+=== REPLY ===
+$19.50 is the price after a 25% discount, so it represents 75% of the original price.
+
+Original price = $19.50 ÷ 0.75 = $26.
+
+The answer is 26.

@@ -1,0 +1,22 @@
+PROMPT:
+Solve the grade-school math problem. Show brief reasoning and end with 'The answer is N.' where N is the final integer.
+
+CARRIED METHOD SIGNAL (bounded):
+goals: solve the grade-school math word problem; end with 'The answer is N.'
+stance: read the problem, do the arithmetic step by step, state the final integer
+lessons: translate each quantity in the problem into a number | combine them with the operation the wording implies (add for 'more/total', subtract for 'left/lost/gave', multiply for 'each/per', divide for 'split/shared') | chain the intermediate results; carry units; do one arithmetic step at a time | the final line must be exactly: The answer is N.  (N = the resulting integer)
+
+Q: John drives for 3 hours at a speed of 60 mph and then turns around because he realizes he forgot something very important at home.  He tries to get home in 4 hours but spends the first 2 hours in standstill traffic.  He spends the next half-hour driving at a speed of 30mph, before being able to drive the remaining time of the 4 hours going at 80 mph.  How far is he from home at the end of those 4 hours?
+A:
+
+=== REPLY ===
+**Reasoning:**
+- Outbound: 3 hr × 60 mph = 180 miles from home.
+- Return trip (4 hours total):
+  - First 2 hr: standstill → 0 miles.
+  - Next 0.5 hr: 30 mph × 0.5 = 15 miles.
+  - Remaining 1.5 hr: 80 mph × 1.5 = 120 miles.
+- Distance covered toward home: 15 + 120 = 135 miles.
+- Distance remaining: 180 − 135 = 45 miles.
+
+The answer is 45.

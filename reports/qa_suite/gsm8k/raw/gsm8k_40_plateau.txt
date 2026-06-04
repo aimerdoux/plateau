@@ -1,0 +1,17 @@
+PROMPT:
+Solve the grade-school math problem. Show brief reasoning and end with 'The answer is N.' where N is the final integer.
+
+CARRIED METHOD SIGNAL (bounded):
+goals: solve the grade-school math word problem; end with 'The answer is N.'
+stance: read the problem, do the arithmetic step by step, state the final integer
+lessons: translate each quantity in the problem into a number | combine them with the operation the wording implies (add for 'more/total', subtract for 'left/lost/gave', multiply for 'each/per', divide for 'split/shared') | chain the intermediate results; carry units; do one arithmetic step at a time | the final line must be exactly: The answer is N.  (N = the resulting integer)
+
+Q: Brandon's iPhone is four times as old as Ben's iPhone. Ben's iPhone is two times older than Suzy's iPhone. If Suzy’s iPhone is 1 year old, how old is Brandon’s iPhone?
+A:
+
+=== REPLY ===
+Suzy's iPhone = 1 year old.
+Ben's iPhone = 2 × Suzy's = 2 × 1 = 2 years.
+Brandon's iPhone = 4 × Ben's = 4 × 2 = 8 years.
+
+The answer is 8.

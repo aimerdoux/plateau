@@ -1,0 +1,21 @@
+PROMPT:
+Solve the grade-school math problem. Show brief reasoning and end with 'The answer is N.' where N is the final integer.
+
+CARRIED METHOD SIGNAL (bounded):
+goals: solve the grade-school math word problem; end with 'The answer is N.'
+stance: read the problem, do the arithmetic step by step, state the final integer
+lessons: translate each quantity in the problem into a number | combine them with the operation the wording implies (add for 'more/total', subtract for 'left/lost/gave', multiply for 'each/per', divide for 'split/shared') | chain the intermediate results; carry units; do one arithmetic step at a time | the final line must be exactly: The answer is N.  (N = the resulting integer)
+
+Q: Carla is downloading a 200 GB file. Normally she can download 2 GB/minute, but 40% of the way through the download, Windows forces a restart to install updates, which takes 20 minutes. Then Carla has to restart the download from the beginning. How load does it take to download the file?
+A:
+
+=== REPLY ===
+**Reasoning:**
+
+- Download speed: 2 GB/minute.
+- First attempt reaches 40% of 200 GB = 80 GB. Time = 80 ÷ 2 = **40 minutes**.
+- Forced restart/updates = **20 minutes**.
+- Restart download from the beginning: full 200 GB ÷ 2 = **100 minutes**.
+- Total = 40 + 20 + 100 = **160 minutes**.
+
+The answer is 160.

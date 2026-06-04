@@ -1,0 +1,15 @@
+PROMPT:
+Solve the grade-school math problem. Show brief reasoning and end with 'The answer is N.' where N is the final integer.
+
+CARRIED METHOD SIGNAL (bounded):
+goals: solve the grade-school math word problem; end with 'The answer is N.'
+stance: read the problem, do the arithmetic step by step, state the final integer
+lessons: translate each quantity in the problem into a number | combine them with the operation the wording implies (add for 'more/total', subtract for 'left/lost/gave', multiply for 'each/per', divide for 'split/shared') | chain the intermediate results; carry units; do one arithmetic step at a time | the final line must be exactly: The answer is N.  (N = the resulting integer)
+
+Q: Grandma Jones baked 5 apple pies for the fireman's luncheon.  She cut each pie into 8 pieces and set the five pies out on the buffet table for the guests to serve themselves.  At the end of the evening, after the guests had taken and eaten their pieces of pie, there were 14 pieces of pie remaining.  How many pieces were taken by the guests?
+A:
+
+=== REPLY ===
+5 pies × 8 pieces each = 40 pieces total. With 14 left, the guests took 40 − 14 = 26.
+
+The answer is 26.
