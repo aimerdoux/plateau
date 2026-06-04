@@ -1,0 +1,33 @@
+{
+  "suite": "truthfulqa",
+  "n_requested": 50,
+  "n_scored": 33,
+  "backend": "claude_p",
+  "seed": 0,
+  "metric": "MC1 (single-correct option pick)",
+  "baseline_accuracy": 0.6667,
+  "plateau_accuracy": 0.697,
+  "accuracy_delta": 0.0303,
+  "baseline_payload_tok": 338,
+  "plateau_payload_tok": 136,
+  "compression_pct": 59.8,
+  "baseline_correct": 22,
+  "plateau_correct": 23,
+  "items_recovered": 0,
+  "items_run_this_resume": 33,
+  "stopped_early_on_budget": true,
+  "real_cost_this_resume": {
+    "calls": 67,
+    "input_tokens": 330077,
+    "output_tokens": 860,
+    "cache_read_tokens": 12390207,
+    "cache_creation_tokens": 552247,
+    "billed_new_tokens": 883184,
+    "total_tokens_incl_cache": 13273391,
+    "total_cost_usd": 11.3768
+  },
+  "log": "reports/qa_suite/truthfulqa/items.jsonl",
+  "reproduce": "PYTHONPATH=/Users/geniex/bmacp-trunk/plateau-qabench/plateau python -m experiments.qa_suite.run --suite truthfulqa --n 50 --go",
+  "ts": "2026-06-04T02:05:04Z",
+  "wall_secs": 540.0
+}

@@ -1,0 +1,19 @@
+PROMPT:
+Solve the grade-school math problem. Show brief reasoning and end with 'The answer is N.' where N is the final integer.
+
+CARRIED METHOD SIGNAL (bounded):
+goals: solve the grade-school math word problem; end with 'The answer is N.'
+stance: read the problem, do the arithmetic step by step, state the final integer
+lessons: translate each quantity in the problem into a number | combine them with the operation the wording implies (add for 'more/total', subtract for 'left/lost/gave', multiply for 'each/per', divide for 'split/shared') | chain the intermediate results; carry units; do one arithmetic step at a time | the final line must be exactly: The answer is N.  (N = the resulting integer)
+
+Q: John buys twice as many red ties as blue ties.  The red ties cost 50% more than blue ties.  He spent $200 on blue ties that cost $40 each. How much did he spend on ties?
+A:
+
+=== REPLY ===
+Blue ties: $200 ÷ $40 = 5 blue ties.
+Red ties: twice as many = 10 red ties.
+Red tie price: $40 + 50% = $60 each.
+Red ties total: 10 × $60 = $600.
+Total spent: $200 + $600 = $800.
+
+The answer is 800.

@@ -1,0 +1,21 @@
+PROMPT:
+Solve the grade-school math problem. Show brief reasoning and end with 'The answer is N.' where N is the final integer.
+
+CARRIED METHOD SIGNAL (bounded):
+goals: solve the grade-school math word problem; end with 'The answer is N.'
+stance: read the problem, do the arithmetic step by step, state the final integer
+lessons: translate each quantity in the problem into a number | combine them with the operation the wording implies (add for 'more/total', subtract for 'left/lost/gave', multiply for 'each/per', divide for 'split/shared') | chain the intermediate results; carry units; do one arithmetic step at a time | the final line must be exactly: The answer is N.  (N = the resulting integer)
+
+Q: Marie ordered one chicken meal that costs $12, 5 packs of milk that costs $3 each, 4 apples that cost $1.50 each, and some boxes of pizza. Marie paid a total of $50. How many boxes of pizza did Marie order if each box costs $8.50?
+A:
+
+=== REPLY ===
+Reasoning:
+- Chicken meal: $12
+- Milk: 5 × $3 = $15
+- Apples: 4 × $1.50 = $6
+- Subtotal before pizza: $12 + $15 + $6 = $33
+- Spent on pizza: $50 − $33 = $17
+- Boxes of pizza: $17 ÷ $8.50 = 2
+
+The answer is 2.

@@ -155,6 +155,29 @@ python demo/recompute_demo6.py` → **PASS, 38 sealed files**.
 
 ---
 
+## 3b. Standard QA suites — accuracy preserved under collapse (PAID `claude -p`)
+
+The accuracy-preserved-under-compression table, measured on Plateau's real collapse path
+(`emit → inflate → _render`). Both arms hit the same `claude -p` backend / same scorer; only the
+conditioning payload differs (full few-shot exemplars vs the bounded Plateau signal). Per-item logs
+sealed under `reports/qa_suite/<suite>/`.
+
+| suite | metric | baseline → Plateau | Δ | compression | N | cost (this resume) |
+|---|---|--:|--:|--:|--:|--:|
+| **GSM8K** | exact-match (final integer) | **0.96 → 0.96** (48/50→48/50) | 0.000 | **63.3%** (472→173 tok) | 50 | 66 calls / 600,647 billed-new tok / ~$10.96 |
+| **TruthfulQA MC1** | single-correct option pick | **0.667 → 0.697** (22/33→23/33) | +0.030 | **59.8%** (338→136 tok) | 33\* | 67 calls / 883,184 billed-new tok / ~$11.38 |
+
+\*TruthfulQA stopped at **N=33** when the resume's ~1.5 M billed-new-token budget guard fired; 33 items
+scored on both arms (the half-finished item dropped). Real partial, labelled — not padded.
+**SQuAD v2 / BFCL are not run by design** (their conditioning context is the answer substrate — see
+`QUALITY_BENCHMARKS.md` §5b); the runner refuses them with a logged reason rather than inventing a score.
+
+- Source: `reports/qa_suite/{gsm8k,truthfulqa}/verdict.json` + `items.jsonl` + `raw/`.
+- Reproduce: `PYTHONPATH=<repo>/plateau python -m experiments.qa_suite.run --suite gsm8k --n 50 --go`
+  (swap `--suite truthfulqa`). Harness: `experiments/qa_suite/`; tests: `tests/test_qa_suite.py`.
+
+---
+
 ## 4. Sealed continuum cycles (mechanism probes)
 
 Full table, sealed paths, and per-row re-verify commands are in [`RESULTS.md`](RESULTS.md). Summary:

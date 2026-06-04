@@ -1,0 +1,33 @@
+{
+  "suite": "gsm8k",
+  "n_requested": 50,
+  "n_scored": 50,
+  "backend": "claude_p",
+  "seed": 0,
+  "metric": "exact-match (final integer)",
+  "baseline_accuracy": 0.96,
+  "plateau_accuracy": 0.96,
+  "accuracy_delta": 0.0,
+  "baseline_payload_tok": 472,
+  "plateau_payload_tok": 173,
+  "compression_pct": 63.3,
+  "baseline_correct": 48,
+  "plateau_correct": 48,
+  "items_recovered": 17,
+  "items_run_this_resume": 33,
+  "stopped_early_on_budget": false,
+  "real_cost_this_resume": {
+    "calls": 66,
+    "input_tokens": 281580,
+    "output_tokens": 14493,
+    "cache_read_tokens": 14070745,
+    "cache_creation_tokens": 304574,
+    "billed_new_tokens": 600647,
+    "total_tokens_incl_cache": 14671392,
+    "total_cost_usd": 10.961
+  },
+  "log": "reports/qa_suite/gsm8k/items.jsonl",
+  "reproduce": "PYTHONPATH=/Users/geniex/bmacp-trunk/plateau-qabench/plateau python -m experiments.qa_suite.run --suite gsm8k --n 50 --go",
+  "ts": "2026-06-04T01:55:41Z",
+  "wall_secs": 680.1
+}

@@ -1,0 +1,21 @@
+PROMPT:
+Solve the grade-school math problem. Show brief reasoning and end with 'The answer is N.' where N is the final integer.
+
+CARRIED METHOD SIGNAL (bounded):
+goals: solve the grade-school math word problem; end with 'The answer is N.'
+stance: read the problem, do the arithmetic step by step, state the final integer
+lessons: translate each quantity in the problem into a number | combine them with the operation the wording implies (add for 'more/total', subtract for 'left/lost/gave', multiply for 'each/per', divide for 'split/shared') | chain the intermediate results; carry units; do one arithmetic step at a time | the final line must be exactly: The answer is N.  (N = the resulting integer)
+
+Q: Gunter is trying to count the jelly beans in a jar. He asks his friends how many they think are in the jar. One says 80. Another says 20 more than half the first one. A third says 25% more than the first one. What is their average guess?
+A:
+
+=== REPLY ===
+First guess: 80
+
+Second guess: 20 more than half of 80 = 20 + 40 = 60
+
+Third guess: 25% more than 80 = 80 + 20 = 100
+
+Average = (80 + 60 + 100) ÷ 3 = 240 ÷ 3 = 80
+
+The answer is 80.

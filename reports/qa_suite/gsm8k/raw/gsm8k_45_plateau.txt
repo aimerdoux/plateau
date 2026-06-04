@@ -1,0 +1,20 @@
+PROMPT:
+Solve the grade-school math problem. Show brief reasoning and end with 'The answer is N.' where N is the final integer.
+
+CARRIED METHOD SIGNAL (bounded):
+goals: solve the grade-school math word problem; end with 'The answer is N.'
+stance: read the problem, do the arithmetic step by step, state the final integer
+lessons: translate each quantity in the problem into a number | combine them with the operation the wording implies (add for 'more/total', subtract for 'left/lost/gave', multiply for 'each/per', divide for 'split/shared') | chain the intermediate results; carry units; do one arithmetic step at a time | the final line must be exactly: The answer is N.  (N = the resulting integer)
+
+Q: Meredith is a freelance blogger who writes about health topics and submits to clients each day as her permanent job. A blog article takes an average of 4 hours to research and write about. Last week, she wrote 5 articles on Monday and  2/5 times more articles on Tuesday than on Monday. On Wednesday, she wrote twice the number of articles she wrote on Tuesday. Calculate the total number of hours she spent writing articles in the three days.
+A:
+
+=== REPLY ===
+**Reasoning:**
+- Monday: 5 articles
+- Tuesday: 2/5 more than Monday = 5 + (2/5 × 5) = 5 + 2 = 7 articles
+- Wednesday: twice Tuesday = 2 × 7 = 14 articles
+- Total articles = 5 + 7 + 14 = 26
+- Hours = 26 × 4 = 104
+
+The answer is 104.
