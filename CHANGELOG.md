@@ -4,6 +4,50 @@ All notable changes to Plateau are recorded here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project
 adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+Docs-only pass — no core or agency logic changed. Adopts the polish of a strong
+per-payload-compression README (crisp tagline, badges, time-boxed quickstart sections, an
+ASCII parent→orchestrator→worker diagram, a "Compared to" table, progressive `<details>`
+disclosure) while keeping every Plateau integrity guardrail — and never adopting a claim the
+sealed artifacts don't support.
+
+### Added
+
+- **`BENCHMARKS.md`** — the live `wavex-os` agency run plus the sealed demos, with **every number
+  sourced** to its artifact (`AGENCY_RUN_REPORT.md` §-by-§, `FLEET_REPORT.md`, sealed verdicts).
+  Headline run figures: parent **0 compactions**, **76,030** signal tokens vs **40.39M** worker
+  tokens bypassed (**≈531:1**, observed this run), peak single-step cache_read **7,294,973** tok,
+  **4** orchestrators, **3** PRs **emitted and never merged**; the 19-agent fleet beneath it ran
+  **500 issues / 439 done / 2,499 heartbeat runs** (live-API counts, not the brief's estimates).
+- **`plateau/agency/bench_summary.py`** — a read-only script (`python -m plateau.agency.bench_summary`)
+  that prints the sourced run metrics verbatim from the sealed reports. It recomputes nothing and
+  labels the two modelled estimates (the ~202 hypothetical inline compactions and the USD cost) as
+  estimates.
+
+### Changed
+
+- **`README.md`** rewritten for parity-of-polish: ASCII wordmark + truthful pillar subhead, honest
+  badges only (License / Python 3.9+ / tests 71 passing / zero core deps — **no** PyPI/codecov/social
+  badges, which aren't earned yet), time-boxed "30-second idea" / "60-second quickstart" headers, an
+  ASCII three-tier architecture diagram, a **Proof** section led by the wavex-os run, a "When to use ·
+  when to skip" table, and a "Compared to" table that **concedes** per-payload compressors' strength
+  and frames them as complementary (run a compressor *inside* a Plateau worker). Dense cycle/install
+  detail collapsed into `<details>` blocks.
+
+### Integrity guardrails (explicitly held)
+
+- The 3 wavex-os PRs are described as **emitted, never merged** — never "merged to main" (the agency
+  is code-enforced not to merge/force-push/push to `main`; that is a selling point).
+- Fleet counts use the **live-API-authoritative** values (439 done / 2,499 runs); the run brief's
+  round estimates (~441 / ~2,482) are noted, not published as fact.
+- The footprint law `O(agents+resumes)` is stated as a **design property corroborated** by 0
+  compactions — **not** a swept-`N` live experiment; the 531:1 ratio is labelled **observed for this
+  one run**, not a guaranteed constant.
+- No recall/capability advantage claimed (demo2/demo3/demo4 nulls retained); no "compresses better
+  than Headroom" claim; no "docs online / on PyPI" claim until those artifacts exist; the clean-machine
+  install `[VERIFY]` marker is retained.
+
 ## [0.2.0] — 2026-06-03
 
 The release that adds the **agency layer** on top of the bounded-context core: a
@@ -70,5 +114,6 @@ Initial release of the bounded-context core.
 - Pre-registered, sealed demos under `demo/` (recall + real-code efficiency) with
   recompute-verifiable verdicts; results in `RESULTS.md`.
 
+[Unreleased]: https://github.com/aimerdoux/plateau/compare/v0.2.0...HEAD
 [0.2.0]: https://github.com/aimerdoux/plateau/releases/tag/v0.2.0
 [0.1.0]: https://github.com/aimerdoux/plateau/releases/tag/v0.1.0
