@@ -1,12 +1,15 @@
 """Thin Claude Code adapter for Plateau. All logic lives in `plateau`; this file is
 only I/O + JSON plumbing at the step boundary.
 
-Two modes, wired to Claude Code's hook events:
+Three modes, wired to Claude Code's hook events:
 
-  pre   — inflate + ground the persisted signal, print the carried self-state (and flag
-          any STALE facts) so it can be surfaced into the next step's context.
-  post  — gate any newly proposed facts, fold the admitted ones into the signal, emit,
-          and persist the bounded blob back to disk.
+  parent — read the Parent Agent Manual's section-4 SYSTEM-PROMPT BLOCK and inject it as
+           standing context at SessionStart, so the parent-agent delegation discipline is
+           active for as long as the plugin is enabled (and absent when it is disabled).
+  pre    — inflate + ground the persisted signal, print the carried self-state (and flag
+           any STALE facts) so it can be surfaced into the next step's context.
+  post   — gate any newly proposed facts, fold the admitted ones into the signal, emit,
+           and persist the bounded blob back to disk.
 
 The signal lives at .plateau/signal.json in the project root. Newly proposed facts (for
 post) are read from .plateau/pending_facts.json — a list of
@@ -15,6 +18,7 @@ re-verifies are admitted; the rest are dropped (and reported). Nothing host-spec
 leaks into the core — this adapter imports `plateau` and the standard library only.
 
 Run directly for a dry run:
+  python adapters/claude_code/hook.py parent
   python adapters/claude_code/hook.py pre
   python adapters/claude_code/hook.py post
 """
@@ -23,6 +27,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import sys
 
 from plateau import (
@@ -35,6 +40,24 @@ SIGNAL = os.path.join(PLATEAU_DIR, "signal.json")
 PENDING = os.path.join(PLATEAU_DIR, "pending_facts.json")
 PENDING_CARRY = os.path.join(PLATEAU_DIR, "pending_carry.json")  # optional CARRY lessons
 LESS_CAP = 12  # bound the carried lessons so the signal can't grow unbounded
+
+# Where the Parent Agent Manual lives. The SessionStart hook reads its section-4
+# SYSTEM-PROMPT BLOCK and injects it as standing context, so the parent-agent
+# discipline is active for as long as the plugin is enabled (and gone when it is
+# disabled). Candidates are tried in order; the first that exists wins:
+#   1. a copy shipped next to this adapter (present in an INSTALLED plugin, where
+#      CLAUDE_PLUGIN_ROOT points at this dir and the repo source tree is absent),
+#   2. the canonical source under the repo root (present in a dev checkout).
+# Keeping (1) as a generated copy of (2) means the two never drift; see this
+# adapter's README ("Parent-discipline autoload") for the regeneration command.
+_HERE = os.path.dirname(os.path.abspath(__file__))
+_PLUGIN_ROOT = os.environ.get("CLAUDE_PLUGIN_ROOT", _HERE)
+MANUAL_CANDIDATES = [
+    os.path.join(_PLUGIN_ROOT, "PARENT_AGENT_MANUAL.md"),
+    os.path.join(_HERE, "PARENT_AGENT_MANUAL.md"),
+    # dev checkout: adapters/claude_code/ -> repo root -> plateau/agency/
+    os.path.join(_HERE, "..", "..", "plateau", "agency", "PARENT_AGENT_MANUAL.md"),
+]
 
 
 def _load_blob() -> str:
@@ -96,6 +119,53 @@ def post() -> dict:
             "note": "only facts whose Measurement re-verified were admitted; lessons are bounded"}
 
 
+def _read_manual() -> tuple[str, str]:
+    """Return (text, path) for the first Parent Agent Manual candidate that exists."""
+    for path in MANUAL_CANDIDATES:
+        if os.path.exists(path):
+            return open(path, encoding="utf-8").read(), os.path.abspath(path)
+    return "", ""
+
+
+def _extract_section4_block(manual: str) -> str:
+    """Pull the fenced SYSTEM-PROMPT BLOCK out of section 4 of the manual.
+
+    Section 4 ('## 4. PARENT SYSTEM-PROMPT BLOCK ...') wraps the copy-paste parent
+    laws in a single fenced ``` block. We return that block's body verbatim so the
+    injected context IS the manual's section-4 text — no paraphrase, no drift."""
+    m = re.search(r'^##\s*4\.[^\n]*$', manual, re.M)
+    if not m:
+        return ""
+    after = manual[m.end():]
+    fb = re.search(r'```[^\n]*\n(.*?)\n```', after, re.S)
+    return fb.group(1).strip() if fb else ""
+
+
+def parent() -> dict:
+    """Load the parent-agent discipline (manual section 4) for SessionStart injection."""
+    manual, path = _read_manual()
+    block = _extract_section4_block(manual) if manual else ""
+    return {
+        "parent_system_prompt_block": block,
+        "manual_path": path,
+        "found": bool(block),
+        "note": "section-4 SYSTEM-PROMPT BLOCK of the Parent Agent Manual; injected as "
+                "standing context at SessionStart so the parent discipline is active "
+                "whenever the plugin is enabled",
+    }
+
+
+def _render_parent(out: dict) -> str:
+    """Wrap the parent laws as standing additionalContext for the session."""
+    block = out.get("parent_system_prompt_block", "")
+    if not block:
+        return ""
+    return ("[Plateau — parent-agent discipline, active while the Plateau plugin is enabled]\n"
+            "Operate as the PARENT agent per these standing laws. Delegate the work to bounded "
+            "background orchestrators; spend your own turns only to spawn and to verify.\n\n"
+            + block)
+
+
 def _render_carried(cs: dict, stale: list) -> str:
     """Compact rendering of the carried self-state for injection as additionalContext.
     This IS the bounded signal — keep it small."""
@@ -119,9 +189,10 @@ def _render_carried(cs: dict, stale: list) -> str:
 
 def main() -> None:
     """CLI + Claude Code hook entry. `--cc` emits Claude-Code-hook JSON:
+    SessionStart (parent) injects the parent-agent discipline as standing context;
     UserPromptSubmit (pre) injects the carried signal as additionalContext; Stop (post)
     gates+persists and returns a one-line systemMessage. Without `--cc`, prints the raw
-    dict (manual/dry use). The pre()/post() decision logic is unchanged either way."""
+    dict (manual/dry use). The decision logic is unchanged either way."""
     args = [a for a in sys.argv[1:] if a != "--cc"]
     cc = "--cc" in sys.argv[1:]
     mode = args[0] if args else "pre"
@@ -130,11 +201,25 @@ def main() -> None:
             sys.stdin.read()  # drain the hook's stdin JSON; we ground via cwd, not stdin
         except Exception:
             pass
-    out = pre() if mode == "pre" else post()
+    if mode == "parent":
+        out = parent()
+    elif mode == "post":
+        out = post()
+    else:
+        out = pre()
     if not cc:
         print(json.dumps(out, indent=2))
         return
-    if mode == "pre":
+    if mode == "parent":
+        ctx = _render_parent(out)
+        # When the manual cannot be found, emit nothing rather than a half-formed prompt.
+        payload = {"hookSpecificOutput": {"hookEventName": "SessionStart"}}
+        if ctx:
+            payload["hookSpecificOutput"]["additionalContext"] = ctx
+        else:
+            payload["suppressOutput"] = True
+        print(json.dumps(payload))
+    elif mode == "pre":
         ctx = _render_carried(out["carried_self_state"], out["stale_dropped_at_inflate"])
         print(json.dumps({"hookSpecificOutput": {
             "hookEventName": "UserPromptSubmit", "additionalContext": ctx}}))

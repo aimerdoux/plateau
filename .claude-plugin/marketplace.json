@@ -6,7 +6,7 @@
   "plugins": [
     {
       "name": "plateau",
-      "description": "Carry a small, re-grounded signal across steps instead of letting the transcript climb toward the context ceiling. UserPromptSubmit injects the bounded signal as context; Stop gates newly proposed facts (a fact enters the signal only if a Measurement re-verifies against the repo). Commands: /plateau:status, /plateau:gate. Requires the `plateau` core package: pip install git+https://github.com/aimerdoux/plateau.git",
+      "description": "Carry a small, re-grounded signal across steps instead of letting the transcript climb toward the context ceiling. SessionStart loads the parent-agent delegation discipline as standing context (active while the plugin is enabled); UserPromptSubmit injects the bounded signal as context; Stop gates newly proposed facts (a fact enters the signal only if a Measurement re-verifies against the repo). Commands: /plateau:status, /plateau:gate. Requires the `plateau` core package: pip install git+https://github.com/aimerdoux/plateau.git",
       "author": { "name": "Plateau contributors" },
       "category": "productivity",
       "source": {
