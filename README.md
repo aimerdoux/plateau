@@ -15,8 +15,12 @@
 
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 [![Python 3.9+](https://img.shields.io/badge/python-3.9%2B-blue.svg)](pyproject.toml)
-[![tests: 71 passing](https://img.shields.io/badge/tests-71_passing-brightgreen.svg)](tests/)
+[![CI](https://github.com/aimerdoux/plateau/actions/workflows/ci.yml/badge.svg)](https://github.com/aimerdoux/plateau/actions/workflows/ci.yml)
 [![core deps: zero](https://img.shields.io/badge/core_deps-zero-brightgreen.svg)](pyproject.toml)
+
+![Context per step — full-transcript context climbs to 37,405 tokens over 6 dependent steps while Plateau stays flat at 1,075, a 66× lower slope; both arms reach PASS](demo/context_growth.gif)
+
+<sub>A **real sealed run** (`demo6b`): replaying the full transcript vs carrying Plateau's bounded re-grounded signal across a 6-step dependent build — both reach PASS with zero rework. The line is read straight from the write-once completion files; regenerate with `python demo/make_context_gif.py`.</sub>
 
 > **Cheaper, not smarter.** Plateau is an efficiency tool: bounded context at no recall penalty.
 > It does not make an agent more capable — and we publish the null results that prove it (read
