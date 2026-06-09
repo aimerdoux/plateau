@@ -14,6 +14,11 @@ sealed artifacts don't support.
 
 ### Added
 
+- **Metacognition (faithfulness) result** added to README's validated set: a recursive self-reliability
+  estimate `R̂` tracks *actual* reliability under induced corruption — **CALIBRATED** via the gate-output
+  proxy (sealed, recompute PASS) and reproduced at the endpoints on a 5-dispatch live-agent pilot. Honest
+  scope: a calibration result, **Proposition-1 aggregate-only**, **silent on phenomenality** (calibration
+  ≠ awareness). Sealed in the parent tree at `reports/continuum/metacog/` + `metacog_kl_v2/`.
 - **`BENCHMARKS.md`** — the live `wavex-os` agency run plus the sealed demos, with **every number
   sourced** to its artifact (`AGENCY_RUN_REPORT.md` §-by-§, `FLEET_REPORT.md`, sealed verdicts).
   Headline run figures: parent **0 compactions**, **76,030** signal tokens vs **40.39M** worker

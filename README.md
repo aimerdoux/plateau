@@ -306,7 +306,7 @@ What you can expect:
 </details>
 
 <details>
-<summary><b>What else is validated (sealed continuum cycles C3 / C4 / C9 / C7)</b></summary>
+<summary><b>What else is validated (sealed continuum cycles C3 / C4 / C9 / C7 + metacognition)</b></summary>
 
 Beyond the efficiency headline, four continuum cycles probe the mechanism (full table + re-verify
 commands in [`RESULTS.md`](RESULTS.md)). **Four published nulls/ties** (C7 plus demo2/demo3/demo4)
@@ -325,6 +325,14 @@ are the integrity signal — we don't cherry-pick.
   edges (rejection 0.0) — *perfect* faithful traversal, including the opaque-symbol arm, with the
   scramble control confirming genuine dereference. NULL is a **tie at the faithful ceiling**, **not**
   confabulation. Sealed at `reports/continuum/c7/raw/verdict.json`; details in [`RESULTS.md`](RESULTS.md).
+- **Metacognition (the paper's §5 second filter) — CALIBRATED (a calibration result, not awareness).**
+  A recursive estimate of the system's *own* reliability `R̂`, built from the re-grounding / innovation
+  stream, tracks *actual* reliability under induced corruption: the free gate-output proxy is
+  **CALIBRATED** (ρ=1.0, monotonic, beats the raw signal by the de-noise margin; sealed, recompute
+  PASS), and the exact next-action-KL readout reproduced the endpoints on a 5-dispatch live-agent pilot
+  (corruption 0 → `R̂` 1.00, corruption 0.8 → `R̂` 0.20). **Proposition-1 aggregate-only** — it knows
+  *if* it is reliable, never *why* — and, like C4, **silent on phenomenality**. Sealed at
+  `reports/continuum/metacog/` (proxy) + `reports/continuum/metacog_kl_v2/` (pilot), parent tree.
 
 > Naming note: the theory preprint labels the reload-correspondence experiment **C11** and reserves
 > **C9** for a different (unrun) rate–distortion-knee sweep. The repo ran it under the label "C9". See
