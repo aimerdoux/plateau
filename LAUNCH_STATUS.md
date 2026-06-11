@@ -1,7 +1,7 @@
 # LAUNCH_STATUS.md
 
 Ops dashboard for the Plateau OSS launch. Updated each ops cycle.
-Last cycle: 2026-06-09. All claims grounded in sealed demo artifacts.
+Last cycle: 2026-06-11. All claims grounded in sealed demo artifacts.
 
 ---
 
@@ -48,7 +48,7 @@ Last cycle: 2026-06-09. All claims grounded in sealed demo artifacts.
 5. Save.
 6. Back in GitHub, go to **Settings → Environments → pypi** and create that environment
    (no secrets needed — OIDC handles auth).
-7. Now cut a GitHub Release tagged `v0.2.0` (title: "v0.2.0 — initial PyPI release").
+7. Now cut a GitHub Release tagged `v0.2.0` (title: “v0.2.0 — initial PyPI release”).
    The `release.yml` workflow will fire automatically and publish the wheel + sdist.
 
 **Verify:** `pip install plateau` should work within ~5 minutes of the release.
@@ -57,7 +57,7 @@ Last cycle: 2026-06-09. All claims grounded in sealed demo artifacts.
 
 ## § B — awesome-claude-code web-form submission
 
-**Human action required.** Go to the awesome-claude-code repository's issue tracker or
+**Human action required.** Go to the awesome-claude-code repository’s issue tracker or
 contribution form and submit. Paste the text below exactly as your PR description or
 issue body (the exact format varies by repo; adapt the markdown heading if needed).
 
@@ -68,14 +68,14 @@ issue body (the exact format varies by repo; adapt the markdown heading if neede
 **URL:** https://github.com/aimerdoux/plateau
 **Category:** Context Management / Agent Infrastructure
 **Description:** Bounded context for long-horizon LLM agents — emit a small re-grounded
-signal instead of carrying full transcript history, keeping a parent agent's token footprint
+signal instead of carrying full transcript history, keeping a parent agent’s token footprint
 flat as the task grows. Recompute-verifiable; null results published; cheaper, not smarter.
 
 **Why it belongs:**
 Plateau is an OSS library that directly addresses context explosion in multi-step Claude
 Code agents. The sealed demo6b experiment (38 files, recompute-verifiable) shows arm1
 (full-history) climbing 365→37,405 tok in 6 steps (slope 6,860 tok/step) while arm2
-(Plateau-bounded) stays flat 508→1,075 tok (slope 103 tok/step ≈ 1.5% of arm1), with
+(Plateau-bounded) stays flat 508→1,075 tok (slope 103 tok/step ≈01.5% of arm1), with
 both arms reaching PASS at completion parity.
 
 pip install plateau
@@ -98,7 +98,7 @@ flat as the task grows.
 
 The headline result (demo6b, pre-registered, sealed, recompute-verifiable):
 - arm1 (full-history): 365→37,405 tok over 6 steps — slope 6,860 tok/step
-- arm2 (Plateau): 508→1,075 tok over 6 steps — slope 103 tok/step (≈1.5% of arm1)
+- arm2 (Plateau): 508→1,075 tok over 6 steps — slope 103 tok/step (≈01.5% of arm1)
 - Both arms reach PASS (32–36/36 tests), 0 rework. Completion parity held.
 
 The claim is efficiency, not intelligence. Plateau keeps context flat; it does not make the
@@ -142,7 +142,7 @@ Plateau: keeping LLM agent context flat over long tasks — OSS, sealed experime
 
 **Body:**
 ```
-I've been working on a problem that comes up a lot in multi-step LLM agents: the context
+I’ve been working on a problem that comes up a lot in multi-step LLM agents: the context
 window fills up as the transcript grows, even when most of it is stale. Plateau is a small
 Python library (zero third-party deps in the core) that emits a bounded re-grounded signal
 at each step instead of replaying the transcript.
@@ -165,7 +165,7 @@ the repo. You can reproduce the verdict from scratch:
 
 ```bash
 git clone https://github.com/aimerdoux/plateau
-DEMO6_RAW=demo/raw6b DEMO6_VERDICT=demo/verdict6b.json \
+DEMO6_RAW=demo/raw6b DEMO6_VERDICT=demo/verdict6b.json \\
   python demo/recompute_demo6.py
 # → RECOMPUTE: PASS
 ```
@@ -182,11 +182,11 @@ pip install plateau (PyPI publish pending one-time trusted-publisher wiring)
 
 ---
 
-## CI / integrity snapshot (2026-06-09)
+## CI / integrity snapshot (2026-06-11)
 
-- Main CI: **green** (run #4, conclusion: success)
+- Main CI: **green** (run #6, conclusion: success, 2026-06-09)
 - Sealed demo6b recompute: **PASS** (38 files, chain+files verify, context_tokens re-derive,
-  harness4 pin intact, EFFICIENCY=WIN)
+  harness4 pin intact, EFFICIENCY=WIN) — verified 2026-06-11
 - Open issues: 0
 - Open PRs: 0
 - Latest GitHub Release: none
