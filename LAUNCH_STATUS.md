@@ -1,7 +1,7 @@
 # LAUNCH_STATUS.md
 
 Ops dashboard for the Plateau OSS launch. Updated each ops cycle.
-Last cycle: 2026-06-09. All claims grounded in sealed demo artifacts.
+Last cycle: 2026-06-14. All claims grounded in sealed demo artifacts.
 
 ---
 
@@ -182,13 +182,14 @@ pip install plateau (PyPI publish pending one-time trusted-publisher wiring)
 
 ---
 
-## CI / integrity snapshot (2026-06-09)
+## CI / integrity snapshot (2026-06-14)
 
-- Main CI: **green** (run #4, conclusion: success)
+- Main CI: **green** (run #6, conclusion: success, 2026-06-09)
 - Sealed demo6b recompute: **PASS** (38 files, chain+files verify, context_tokens re-derive,
-  harness4 pin intact, EFFICIENCY=WIN)
+  harness4 pin intact, EFFICIENCY=WIN) — verified 2026-06-14
 - Open issues: 0
-- Open PRs: 0
+- Open PRs (before this cycle): 2 (PR #10 stale draft 2026-06-11, PR #11 stale draft 2026-06-13;
+  both superseded by this cycle)
 - Latest GitHub Release: none
 - pyproject version: 0.2.0
 - PyPI published version: not yet published
