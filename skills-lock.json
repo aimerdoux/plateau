@@ -1,0 +1,53 @@
+{
+  "version": 1,
+  "skills": {
+    "competitive-ads-extractor": {
+      "source": "davila7/claude-code-templates",
+      "sourceType": "github",
+      "skillPath": "cli-tool/components/skills/business-marketing/competitive-ads-extractor/SKILL.md",
+      "computedHash": "8367364ae0aefcf0554468308066e39dc81aeaccfcf9922f85de1b7f56ad61a8"
+    },
+    "content-research-writer": {
+      "source": "davila7/claude-code-templates",
+      "sourceType": "github",
+      "skillPath": "cli-tool/components/skills/business-marketing/content-research-writer/SKILL.md",
+      "computedHash": "de7e9085e875a651f209c826d1a5e7dd5f2436fb38fe565ef76b54492c1a0c22"
+    },
+    "deep-research": {
+      "source": "davila7/claude-code-templates",
+      "sourceType": "github",
+      "skillPath": "cli-tool/components/skills/ai-research/deep-research/SKILL.md",
+      "computedHash": "e2af819c5155e21e5874b4f3e209e253630300c1193e8db68161aebc3429ff82"
+    },
+    "faster-whisper": {
+      "source": "theplasmak/faster-whisper",
+      "sourceType": "github",
+      "skillPath": "SKILL.md",
+      "computedHash": "75b999323c0e2ea24fef6c1f7a0ded32fd4e2a1a92a9691c72eb10c961706fee"
+    },
+    "instagram-downloader": {
+      "source": "serpdownloaders/skills",
+      "sourceType": "github",
+      "skillPath": "skills/instagram-downloader/SKILL.md",
+      "computedHash": "666191b9d7d3264dd4e7a6fa666536885736b21bc1e2e35504c8d7b5ce35749c"
+    },
+    "remotion-best-practices": {
+      "source": "remotion-dev/skills",
+      "sourceType": "github",
+      "skillPath": "skills/remotion/SKILL.md",
+      "computedHash": "006f8413941b59eff54a7ce64851b8a2fb79e7a3a5f1a895e97a48f01482553d"
+    },
+    "text-to-speech": {
+      "source": "elevenlabs/skills",
+      "sourceType": "github",
+      "skillPath": "text-to-speech/SKILL.md",
+      "computedHash": "dccf9155f284345ade4a5af5d3c3db5d5da77856011ff92fff725160b0df8370"
+    },
+    "voice-dna-creator": {
+      "source": "az9713/ai-co-writing-claude-skills",
+      "sourceType": "github",
+      "skillPath": ".claude/skills/voice-dna-creator/SKILL.md",
+      "computedHash": "792f841a9864ab3af3187ee5f9c802f6dba2c6e8a045da617774db9bee0b361c"
+    }
+  }
+}
