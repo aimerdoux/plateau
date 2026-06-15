@@ -1,0 +1,1 @@
+{"hash": "sha256:f2099114abb2d3c45b37296f840d25e87ed84f7fea15eaf5990b60d672ee33b0", "is_bytes": false, "provenance": {"feasibility": 1.0, "session": "sigma-ab-live", "turn": 0}, "satisfies": ["ab_palindrome"], "self_verifiable": true}

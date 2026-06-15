@@ -1,0 +1,30 @@
+{
+  "task_id": "t5_md_table",
+  "depth": 3,
+  "frozen_hash": "sha256:a8025fb7298b877dd050ce9e1ba4c8955c54eadf421143b826f1da6b34c8f32d",
+  "kpi": "valid 3-column GitHub markdown table, header+sep+>=3 rows, col3 numeric",
+  "ts": 1781548563.257389,
+  "with": {
+    "all_pass": true,
+    "feasibility": 1.0,
+    "iterations": 2,
+    "calls": 2,
+    "cost": 2.0,
+    "feasibility_trace": [
+      0.0,
+      1.0
+    ],
+    "fossils_written": 2,
+    "stop_reason": "all_gates_pass",
+    "candidate_code": "|Item|Category|Quantity|\n|---|---|---|\n|Widget|Hardware|12|\n|Notebook|Stationery|45|\n|Coffee Mug|Kitchenware|8|"
+  },
+  "without": {
+    "all_pass": true,
+    "feasibility": 1.0,
+    "iterations": 1,
+    "calls": 1,
+    "cost": 1.0,
+    "candidate_code": "| Item | Category | Quantity |\n|---|---|---|\n| Notebook | Stationery | 12 |\n| Stapler | Office Supplies | 5 |\n| Marker | Stationery | 24 |"
+  },
+  "done_ts": 1781548590.382689
+}

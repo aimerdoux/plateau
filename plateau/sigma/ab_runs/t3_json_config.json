@@ -1,0 +1,29 @@
+{
+  "task_id": "t3_json_config",
+  "depth": 2,
+  "frozen_hash": "sha256:106878f210eac053819dd355f9955bca0f2b863b5a21323303a59bb57a992700",
+  "kpi": "JSON object with required keys+types (name/version str, port/retries int, enabled bool, tags list[str]>=2, port in range)",
+  "ts": 1781548504.9484968,
+  "with": {
+    "all_pass": true,
+    "feasibility": 1.0,
+    "iterations": 1,
+    "calls": 1,
+    "cost": 1.0,
+    "feasibility_trace": [
+      1.0
+    ],
+    "fossils_written": 1,
+    "stop_reason": "all_gates_pass",
+    "candidate_code": "{\n  \"name\": \"web-service\",\n  \"version\": \"1.2.0\",\n  \"port\": 8080,\n  \"retries\": 3,\n  \"enabled\": true,\n  \"tags\": [\"http\", \"api\"]\n}"
+  },
+  "without": {
+    "all_pass": true,
+    "feasibility": 1.0,
+    "iterations": 1,
+    "calls": 1,
+    "cost": 1.0,
+    "candidate_code": "{\n  \"name\": \"web-service\",\n  \"version\": \"1.2.0\",\n  \"port\": 8080,\n  \"retries\": 3,\n  \"enabled\": true,\n  \"tags\": [\"web\", \"service\"]\n}"
+  },
+  "done_ts": 1781548531.555465
+}
