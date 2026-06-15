@@ -1,3 +1,6 @@
 [loop] pre-registered manifest hash = sha256:9d43696c604266a52f3934f6a3b555207c9c10006ad13163119cd0319f918be1
 [loop] max_iters=5 tasks=['8b3e2489-73e__test_spend', 'c8c7a298-bab__test_xpense', 'f7e6348e-943__test_add', 'f7e6348e-943__test_done', 'f7e6348e-943__test_persist', 'f7e6348e-943__test_list']
 [loop] === 8b3e2489-73e__test_spend (turns=141 V_asserts=49) ===
+[loop] pre-registered manifest hash = sha256:9d43696c604266a52f3934f6a3b555207c9c10006ad13163119cd0319f918be1
+[loop] max_iters=5 tasks=['8b3e2489-73e__test_spend', 'c8c7a298-bab__test_xpense', 'f7e6348e-943__test_add', 'f7e6348e-943__test_done', 'f7e6348e-943__test_persist', 'f7e6348e-943__test_list']
+[loop] === 8b3e2489-73e__test_spend (turns=141 V_asserts=49) ===
