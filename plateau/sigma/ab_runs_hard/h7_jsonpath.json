@@ -1,0 +1,15 @@
+{
+  "task_id": "h7_jsonpath",
+  "depth": 4,
+  "kpi": "jget(obj,path,default) dotted keys + [i] indexing + negative index + default on miss",
+  "frozen_hash": "sha256:f55105d8fee65b0b20f87cc58149a1925c6e963b2dadb80dbb05b71d6f8ed56f",
+  "without": {
+    "all_pass": true,
+    "feasibility": 1.0,
+    "iterations": 1,
+    "calls": 1,
+    "cost": 1.0,
+    "candidate_code": "def jget(obj, path, default=None):\n    import re\n\n    _MISSING = object()\n    tokens = []\n    for part in path.split(\".\"):\n        m = re.match(r\"^([^\\[\\]]*)((?:\\[-?\\d+\\])*)$\", part)\n        if not m:\n            return default\n        key, brackets = m.group(1), m.group(2)\n        if key != \"\":\n            tokens.append((\"key\", key))\n        for idx in re.findall(r\"\\[(-?\\d+)\\]\", brackets):\n            tokens.append((\"idx\", int(idx)))\n\n    cur = obj\n    for kind, val in tokens:\n        if kind == \"key\":\n            if isinstance(cur, dict) and val in cur:\n                cur = cur[val]\n            else:\n                return default\n        else:\n            if isinstance(cur, list) and not isinstance(cur, (str, bytes)):\n                try:\n                    cur = cur[val]\n                except IndexError:\n                    return default\n            else:\n                return default\n    return cur"
+  },
+  "ts_without": 1781549488.421952
+}

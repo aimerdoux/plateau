@@ -1,0 +1,30 @@
+{
+  "task_id": "h8_csv",
+  "depth": 5,
+  "kpi": "parse_csv RFC-4180-ish: quoted fields, escaped \"\" quotes, embedded commas+newlines, empty fields, trailing newline",
+  "frozen_hash": "sha256:f2fd360bb18c5753eb2ffd5cc9d1d38ede52e7671ab6ff16cebc3358c59e2d4f",
+  "without": {
+    "all_pass": false,
+    "feasibility": 0.0,
+    "iterations": 1,
+    "calls": 1,
+    "cost": 1.0,
+    "candidate_code": "def parse_csv(text):\n    if text == \"\":\n        return []\n\n    rows = []\n    field = []\n    row = []\n    in_quotes = False\n    i = 0\n    n = len(text)\n\n    while i < n:\n        c = text[i]\n\n        if in_quotes:\n            if c == '\"':\n                if i + 1 < n and text[i + 1] == '\"':\n                    field.append('\"')\n                    i += 2\n                    continue\n                in_quotes = False\n                i += 1\n                continue\n            field.append(c)\n            i += 1\n            continue\n\n        if c == '\"':\n            in_quotes = True\n            i += 1\n            continue\n        if c == ',':\n            row.append(\"\".join(field))\n            field = []\n            i += 1\n            continue\n        if c == '\\r':\n            if i + 1 < n and text[i + 1] == '\\n':\n                i += 1\n            row.append(\"\".join(field))\n            field = []\n            rows.append(row)\n            row = []\n            i += 1\n            continue\n        if c == '\\n':\n            row.append(\"\".join(field))\n            field = []\n            rows.append(row)\n            row = []\n            i += 1\n            continue\n\n        field.append(c)\n        i += 1\n\n    row.append(\"\".join(field))\n    field = []\n    rows.append(row)\n\n    return rows"
+  },
+  "ts_without": 1781549505.2824152,
+  "is_control": false,
+  "with": {
+    "all_pass": true,
+    "feasibility": 1.0,
+    "iterations": 1,
+    "calls": 1,
+    "cost": 1.0,
+    "feasibility_trace": [
+      1.0
+    ],
+    "fossils_written": 1,
+    "stop_reason": "all_gates_pass",
+    "candidate_code": "def parse_csv(text):\n    if text == \"\":\n        return []\n    rows = []\n    field = []\n    row = []\n    i = 0\n    n = len(text)\n    in_quotes = False\n    started = False\n    while i < n:\n        c = text[i]\n        if in_quotes:\n            if c == '\"':\n                if i + 1 < n and text[i + 1] == '\"':\n                    field.append('\"')\n                    i += 2\n                    continue\n                in_quotes = False\n                i += 1\n                continue\n            field.append(c)\n            i += 1\n            continue\n        if c == '\"':\n            in_quotes = True\n            started = True\n            i += 1\n            continue\n        if c == ',':\n            row.append(\"\".join(field))\n            field = []\n            started = True\n            i += 1\n            continue\n        if c == '\\r':\n            if i + 1 < n and text[i + 1] == '\\n':\n                i += 1\n            row.append(\"\".join(field))\n            rows.append(row)\n            field = []\n            row = []\n            started = False\n            i += 1\n            continue\n        if c == '\\n':\n            row.append(\"\".join(field))\n            rows.append(row)\n            field = []\n            row = []\n            started = False\n            i += 1\n            continue\n        field.append(c)\n        started = True\n        i += 1\n    if started or field or row:\n        row.append(\"\".join(field))\n        rows.append(row)\n    return rows"
+  },
+  "ts_with": 1781549715.6996
+}

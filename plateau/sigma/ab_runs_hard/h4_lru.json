@@ -1,0 +1,30 @@
+{
+  "task_id": "h4_lru",
+  "depth": 5,
+  "kpi": "LRUCache(cap) with get/put, eviction of true-LRU, recency refresh on BOTH get and put",
+  "frozen_hash": "sha256:1b8b3461b55fabf708be98ab2b40b1335d23137b6ce16b6c4f115588b2a45d41",
+  "without": {
+    "all_pass": true,
+    "feasibility": 1.0,
+    "iterations": 1,
+    "calls": 1,
+    "cost": 1.0,
+    "candidate_code": "from collections import OrderedDict\n\n\nclass LRUCache:\n    def __init__(self, capacity):\n        if capacity <= 0:\n            raise ValueError(\"capacity must be a positive integer\")\n        self.capacity = capacity\n        self._store = OrderedDict()\n\n    def get(self, key):\n        if key not in self._store:\n            return -1\n        self._store.move_to_end(key)\n        return self._store[key]\n\n    def put(self, key, value):\n        if key in self._store:\n            self._store.move_to_end(key)\n        self._store[key] = value\n        if len(self._store) > self.capacity:\n            self._store.popitem(last=False)"
+  },
+  "ts_without": 1781549412.732196,
+  "is_control": true,
+  "with": {
+    "all_pass": true,
+    "feasibility": 1.0,
+    "iterations": 1,
+    "calls": 1,
+    "cost": 1.0,
+    "feasibility_trace": [
+      1.0
+    ],
+    "fossils_written": 1,
+    "stop_reason": "all_gates_pass",
+    "candidate_code": "class _Node:\n    __slots__ = (\"key\", \"value\", \"prev\", \"next\")\n\n    def __init__(self, key=None, value=None):\n        self.key = key\n        self.value = value\n        self.prev = None\n        self.next = None\n\n\nclass LRUCache:\n    def __init__(self, capacity):\n        if capacity <= 0:\n            raise ValueError(\"capacity must be a positive integer\")\n        self.capacity = capacity\n        self._map = {}\n        # Doubly linked list with sentinel head/tail.\n        # head.next is most-recently-used, tail.prev is least-recently-used.\n        self._head = _Node()\n        self._tail = _Node()\n        self._head.next = self._tail\n        self._tail.prev = self._head\n\n    def _remove(self, node):\n        node.prev.next = node.next\n        node.next.prev = node.prev\n\n    def _add_front(self, node):\n        node.prev = self._head\n        node.next = self._head.next\n        self._head.next.prev = node\n        self._head.next = node\n\n    def get(self, key):\n        node = self._map.get(key)\n        if node is None:\n            return -1\n        self._remove(node)\n        self._add_front(node)\n        return node.value\n\n    def put(self, key, value):\n        node = self._map.get(key)\n        if node is not None:\n            node.value = value\n            self._remove(node)\n            self._add_front(node)\n            return\n        if len(self._map) >= self.capacity:\n            lru = self._tail.prev\n            self._remove(lru)\n            del self._map[lru.key]\n        node = _Node(key, value)\n        self._map[key] = node\n        self._add_front(node)"
+  },
+  "ts_with": 1781549761.268225
+}
