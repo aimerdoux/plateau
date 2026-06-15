@@ -1,0 +1,5 @@
+# WaveX run artifacts — heavy/ephemeral media is not versioned
+**/audio.*
+**/video.*
+**/frames/
+**/metadata.json

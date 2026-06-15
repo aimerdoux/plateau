@@ -7,6 +7,12 @@
       "skillPath": "cli-tool/components/skills/business-marketing/competitive-ads-extractor/SKILL.md",
       "computedHash": "8367364ae0aefcf0554468308066e39dc81aeaccfcf9922f85de1b7f56ad61a8"
     },
+    "content-planner": {
+      "source": "bradautomates/head-of-content",
+      "sourceType": "github",
+      "skillPath": ".claude/skills/content-planner/SKILL.md",
+      "computedHash": "e47b189707319f96898c4d2d33d1bd2efd936ee1ea0a53207152aed1d469e3c3"
+    },
     "content-research-writer": {
       "source": "davila7/claude-code-templates",
       "sourceType": "github",
@@ -25,11 +31,23 @@
       "skillPath": "SKILL.md",
       "computedHash": "75b999323c0e2ea24fef6c1f7a0ded32fd4e2a1a92a9691c72eb10c961706fee"
     },
+    "google-trends-research": {
+      "source": "postplusai/postplus-skills",
+      "sourceType": "github",
+      "skillPath": "skills/20-research/google-trends-research/SKILL.md",
+      "computedHash": "ff6555da84552de97bc86fde1ca4e3261d3cfee40c91d8c80b480f932e0ce421"
+    },
     "instagram-downloader": {
       "source": "serpdownloaders/skills",
       "sourceType": "github",
       "skillPath": "skills/instagram-downloader/SKILL.md",
       "computedHash": "666191b9d7d3264dd4e7a6fa666536885736b21bc1e2e35504c8d7b5ce35749c"
+    },
+    "instagram-research": {
+      "source": "bradautomates/head-of-content",
+      "sourceType": "github",
+      "skillPath": ".claude/skills/instagram-research/SKILL.md",
+      "computedHash": "80568f3c60115b5d96a99ba777220501cebfbe6a72e8c72c1429ff8942baec59"
     },
     "remotion-best-practices": {
       "source": "remotion-dev/skills",
@@ -37,17 +55,47 @@
       "skillPath": "skills/remotion/SKILL.md",
       "computedHash": "006f8413941b59eff54a7ce64851b8a2fb79e7a3a5f1a895e97a48f01482553d"
     },
+    "social-media-extractor": {
+      "source": "postplusai/postplus-skills",
+      "sourceType": "github",
+      "skillPath": "skills/10-routing/social-media-extractor/SKILL.md",
+      "computedHash": "d3d2e56e7551a10dde248ad951c23b890f02b727f97d7b65c26e14a06f89567e"
+    },
     "text-to-speech": {
       "source": "elevenlabs/skills",
       "sourceType": "github",
       "skillPath": "text-to-speech/SKILL.md",
       "computedHash": "dccf9155f284345ade4a5af5d3c3db5d5da77856011ff92fff725160b0df8370"
     },
+    "tiktok-research": {
+      "source": "bradautomates/head-of-content",
+      "sourceType": "github",
+      "skillPath": ".claude/skills/tiktok-research/SKILL.md",
+      "computedHash": "b1d1372f93a44247fedeb2e6fa7c5bef1f9857fa91c8a81aa39d61811c2e6cd2"
+    },
+    "video-content-analyzer": {
+      "source": "bradautomates/head-of-content",
+      "sourceType": "github",
+      "skillPath": ".claude/skills/video-content-analyzer/SKILL.md",
+      "computedHash": "c65a5572016c544efeac3bb4ba4b814050d2aed7b80bd542d39e57d036535f7b"
+    },
     "voice-dna-creator": {
       "source": "az9713/ai-co-writing-claude-skills",
       "sourceType": "github",
       "skillPath": ".claude/skills/voice-dna-creator/SKILL.md",
       "computedHash": "792f841a9864ab3af3187ee5f9c802f6dba2c6e8a045da617774db9bee0b361c"
+    },
+    "x-research": {
+      "source": "bradautomates/head-of-content",
+      "sourceType": "github",
+      "skillPath": ".claude/skills/x-research/SKILL.md",
+      "computedHash": "39a3ba5e41da30ed9a6687368b83e2f9e026e19ffad1157f85945dd380de1ebf"
+    },
+    "youtube-research": {
+      "source": "bradautomates/head-of-content",
+      "sourceType": "github",
+      "skillPath": ".claude/skills/youtube-research/SKILL.md",
+      "computedHash": "f4e95c512fd03419e45b1f261fb790809ebe2d1c8d250c0b298083dd07e63aba"
     }
   }
 }

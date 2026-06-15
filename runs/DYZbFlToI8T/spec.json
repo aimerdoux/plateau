@@ -1,0 +1,85 @@
+{
+  "source_url": "https://www.instagram.com/reel/DYZbFlToI8T/",
+  "metadata": {
+    "title": "Video by kierzacporter",
+    "uploader": "Kier Porter | Creative Director",
+    "uploader_id": "28177426827",
+    "channel": "kierzacporter",
+    "duration": 18.366,
+    "view_count": null,
+    "like_count": 11175,
+    "comment_count": 128,
+    "repost_count": null,
+    "description": "Which ones do you use?",
+    "tags": null,
+    "categories": null,
+    "webpage_url": "https://www.instagram.com/reel/DYZbFlToI8T/",
+    "upload_date": "20260516",
+    "resolution": "750x1333",
+    "fps": null,
+    "aspect_ratio": 0.56
+  },
+  "audio": {
+    "voiceover": "Yap, green screen, talking head, interview, man on the street, text of a B roll, split screen, clone, triple clone, video reaction, ranking, list to call, object lesson, play pause reaction, top down, carous"
+  },
+  "subtitles_srt_file": "see *.srt in run dir",
+  "keyframes": [
+    "runs/DYZbFlToI8T/frames/kf_00_t0s.jpg",
+    "runs/DYZbFlToI8T/frames/kf_01_t5s.jpg",
+    "runs/DYZbFlToI8T/frames/kf_02_t10s.jpg",
+    "runs/DYZbFlToI8T/frames/kf_03_t15s.jpg"
+  ],
+  "creative_spec_TODO": {
+    "format_archetype": "talking-head + listicle (with text-over-broll inserts)",
+    "visual_style": "Moody UGC office set. Creator seated center on a black ergonomic chair, dark charcoal walls, three framed landscape prints back-lit by warm wall sconces, a potted monstera camera-right. Soft natural key from front, shallow-ish depth, 9:16 (750x1333).",
+    "color_grade": "Low-key, warm shadows, slightly crushed blacks, muted earthy palette (olive tee, tan shorts, warm wood/plant greens). Cinematic-but-cozy, not clinical.",
+    "shot_list": [
+      {
+        "t": 0.0,
+        "framing": "medium-wide, centered, symmetrical",
+        "subject": "creator hands on knees, neutral",
+        "motion": "static lock-off; animated view-counter '0' climbing at top"
+      },
+      {
+        "t": 5.0,
+        "framing": "same lock-off",
+        "subject": "creator talking, light gestures",
+        "motion": "counter mid-climb; caption persists"
+      },
+      {
+        "t": 10.0,
+        "framing": "same, plus inset demo clip",
+        "subject": "creator pointing up both hands, energetic",
+        "motion": "counter '577K'; format-labelled inset video ('LISTICLE') pops centered with a hook-pyramid graphic"
+      },
+      {
+        "t": 15.0,
+        "framing": "same lock-off",
+        "subject": "creator gesturing",
+        "motion": "rapid format-label swaps synced to VO; CTA outro"
+      }
+    ],
+    "on_screen_text_style": "All-caps bold condensed sans (Anton/Druk feel), pure white, heavy weight, top-third title 'CONTENT FORMATS THAT HIT (ALL NICHES)'. Per-format label in same face pops above the inset.",
+    "subtitle_style": "No karaoke captions; instead single big format-name words punched in on the beat (word-as-graphic), centered.",
+    "effects_transitions": [
+      "animated live-view counter 0->577K as a retention/curiosity device",
+      "format-label hard pop-ins synced to each spoken word",
+      "picture-in-picture demo inserts illustrating each named format",
+      "hard cuts, no fancy transitions"
+    ],
+    "voiceover_tone": "Male, confident, fast and punchy, list-cadence; scripted but casual creator energy.",
+    "music_sound": "Low subtle beat bed under VO; word-pop SFX ticks on each label.",
+    "pacing_cuts_per_sec": "~1 label change/sec (19 formats in ~18s); base shot is one continuous lock-off with graphic layers on top",
+    "product_or_brand": "The creator's personal brand (Kier Porter, Creative Director) selling content-strategy expertise; the 'product' is the list/playbook itself -> classic save-bait.",
+    "hook_breakdown": "First 3s = curiosity + authority stack: a LIVE view counter visibly climbing (FOMO/social-proof), a bold promise title ('20 content formats that hit \u2014 ALL niches'), and rapid-fire VO immediately naming formats so the viewer stays to catch 'their' one. Save-trigger: too many items to remember = save it.",
+    "recreation_brief": {
+      "image_gen_prompts": [
+        "9:16 portrait. A WaveX creator seated center on a matte-black ergonomic chair in a moody dark-charcoal home studio, three warm back-lit framed prints behind, a monstera plant camera-right, soft warm key light, shallow depth of field, cinematic low-key earthy grade, neutral confident expression, hands on knees. Leave clean negative space top third for a bold title. Photoreal.",
+        "9:16 portrait, same set and lighting, creator mid-gesture pointing upward with both hands, energetic expression, clean center composition, space for an inset card lower-center. Photoreal cinematic.",
+        "9:16 portrait product still: the WaveX product/app screen on a clean dark gradient background, dramatic rim light, premium tech-hero look, centered, space above for an all-caps title. Photoreal.",
+        "Graphic asset: an all-caps heavy condensed white title lockup on transparent bg reading the format name, plus a simple white-line 'hook pyramid' diagram with one green top segment and red segments below labelled HOOK."
+      ],
+      "assembly_notes": "Image-first build (no video credits): (1) base = one hero still of the WaveX talking-head subject, held for the whole clip with a slow Ken Burns push-in. (2) Overlay the climbing view-counter (0 -> target) as the retention hook for the first 3s \u2014 animate as a number graphic, no video needed. (3) Punch in each FORMAT name as a white word-graphic on the beat (~1/sec), 19-20 of them, pulled from the wavex format taxonomy. (4) For ~6 marquee formats, pop a small inset 'demo' still (a generated 9:16 image standing in for that format) with its label. (5) VO from the text-to-speech skill reading the format list fast; light beat bed + tick SFX on each word. (6) Outro CTA still 'which ones do you use? -> save this'. If Higgsfield credits return, the only place a 1-2s clip helps is the inset demos \u2014 everything else stays stills."
+    }
+  }
+}
