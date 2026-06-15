@@ -66,9 +66,9 @@ def claude_call(prompt: str) -> tuple:
         calls += 1
         try:
             p = subprocess.run(["claude", "-p"], input=prompt, capture_output=True,
-                               text=True, timeout=300)
+                               text=True, timeout=600)
         except subprocess.TimeoutExpired:
-            last_err = "claude -p TIMEOUT (300s)"
+            last_err = "claude -p TIMEOUT (600s)"
             time.sleep(60 + 30 * attempt)
             continue
         out = (p.stdout or "").strip()

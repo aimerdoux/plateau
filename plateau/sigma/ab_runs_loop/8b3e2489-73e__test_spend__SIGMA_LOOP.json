@@ -30,9 +30,59 @@
       "fossil": "sha256:353ac393673299ff260795a828c988d41b179dfb14dd5d6022755235738dcbd5",
       "stdout_tail": "sure your test modules/packages have valid Python names.\nTraceback:\n/Users/geniex/.local/share/uv/python/cpython-3.11.15-macos-aarch64-none/lib/python3.11/importlib/__init__.py:126: in import_module\n    return _bootstrap._gcd_import(name[level:], package, level)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n/var/folders/fb/t8l0y38x7vd971kr0qmfncym0000gn/T/tmpqi07pz12/test_spend.py:19: in <module>\n    from spend.models import SCHEMA_VERSION, Entry, Store\nE   ImportError: cannot import name 'Entry' from 'spend.models' (/var/folders/fb/t8l0y38x7vd971kr0qmfncym0000gn/T/tmpqi07pz12/spend/models.py)\n=========================== short test summary info ============================\nERROR ../../../../../../../var/folders/fb/t8l0y38x7vd971kr0qmfncym0000gn/T/tmpqi07pz12/test_spend.py\n!!!!!!!!!!!!!!!!!!!! Interrupted: 1 error during collection !!!!!!!!!!!!!!!!!!!!\n1 error in 0.05s\n\n",
       "reply_head": "# FILE: spend/__init__.py\n```python\n\"\"\"spend \u2014 a small, dependency-free spending tracker.\n\nMoney is stored as integer minor units (cents). The on-disk store is\nschema-versioned and old files auto-migrate on load. Entries carry stable\nmonotonic integer ids, and a single-level undo is available.\n\"\"\"\nf"
+    },
+    {
+      "iter": 1,
+      "calls": 1,
+      "pass": false,
+      "v_summary": "1 error",
+      "runner": "pytest",
+      "n_ran": 2,
+      "n_parsed_files": 10,
+      "wrote_layout": [
+        "spend/__init__.py",
+        "spend/__main__.py",
+        "spend/cli.py",
+        "spend/config.py",
+        "spend/core.py",
+        "spend/csvexport.py",
+        "spend/models.py",
+        "spend/money.py",
+        "spend/storage.py",
+        "spend/summary.py"
+      ],
+      "reply_chars": 15569,
+      "fossil": "sha256:4ed299e051abecaaa736e414c93dfae80c180311ee59bec379945893ac03f2b6",
+      "stdout_tail": "sure your test modules/packages have valid Python names.\nTraceback:\n/Users/geniex/.local/share/uv/python/cpython-3.11.15-macos-aarch64-none/lib/python3.11/importlib/__init__.py:126: in import_module\n    return _bootstrap._gcd_import(name[level:], package, level)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n/var/folders/fb/t8l0y38x7vd971kr0qmfncym0000gn/T/tmprhnmho57/test_spend.py:19: in <module>\n    from spend.models import SCHEMA_VERSION, Entry, Store\nE   ImportError: cannot import name 'Store' from 'spend.models' (/var/folders/fb/t8l0y38x7vd971kr0qmfncym0000gn/T/tmprhnmho57/spend/models.py)\n=========================== short test summary info ============================\nERROR ../../../../../../../var/folders/fb/t8l0y38x7vd971kr0qmfncym0000gn/T/tmprhnmho57/test_spend.py\n!!!!!!!!!!!!!!!!!!!! Interrupted: 1 error during collection !!!!!!!!!!!!!!!!!!!!\n1 error in 0.05s\n\n",
+      "reply_head": "# FILE: spend/__init__.py\n```python\n\"\"\"spend \u2014 a small, dependency-free spending tracker.\n\nMoney is stored as integer minor units (cents). The on-disk store is\nschema-versioned and old files auto-migrate on load. Entries carry stable\nmonotonic integer ids, and a single-level undo is available.\n\"\"\"\nf"
+    },
+    {
+      "iter": 2,
+      "calls": 1,
+      "pass": false,
+      "v_summary": "16 failed",
+      "runner": "pytest",
+      "n_ran": 18,
+      "n_parsed_files": 10,
+      "wrote_layout": [
+        "spend/__init__.py",
+        "spend/__main__.py",
+        "spend/cli.py",
+        "spend/config.py",
+        "spend/core.py",
+        "spend/csvexport.py",
+        "spend/models.py",
+        "spend/money.py",
+        "spend/storage.py",
+        "spend/summary.py"
+      ],
+      "reply_chars": 16519,
+      "fossil": "sha256:7fd8057d61022c416d49a0044ec2e89d00d8c32b944993865e381b0bb50a6095",
+      "stdout_tail": "_of_first_write_clears\nFAILED ../../../../../../../var/folders/fb/t8l0y38x7vd971kr0qmfncym0000gn/T/tmp4h6q8v38/test_spend.py::TestStorage::test_undo_single_level\nFAILED ../../../../../../../var/folders/fb/t8l0y38x7vd971kr0qmfncym0000gn/T/tmp4h6q8v38/test_spend.py::TestMigration::test_unknown_version_raises\nFAILED ../../../../../../../var/folders/fb/t8l0y38x7vd971kr0qmfncym0000gn/T/tmp4h6q8v38/test_spend.py::TestMigration::test_v1_loads_and_upgrades\nFAILED ../../../../../../../var/folders/fb/t8l0y38x7vd971kr0qmfncym0000gn/T/tmp4h6q8v38/test_spend.py::TestCsv::test_export\nFAILED ../../../../../../../var/folders/fb/t8l0y38x7vd971kr0qmfncym0000gn/T/tmp4h6q8v38/test_spend.py::TestSummary::test_by_category_partitions\nFAILED ../../../../../../../var/folders/fb/t8l0y38x7vd971kr0qmfncym0000gn/T/tmp4h6q8v38/test_spend.py::TestSummary::test_by_tag_total_is_grand_total\n16 failed, 2 passed in 0.05s\n\n",
+      "reply_head": "# FILE: spend/__init__.py\n```python\n\"\"\"spend \u2014 a small, dependency-free spending tracker.\n\nMoney is stored as integer minor units (cents). The on-disk store is\nschema-versioned and old files auto-migrate on load. Entries carry stable\nmonotonic integer ids, and a single-level undo is available.\n\"\"\"\nf"
     }
   ],
   "done": false,
   "passed": false,
-  "iters_run": 1
+  "iters_run": 3
 }
