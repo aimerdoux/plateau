@@ -349,10 +349,8 @@ def build_sigma_schema(task: CompressTask) -> str:
     lines.append("")
     lines.append("## Constraints")
     lines.append("- Standard library only — no third-party packages.")
-    lines.append("- Output the COMPLETE package: one fenced ```python block PER FILE, each "
-                 "immediately preceded by a line `# FILE: <relative/path>` so the files can be "
-                 "written verbatim.")
-    lines.append("- The package must import cleanly and the suite must pass with zero failures.")
+    lines.append("- The package must import cleanly and satisfy ALL of the contract above in one "
+                 "shot (the objective suite asserts it).")
     if dec["fossils"]:
         lines.append("")
         lines.append("## Φ — Paid sub-results (load-bearing decisions the original build pinned "

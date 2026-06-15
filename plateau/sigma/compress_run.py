@@ -83,9 +83,17 @@ def build_and_prereg(tasks: list) -> dict:
                    "schema. Can a FRESH single `claude -p` pass given ONLY the Σ schema reproduce a "
                    "D that passes the ORIGINAL objective V, where the raw turn-1 ask (COLD) cannot?"),
         "arms": {
-            "COLD": "one claude -p pass, given the raw turn-1 user ask (iota_naive) verbatim.",
-            "SIGMA": "one claude -p pass, given ONLY the distilled Σ schema (compressed recipe).",
+            "COLD": ("one claude -p pass. Payload = the raw turn-1 user ask (iota_naive) verbatim, "
+                     "under a shared output-protocol preamble (emit a complete `# FILE:`-labeled "
+                     "stdlib package importable as the pkg)."),
+            "SIGMA": ("one claude -p pass. Payload = ONLY the distilled Σ schema (compressed "
+                      "recipe: contract + Φ + excluded_paths), under the SAME shared preamble."),
         },
+        "shared_preamble": ("Both arms get an IDENTICAL output-protocol preamble (same package "
+                            "import root + the `# FILE:` format). This isolates the variable to "
+                            "the recipe CONTENT, not packaging boilerplate, so COLD is not "
+                            "penalized merely for not knowing the output format — avoids "
+                            "OVERSTATING Σ. The ONLY delta between arms is iota_naive vs Σ schema."),
         "passes_per_arm": 1,
         "same_base_model_both_arms": "claude -p (Claude Code CLI)",
         "metric": "gate_pass_objective_v",
@@ -142,9 +150,32 @@ def _ckpt(tid: str) -> str:
     return os.path.join(RUNS, f"{tid}.json")
 
 
+# A SHARED output-protocol preamble applied IDENTICALLY to BOTH arms. This isolates the variable
+# under test to the RECIPE CONTENT (raw ask vs distilled schema), not the packaging boilerplate:
+# without it, COLD would fail merely for not knowing to emit a complete labeled package, which
+# would conflate "the schema carries the recipe" with "the schema carries the output format" and
+# OVERSTATE Σ's advantage. Both arms get the same format instruction + the same package import
+# root, so a fair single pass can in principle emit a runnable package from either payload.
+def _shared_preamble(task: CompressTask) -> str:
+    return (
+        "You are reproducing a self-contained, standard-library-only Python package in ONE shot.\n"
+        f"The package must be importable as `{task.pkg}`.\n"
+        "OUTPUT FORMAT (mandatory): emit the COMPLETE package as a sequence of fenced code blocks, "
+        "one per file, each block IMMEDIATELY preceded by a line of the exact form `# FILE: "
+        "<relative/path>` (path relative to the import root). Output ONLY these file blocks — no "
+        "prose, no commentary, no questions. The package will be imported and exercised by an "
+        "automated test suite, so it must import cleanly and implement the behavior described "
+        "below.\n\n----- TASK -----\n"
+    )
+
+
 def _run_arm(prompt: str, task: CompressTask, timeout: int = 180) -> dict:
-    """One paid claude -p pass, then score the reply against the objective V. NO fabrication."""
-    reply, ncalls = claude_call(prompt)
+    """One paid claude -p pass, then score the reply against the objective V. NO fabrication.
+
+    The SAME shared output-protocol preamble is prepended for both arms; only `prompt` (the raw
+    turn-1 ask for COLD, the distilled schema for SIGMA) differs."""
+    full = _shared_preamble(task) + prompt
+    reply, ncalls = claude_call(full)
     layout = sorted(task.impl_files.keys())
     res = run_v(reply, pkg=task.pkg, test_name=task.test_name, test_src=task.test_src,
                required_layout=layout)
