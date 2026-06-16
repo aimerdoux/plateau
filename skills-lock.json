@@ -1,6 +1,12 @@
 {
   "version": 1,
   "skills": {
+    "agent-browser": {
+      "source": "vercel-labs/agent-browser",
+      "sourceType": "github",
+      "skillPath": "skills/agent-browser/SKILL.md",
+      "computedHash": "edad4d958bc4baf821e3391bb9889a03a8bbc0e4d7f54ee4a5f30837654fed83"
+    },
     "competitive-ads-extractor": {
       "source": "davila7/claude-code-templates",
       "sourceType": "github",

@@ -40,10 +40,10 @@ grade, shot list, on-screen text, effects, voiceover tone, product/brand, hook
 breakdown, and a **recreation brief with image-gen prompts**. Runs fully local
 (`yt-dlp` + `faster-whisper` + PyAV).
 
-### 4. PRODUCE — build our version (image-first)
+### 4. PRODUCE — build our version (image-first, now fully automated)
 | Skill | Use |
 |-------|-----|
-| **Higgsfield (manual)** | export the stills (one per shot from the spec's prompts, 9:16) — uses the unlimited image plan you already pay for |
+| **`wavex-higgsfield`** 🤖 | drives Higgsfield's UI via **agent-browser** to auto-generate the stills from the spec's prompts into `inbox/` — no manual export. Needs a cloud-browser key (Browserbase/Kernel) + a saved Higgsfield session |
 | **`wavex-produce`** ⭐ | watch-folder: stills in `inbox/` → fal.ai **Wan/Seedance** i2v clips in `outbox/` (~$0.25/clip) |
 | `text-to-speech` (ElevenLabs) | voiceover from the rewritten script |
 | `voice-dna-creator` | keep copy in the WaveX voice |
