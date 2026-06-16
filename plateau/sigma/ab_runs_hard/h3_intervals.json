@@ -1,0 +1,35 @@
+{
+  "task_id": "h3_intervals",
+  "depth": 4,
+  "kpi": "merge_intervals (overlap+touching+containment+unsorted) and complement within bound",
+  "frozen_hash": "sha256:1bc8778acfa83e2455d7c5483aec92d29d33b76b7875d0f3739a36fa51097db1",
+  "without": {
+    "all_pass": false,
+    "feasibility": 0.0,
+    "iterations": 1,
+    "calls": 1,
+    "cost": 1.0,
+    "candidate_code": "def merge_intervals(intervals):\n    if not intervals:\n        return []\n    ordered = sorted([list(iv) for iv in intervals], key=lambda iv: iv[0])\n    merged = [list(ordered[0])]\n    for start, end in ordered[1:]:\n        last = merged[-1]\n        if start <= last[1]:\n            if end > last[1]:\n                last[1] = end\n        else:\n            merged.append([start, end])\n    return merged\n\n\ndef complement(intervals, lo, hi):\n    if lo > hi:\n        return []\n    gaps = []\n    cursor = lo\n    for start, end in merge_intervals(intervals):\n        if end < lo or start > hi:\n            continue\n        start = max(start, lo)\n        end = min(end, hi)\n        if start > cursor:\n            gaps.append([cursor, start - 1])\n        cursor = max(cursor, end + 1)\n        if cursor > hi:\n            break\n    if cursor <= hi:\n        gaps.append([cursor, hi])\n    return gaps"
+  },
+  "ts_without": 1781549395.911368,
+  "is_control": false,
+  "with": {
+    "all_pass": false,
+    "feasibility": 0.0,
+    "iterations": 6,
+    "calls": 6,
+    "cost": 6.0,
+    "feasibility_trace": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "fossils_written": 6,
+    "stop_reason": "budget_exhausted",
+    "candidate_code": "def merge_intervals(intervals):\n    norm = []\n    for iv in intervals:\n        s, e = iv[0], iv[1]\n        if s > e:\n            s, e = e, s\n        norm.append([s, e])\n    norm.sort(key=lambda iv: (iv[0], iv[1]))\n    merged = []\n    for s, e in norm:\n        if merged and s <= merged[-1][1] + 1:\n            if e > merged[-1][1]:\n                merged[-1][1] = e\n        else:\n            merged.append([s, e])\n    return merged\n\n\ndef complement(intervals, lo, hi):\n    if lo > hi:\n        return []\n    gaps = []\n    cursor = lo\n    for s, e in merge_intervals(intervals):\n        if e < lo:\n            continue\n        if s > hi:\n            break\n        if s > cursor:\n            gaps.append([cursor, s - 1])\n        if e + 1 > cursor:\n            cursor = e + 1\n        if cursor > hi:\n            break\n    if cursor <= hi:\n        gaps.append([cursor, hi])\n    return gaps"
+  },
+  "ts_with": 1781549702.689923
+}

@@ -1,0 +1,1 @@
+{"hash": "sha256:7fd8057d61022c416d49a0044ec2e89d00d8c32b944993865e381b0bb50a6095", "is_bytes": false, "provenance": {"arm": "SIGMA_LOOP", "iteration": 2, "pass": false, "summary": "16 failed", "task": "8b3e2489-73e__test_spend"}, "satisfies": [], "self_verifiable": true}

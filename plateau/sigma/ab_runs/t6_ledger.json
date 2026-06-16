@@ -1,0 +1,30 @@
+{
+  "task_id": "t6_ledger",
+  "depth": 4,
+  "frozen_hash": "sha256:508f7c660d035e93e26f2dadeea3095b13ea00e5b948c6325f24142afbd2f66c",
+  "kpi": "parse_ledger groups `cat:amount` lines, sums per category, skips comments/blank/malformed, empty->{}",
+  "ts": 1781548590.383358,
+  "with": {
+    "all_pass": true,
+    "feasibility": 1.0,
+    "iterations": 2,
+    "calls": 2,
+    "cost": 2.0,
+    "feasibility_trace": [
+      0.0,
+      1.0
+    ],
+    "fossils_written": 2,
+    "stop_reason": "all_gates_pass",
+    "candidate_code": "def parse_ledger(text):\n    totals = {}\n    for line in text.splitlines():\n        stripped = line.strip()\n        if not stripped or stripped.startswith(\"#\"):\n            continue\n        if \":\" not in stripped:\n            continue\n        category, _, amount = stripped.partition(\":\")\n        category = category.strip()\n        amount = amount.strip()\n        try:\n            value = float(amount)\n        except ValueError:\n            continue\n        totals[category] = totals.get(category, 0.0) + value\n    return totals"
+  },
+  "without": {
+    "all_pass": true,
+    "feasibility": 1.0,
+    "iterations": 1,
+    "calls": 1,
+    "cost": 1.0,
+    "candidate_code": "def parse_ledger(text):\n    totals = {}\n    for line in text.splitlines():\n        stripped = line.strip()\n        if not stripped or stripped.startswith(\"#\"):\n            continue\n        if \":\" not in stripped:\n            continue\n        category, _, amount = stripped.partition(\":\")\n        category = category.strip()\n        try:\n            value = float(amount.strip())\n        except ValueError:\n            continue\n        totals[category] = totals.get(category, 0.0) + value\n    return totals"
+  },
+  "done_ts": 1781548618.017597
+}

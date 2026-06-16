@@ -1,0 +1,29 @@
+{
+  "task_id": "t7_fsm",
+  "depth": 5,
+  "frozen_hash": "sha256:378d1d71d2beed69ab746129b3d14051b944b21d1569d06323f6ac56bad5f27d",
+  "kpi": "Turnstile FSM: locked/unlocked states, coin()/push() transitions + denied/allowed semantics + relock",
+  "ts": 1781548618.0180302,
+  "with": {
+    "all_pass": true,
+    "feasibility": 1.0,
+    "iterations": 1,
+    "calls": 1,
+    "cost": 1.0,
+    "feasibility_trace": [
+      1.0
+    ],
+    "fossils_written": 1,
+    "stop_reason": "all_gates_pass",
+    "candidate_code": "class Turnstile:\n    def __init__(self):\n        self.state = \"locked\"\n\n    def coin(self):\n        self.state = \"unlocked\"\n        return \"unlocked\"\n\n    def push(self):\n        if self.state == \"unlocked\":\n            self.state = \"locked\"\n            return \"allowed\"\n        return \"denied\""
+  },
+  "without": {
+    "all_pass": true,
+    "feasibility": 1.0,
+    "iterations": 1,
+    "calls": 1,
+    "cost": 1.0,
+    "candidate_code": "class Turnstile:\n    def __init__(self):\n        self.state = \"locked\"\n\n    def coin(self):\n        self.state = \"unlocked\"\n        return self.state\n\n    def push(self):\n        if self.state == \"unlocked\":\n            self.state = \"locked\"\n            return \"allowed\"\n        return \"denied\""
+  },
+  "done_ts": 1781548633.28723
+}

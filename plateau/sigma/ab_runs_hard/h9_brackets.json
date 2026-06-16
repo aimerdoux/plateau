@@ -1,0 +1,15 @@
+{
+  "task_id": "h9_brackets",
+  "depth": 4,
+  "kpi": "is_balanced 3 bracket kinds, reject interleaving, ignore brackets inside double-quoted string literals incl. escaped quote",
+  "frozen_hash": "sha256:4d0cd9793419cb5dd4e2a348da191e510de4eaa0a5b0b97f22827d70ccdb4915",
+  "without": {
+    "all_pass": true,
+    "feasibility": 1.0,
+    "iterations": 1,
+    "calls": 1,
+    "cost": 1.0,
+    "candidate_code": "def is_balanced(s):\n    pairs = {')': '(', ']': '[', '}': '{'}\n    openers = set(pairs.values())\n    stack = []\n    i = 0\n    n = len(s)\n    while i < n:\n        c = s[i]\n        if c == '\"':\n            i += 1\n            while i < n:\n                if s[i] == '\\\\':\n                    i += 2\n                    continue\n                if s[i] == '\"':\n                    break\n                i += 1\n            i += 1\n            continue\n        if c in openers:\n            stack.append(c)\n        elif c in pairs:\n            if not stack or stack.pop() != pairs[c]:\n                return False\n        i += 1\n    return not stack"
+  },
+  "ts_without": 1781549534.3667588
+}

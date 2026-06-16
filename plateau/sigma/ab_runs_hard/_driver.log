@@ -1,0 +1,22 @@
+[abh] pre-registered manifest hash = sha256:4e248246873f0d6b9388a196d675526d9fad7b99c039ff753dad2fa32dc92d18
+[abh] === PHASE A: HEADROOM FILTER (ARM_WITHOUT baseline on all tasks) ===
+[abh]   h1_roman: WITHOUT pass=True feas=1.0
+[abh]   h2_calc: WITHOUT pass=True feas=1.0
+[abh]   h3_intervals: WITHOUT pass=False feas=0.0
+[abh]   h4_lru: WITHOUT pass=True feas=1.0
+[abh]   h5_semver: WITHOUT pass=True feas=1.0
+[abh]   h6_base62: WITHOUT pass=True feas=1.0
+[abh]   h7_jsonpath: WITHOUT pass=True feas=1.0
+[abh]   h8_csv: WITHOUT pass=False feas=0.0
+[abh]   h9_brackets: WITHOUT pass=True feas=1.0
+[abh]   h10_verdict_json: WITHOUT pass=True feas=1.0
+[abh]   h11_toposort: WITHOUT pass=True feas=1.0
+[abh]   h12_money: WITHOUT pass=True feas=1.0
+[abh] HEADROOM: baseline_fail = 2/12
+[abh] === PHASE B: RECOVERY (2 baseline-FAIL) + CONTROLS (3 baseline-PASS) ===
+[abh]   h3_intervals: WITH pass=False iters=6 calls=6 trace=[0.0, 0.0, 0.0, 0.0, 0.0, 0.0] (RECOVERY)
+[abh]   h8_csv: WITH pass=True iters=1 calls=1 trace=[1.0] (RECOVERY)
+[abh]   h1_roman: WITH pass=True iters=1 calls=1 trace=[1.0] (CONTROL)
+[abh]   h2_calc: WITH pass=True iters=1 calls=1 trace=[1.0] (CONTROL)
+[abh]   h4_lru: WITH pass=True iters=1 calls=1 trace=[1.0] (CONTROL)
+[abh] ALL DONE

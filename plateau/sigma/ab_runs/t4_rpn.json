@@ -1,0 +1,29 @@
+{
+  "task_id": "t4_rpn",
+  "depth": 3,
+  "frozen_hash": "sha256:68a8fff7a0600e2acedd595e66bda59bd966c86aea75e215f5dc074882e0c800",
+  "kpi": "rpn_eval evaluates RPN incl. + - * / and RAISES on div-by-zero / underflow",
+  "ts": 1781548531.555844,
+  "with": {
+    "all_pass": true,
+    "feasibility": 1.0,
+    "iterations": 1,
+    "calls": 1,
+    "cost": 1.0,
+    "feasibility_trace": [
+      1.0
+    ],
+    "fossils_written": 1,
+    "stop_reason": "all_gates_pass",
+    "candidate_code": "def rpn_eval(expr):\n    tokens = expr.split()\n    stack = []\n    ops = {\n        '+': lambda a, b: a + b,\n        '-': lambda a, b: a - b,\n        '*': lambda a, b: a * b,\n        '/': lambda a, b: a // b,\n    }\n    for tok in tokens:\n        if tok in ops:\n            if len(stack) < 2:\n                raise ValueError(\"malformed expression: too few operands\")\n            b = stack.pop()\n            a = stack.pop()\n            if tok == '/' and b == 0:\n                raise ZeroDivisionError(\"division by zero\")\n            stack.append(ops[tok](a, b))\n        else:\n            stack.append(int(tok))\n    if len(stack) != 1:\n        raise ValueError(\"malformed expression\")\n    return stack[0]"
+  },
+  "without": {
+    "all_pass": true,
+    "feasibility": 1.0,
+    "iterations": 1,
+    "calls": 1,
+    "cost": 1.0,
+    "candidate_code": "def rpn_eval(expr):\n    ops = {\n        '+': lambda a, b: a + b,\n        '-': lambda a, b: a - b,\n        '*': lambda a, b: a * b,\n        '/': lambda a, b: a // b,\n    }\n    stack = []\n    for token in expr.split():\n        if token in ops:\n            if len(stack) < 2:\n                raise ValueError(\"malformed expression: too few operands\")\n            b = stack.pop()\n            a = stack.pop()\n            if token == '/' and b == 0:\n                raise ZeroDivisionError(\"division by zero\")\n            stack.append(ops[token](a, b))\n        else:\n            stack.append(int(token))\n    if len(stack) != 1:\n        raise ValueError(\"malformed expression\")\n    return stack[0]"
+  },
+  "done_ts": 1781548563.256928
+}

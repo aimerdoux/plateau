@@ -1,0 +1,1 @@
+{"hash": "sha256:e39505478b038e54590566380f1f76c6496c9a64e6584598e6e60299a2f1a5a3", "is_bytes": false, "provenance": {"arm": "COLD_LOOP", "iteration": 2, "pass": false, "summary": "1 error", "task": "8b3e2489-73e__test_spend"}, "satisfies": [], "self_verifiable": true}
