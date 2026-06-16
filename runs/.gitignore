@@ -3,3 +3,5 @@
 **/video.*
 **/frames/
 **/metadata.json
+# WaveX ephemeral produce runs (stills/clips not versioned)
+wavex_runs/
