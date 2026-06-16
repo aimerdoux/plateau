@@ -43,15 +43,19 @@ breakdown, and a **recreation brief with image-gen prompts**. Runs fully local
 ### 4. PRODUCE — build our version (image-first)
 | Skill | Use |
 |-------|-----|
-| (your image generator) | one still per shot from the spec's prompts, 9:16 |
+| **Higgsfield (manual)** | export the stills (one per shot from the spec's prompts, 9:16) — uses the unlimited image plan you already pay for |
+| **`wavex-produce`** ⭐ | watch-folder: stills in `inbox/` → fal.ai **Wan/Seedance** i2v clips in `outbox/` (~$0.25/clip) |
 | `text-to-speech` (ElevenLabs) | voiceover from the rewritten script |
 | `voice-dna-creator` | keep copy in the WaveX voice |
 | `content-research-writer` | script + on-screen copy with citations |
-| `remotion-best-practices` | assemble stills→video in React (Ken Burns, cuts, subtitles) when we want code-driven assembly |
+| `remotion-best-practices` | assemble clips/stills→video in React (Ken Burns, cuts, subtitles) |
 
-**Image-first rule:** every recreation must be buildable from stills + pan/zoom +
-word-pop subtitles + TTS. Note where a 1–2s video clip *would* slot in if
-Higgsfield credits return, but never depend on it.
+**Decided stack (cheapest scalable, image-first):** Higgsfield stills (manual
+export, unlimited) → `wavex-produce` → fal.ai Wan/Seedance image-to-video. This
+beat Eromify (~$0.82/clip) and "Kling direct" (~$0.35–0.70/clip) at **~$0.25/clip**
+for ~1,000 clips/mo ≈ ~$250. Higgsfield's unlimited images are **UI-only** (no
+free API), so the image leg stays manual; video is the only paid leg.
+Needs `FAL_KEY`. Swap `WAVEX_VIDEO_MODEL` to compare Wan vs Seedance vs Kling.
 
 ## Quickstart
 
