@@ -1,7 +1,7 @@
 # LAUNCH_STATUS.md
 
 Ops dashboard for the Plateau OSS launch. Updated each ops cycle.
-Last cycle: 2026-06-09. All claims grounded in sealed demo artifacts.
+Last cycle: 2026-06-16. All claims grounded in sealed demo artifacts.
 
 ---
 
@@ -18,6 +18,14 @@ Last cycle: 2026-06-09. All claims grounded in sealed demo artifacts.
 | Social-preview / OG card (`assets/social-preview.png`) | ✅ on main | generated from sealed demo6b completion series |
 | Community infra (CONTRIBUTING, SECURITY, issue/PR templates) | ✅ on main | evidence-first policy documented |
 | Sealed demo6b result (38 files, recompute PASS) | ✅ on main | EFFICIENCY=WIN, arm1 slope 6859.7, arm2 slope 103.0 |
+
+## In progress (open PRs — human merge required)
+
+| PR | title | status |
+|---|---|---|
+| #12 | ops cycle 2026-06-15 LAUNCH_STATUS draft | draft, superseded by this cycle — close |
+| #13 | feat(sigma): Σ operator — smallest shippable slice (§10) | CI green (run #11, 87 passed / 1 skip), ready for human merge |
+| #14 | feat(sigma): experiment harness + live A/B — FLAT result | stacked on #13, no CI until rebased to main after #13 merges |
 
 ## Not yet shipped (human-gated)
 
@@ -182,13 +190,15 @@ pip install plateau (PyPI publish pending one-time trusted-publisher wiring)
 
 ---
 
-## CI / integrity snapshot (2026-06-09)
+## CI / integrity snapshot (2026-06-16)
 
-- Main CI: **green** (run #4, conclusion: success)
+- Main CI: **green** (run #6, conclusion: success, 2026-06-09 — no new pushes to main since)
+- PR #13 CI: **green** (run #11, conclusion: success, 87 passed / 1 pre-existing skip)
+- PR #14 CI: **no run** — CI only triggers on PRs to `main`; will run after #13 merges
 - Sealed demo6b recompute: **PASS** (38 files, chain+files verify, context_tokens re-derive,
-  harness4 pin intact, EFFICIENCY=WIN)
+  harness4 pin intact, EFFICIENCY=WIN) — re-verified 2026-06-16
 - Open issues: 0
-- Open PRs: 0
+- Open PRs: 3 (#12 superseded draft, #13 Σ operator ready, #14 Σ experiment stacked on #13)
 - Latest GitHub Release: none
 - pyproject version: 0.2.0
-- PyPI published version: not yet published
+- PyPI published version: not yet published (§ A blocker: trusted-publisher setup)
