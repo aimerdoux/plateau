@@ -1,7 +1,7 @@
 # LAUNCH_STATUS.md
 
 Ops dashboard for the Plateau OSS launch. Updated each ops cycle.
-Last cycle: 2026-06-09. All claims grounded in sealed demo artifacts.
+Last cycle: 2026-06-19. All claims grounded in sealed demo artifacts.
 
 ---
 
@@ -11,13 +11,20 @@ Last cycle: 2026-06-09. All claims grounded in sealed demo artifacts.
 |---|---|---|
 | Core library (`plateau/`) | ✅ on main | stdlib-only, py3.9+ |
 | Agency layer (`plateau/agency/`) | ✅ on main | prose contracts + driver |
-| Tests (28 passing) | ✅ CI green | pytest 3.9 / 3.11 / 3.12 |
+| Tests (75 passing) | ✅ CI green | pytest 3.9 / 3.11 / 3.12 (76 test functions − 1 pre-existing gsm8k skip) |
 | CI workflow (`.github/workflows/ci.yml`) | ✅ green | badge is live, earned |
 | Release workflow (`.github/workflows/release.yml`) | ✅ on main | PyPI OIDC trusted-publish on GitHub Release |
 | Hero demo GIF (`demo/context_growth.gif`) | ✅ on main | animated context-per-step from sealed demo6b |
 | Social-preview / OG card (`assets/social-preview.png`) | ✅ on main | generated from sealed demo6b completion series |
 | Community infra (CONTRIBUTING, SECURITY, issue/PR templates) | ✅ on main | evidence-first policy documented |
 | Sealed demo6b result (38 files, recompute PASS) | ✅ on main | EFFICIENCY=WIN, arm1 slope 6859.7, arm2 slope 103.0 |
+
+## In progress (open PRs, human review required to merge)
+
+| PR | title | CI | status |
+|---|---|---|---|
+| #13 | feat(sigma): Σ operator — smallest shippable slice | ✅ green (87 passed / 1 skip) | ready for human merge |
+| #14 | feat(sigma): experiment harness + live A/B — honest FLAT result | ⏳ no run yet (stacked on #13; CI will fire after #13 merges) | waiting on #13 |
 
 ## Not yet shipped (human-gated)
 
@@ -182,13 +189,15 @@ pip install plateau (PyPI publish pending one-time trusted-publisher wiring)
 
 ---
 
-## CI / integrity snapshot (2026-06-09)
+## CI / integrity snapshot (2026-06-19)
 
-- Main CI: **green** (run #4, conclusion: success)
+- Main CI: **green** (run #6, conclusion: success, 2026-06-09 — no new pushes to main since)
+- Tests on main: **75 passing** (76 test functions − 1 pre-existing gsm8k skip; corrected from stale "28" figure in earlier snapshot)
 - Sealed demo6b recompute: **PASS** (38 files, chain+files verify, context_tokens re-derive,
-  harness4 pin intact, EFFICIENCY=WIN)
+  harness4 pin intact, EFFICIENCY=WIN) — re-verified 2026-06-19
 - Open issues: 0
-- Open PRs: 0
+- Open PRs: #13 (Σ operator, CI green, ready for human merge), #14 (stacked on #13, CI pending)
+- PRs closed this cycle: #18 (stale ops-cycle draft 2026-06-18, superseded by this PR)
 - Latest GitHub Release: none
 - pyproject version: 0.2.0
 - PyPI published version: not yet published
