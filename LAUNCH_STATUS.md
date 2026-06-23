@@ -1,7 +1,7 @@
 # LAUNCH_STATUS.md
 
 Ops dashboard for the Plateau OSS launch. Updated each ops cycle.
-Last cycle: 2026-06-09. All claims grounded in sealed demo artifacts.
+Last cycle: 2026-06-23. All claims grounded in sealed demo artifacts.
 
 ---
 
@@ -11,13 +11,20 @@ Last cycle: 2026-06-09. All claims grounded in sealed demo artifacts.
 |---|---|---|
 | Core library (`plateau/`) | ✅ on main | stdlib-only, py3.9+ |
 | Agency layer (`plateau/agency/`) | ✅ on main | prose contracts + driver |
-| Tests (28 passing) | ✅ CI green | pytest 3.9 / 3.11 / 3.12 |
+| Tests (75 passing with `plateau[demo]`; 70 without numpy; 1 pre-existing gsm8k skip) | ✅ CI green | pytest 3.9 / 3.11 / 3.12 |
 | CI workflow (`.github/workflows/ci.yml`) | ✅ green | badge is live, earned |
 | Release workflow (`.github/workflows/release.yml`) | ✅ on main | PyPI OIDC trusted-publish on GitHub Release |
 | Hero demo GIF (`demo/context_growth.gif`) | ✅ on main | animated context-per-step from sealed demo6b |
 | Social-preview / OG card (`assets/social-preview.png`) | ✅ on main | generated from sealed demo6b completion series |
 | Community infra (CONTRIBUTING, SECURITY, issue/PR templates) | ✅ on main | evidence-first policy documented |
 | Sealed demo6b result (38 files, recompute PASS) | ✅ on main | EFFICIENCY=WIN, arm1 slope 6859.7, arm2 slope 103.0 |
+
+## In progress (open PRs, awaiting human merge)
+
+| PR | title | CI | status |
+|---|---|---|---|
+| [#13](https://github.com/aimerdoux/plateau/pull/13) | feat(sigma): Σ operator — smallest shippable slice (§10) | ✅ 87 passed / 1 skip (py3.9/3.11/3.12) | Ready for human merge since 2026-06-15 |
+| [#14](https://github.com/aimerdoux/plateau/pull/14) | feat(sigma): experiment harness + live A/B — honest FLAT result | ⏳ 0 runs — stacked on #13; fires after #13 merges | Awaiting #13 merge |
 
 ## Not yet shipped (human-gated)
 
@@ -182,13 +189,16 @@ pip install plateau (PyPI publish pending one-time trusted-publisher wiring)
 
 ---
 
-## CI / integrity snapshot (2026-06-09)
+## CI / integrity snapshot (2026-06-23)
 
-- Main CI: **green** (run #4, conclusion: success)
+- Main CI: **green** (run #6, conclusion: success — no new pushes to main since 2026-06-09)
+- PR #13 CI: **green** (87 passed / 1 pre-existing skip, py3.9/3.11/3.12 — ready for human merge)
+- PR #14 CI: **0 runs** (stacked on #13; will fire after #13 merges to main)
 - Sealed demo6b recompute: **PASS** (38 files, chain+files verify, context_tokens re-derive,
-  harness4 pin intact, EFFICIENCY=WIN)
+  harness4 pin intact, EFFICIENCY=WIN) — re-verified 2026-06-23
 - Open issues: 0
-- Open PRs: 0
+- Open PRs: #13 (ready for human merge), #14 (stacked on #13)
 - Latest GitHub Release: none
 - pyproject version: 0.2.0
 - PyPI published version: not yet published
+- Tests on main: 75 passed / 1 skipped with `plateau[demo]` (numpy); 70 passed / 5 skipped without numpy
