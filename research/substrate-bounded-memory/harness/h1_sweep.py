@@ -91,29 +91,22 @@ def field_accuracy(item_coords, charges, seed):
 
 
 def prep_items(k, seed):
-    """k net-neutral item vortices from projected synthetic embeddings. Odd k gets
-    one uncounted ballast antivortex (single vortex is topologically forbidden in a
-    periodic box); the ballast is excluded from scoring."""
-    emb = synthetic_embeddings(k, seed)
+    """m net-neutral item vortices from projected synthetic embeddings, where
+    m = k rounded up to even (a single vortex is topologically forbidden in a
+    periodic box; odd counts cannot be charge-balanced). Every vortex is a scored
+    item -- no ballast. Returns (coords[m,2], charges[m], m)."""
+    m = k if k % 2 == 0 else k + 1
+    emb = synthetic_embeddings(m, seed)
     coords, charges, _ = encode(emb, P, SIDE)
-    ballast = None
-    if int(np.sum(charges)) != 0:
-        # append a corner ballast to force neutrality; excluded from scoring
-        bsign = -int(np.sign(np.sum(charges)))
-        coords = np.vstack([coords, [[1.0, 1.0]]])
-        charges = np.append(charges, bsign)
-        ballast = len(charges) - 1
-    return coords, charges, ballast
+    return coords, charges, m
 
 
 def run_cell(k, seed):
-    coords, charges, ballast = prep_items(k, seed)
-    score_idx = [i for i in range(len(coords)) if i != ballast]
-    sc = coords[score_idx]
+    coords, charges, m = prep_items(k, seed)
     field_acc, n_surv = field_accuracy(coords, charges, seed)
-    b1 = b1_accuracy(sc, RHO)
-    return {"k": k, "seed": seed, "field_acc": field_acc, "b1_acc": b1,
-            "n_survivors": int(n_surv)}
+    b1 = b1_accuracy(coords, RHO)
+    return {"k": k, "n_items": m, "seed": seed, "field_acc": field_acc,
+            "b1_acc": b1, "n_survivors": int(n_surv)}
 
 
 def ncrit(mean_by_k, kgrid):

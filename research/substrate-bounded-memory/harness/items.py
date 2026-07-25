@@ -25,32 +25,29 @@ def synthetic_embeddings(k: int, seed: int):
     return rng.standard_normal((k, EMBED_DIM))
 
 
-def encode(embeddings, P, side: float, margin: float = 0.0):
-    """Project embeddings -> (x, y) in [margin, side-margin]^2 and a net-neutral
-    charge from the median split of the 3rd projected axis. Returns (coords[k,2],
-    charges[k], raw2[k,2]) where raw2 is the pre-rescale projection (for B1)."""
+# raw projected axes are ~N(0,1) (emb~N(0,1), P~N(0,1/768)); SCALE*3sigma ~ 60
+# fills the 128 box centred at 64; the small tails wrap periodically. Fixed and
+# k-independent -> no degenerate small-k stacking (the old min/max rescale put a
+# lone point at the origin).
+SCALE = 20.0
+
+
+def encode(embeddings, P, side: float):
+    """Project embeddings -> (x, y) via a fixed centred periodic map, and an
+    EXACTLY net-neutral charge from the median split of the 3rd projected axis.
+    Requires an even number of items (odd counts cannot be charge-balanced, and a
+    single vortex is topologically forbidden in a periodic box). Returns
+    (coords[k,2], charges[k], raw2[k,2]); raw2 is the pre-map projection (B1)."""
+    k = len(embeddings)
+    if k % 2 != 0:
+        raise ValueError("encode requires an even item count (net-neutral charge)")
     proj = embeddings @ P                      # [k,3]
     raw2 = proj[:, :2]
-    # robust rescale of each axis to [margin, side-margin] by empirical min/max
-    lo = raw2.min(axis=0)
-    hi = raw2.max(axis=0)
-    span = np.where(hi > lo, hi - lo, 1.0)
-    coords = margin + (raw2 - lo) / span * (side - 2 * margin)
-    # net-neutral charge: median split of axis 3 (exactly balanced for even k)
+    coords = (raw2 * SCALE + side / 2.0) % side
+    # exactly balanced sign: the k/2 items above the median are +1, the rest -1
     a3 = proj[:, 2]
-    med = np.median(a3)
-    charges = np.where(a3 >= med, 1, -1).astype(int)
-    # enforce exact neutrality if k is odd or ties land unevenly
-    imbalance = int(np.sum(charges))
-    if imbalance != 0:
-        order = np.argsort(np.abs(a3 - med))   # flip the most-ambiguous signs
-        flip_to = -1 if imbalance > 0 else 1
-        need = abs(imbalance) // 2
-        flipped = 0
-        for idx in order:
-            if charges[idx] == -flip_to:
-                charges[idx] = flip_to
-                flipped += 1
-                if flipped >= need:
-                    break
+    order = np.argsort(a3)
+    charges = np.empty(k, dtype=int)
+    charges[order[: k // 2]] = -1
+    charges[order[k // 2:]] = +1
     return coords, charges, raw2
