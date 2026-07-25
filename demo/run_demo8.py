@@ -128,7 +128,10 @@ def bounded_signal(wt: str) -> str:
 def dispatch(prompt: str, wt: str, timeout: int) -> tuple:
     """One real `claude -p` worker. Returns (reply, exit_code)."""
     t0 = time.time()
-    p = subprocess.run(["claude", "-p", "--permission-mode", "bypassPermissions"],
+    # acceptEdits (NOT bypassPermissions): the latter maps to --dangerously-skip-permissions,
+    # which the CLI refuses under root — it kills every worker in <1s. Learned the hard way;
+    # see the void collection disclosed in the readout.
+    p = subprocess.run(["claude", "-p", "--permission-mode", "acceptEdits"],
                        input=prompt, cwd=wt, capture_output=True, text=True, timeout=timeout)
     return (p.stdout or "") + (p.stderr or ""), p.returncode, round(time.time() - t0, 1)
 
@@ -183,6 +186,16 @@ def main() -> int:
 
     os.makedirs(RAW, exist_ok=True)
     print(f"[demo8] prereg {file_hash(PREREG)}")
+
+    # PREFLIGHT: prove a worker can actually run before spending 10 of them. The first
+    # collection was voided because every `claude -p` died in <1s on a CLI flag the
+    # environment refuses — 10 workers burned to learn one fact a single probe gives.
+    probe, code, secs = dispatch("Reply with exactly: PROBE_OK", ROOT, 120)
+    if "PROBE_OK" not in probe:
+        print(f"[demo8] ABORT — worker preflight failed (exit={code}, {secs}s): "
+              f"{probe.strip()[:200]}")
+        return 2
+    print(f"[demo8] worker preflight OK ({secs}s)")
     all_records = []
     for arm in ARMS:
         print(f"[demo8] === {arm} ===", flush=True)
