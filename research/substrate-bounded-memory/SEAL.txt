@@ -1,0 +1,12 @@
+D-036 — Substrate as bounded memory — PREREG SEAL
+=================================================
+This seals research/substrate-bounded-memory/PREREG.md at its committing commit.
+The run must echo these hashes before writing any datum.
+
+PREREG.md  sha256    : f46be578f6e6b1457358ad2d865c5aec5038c8e52202e320f3a61a06851c1f78
+PREREG.md  git-blob  : ab803dfbf1649251bd227712d1c7ceb2037242c1
+
+Re-verify:
+  sha256sum research/substrate-bounded-memory/PREREG.md
+  git hash-object research/substrate-bounded-memory/PREREG.md
+Both must match the values above. Any mismatch = the sealed rule was edited after sealing.
