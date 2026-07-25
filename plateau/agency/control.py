@@ -27,6 +27,7 @@ Pure stdlib; imports only `plateau`. No host paths baked in (grounding resolves 
 """
 from __future__ import annotations
 
+import argparse
 import json
 import os
 import re
@@ -184,3 +185,156 @@ def gate_tasks_into_signal(signal: RelationalState, text: str, root: str,
             thoughts.append(task_fact(task, v.artifacts[task.id], root))
     new_signal = apply_gate(SelfState(signal=signal, thoughts=thoughts))
     return new_signal, v
+
+
+# --------------------------------------------------------------- CLI ------
+# `python -m plateau.agency.control {init,status,verify}` makes the loop operable from a
+# shell, not just importable — the same three verbs the gatekeeper Stop hook and the parent's
+# Monitor/Verify verbs already use, exposed directly so a human or a dispatch script can ask
+# "where does this run stand" without reading control.py source.
+
+
+def _read_text(path: str) -> str:
+    try:
+        with open(path) as fh:
+            return fh.read()
+    except FileNotFoundError:
+        return ""
+
+
+def cmd_init(control_dir: str) -> dict:
+    """Scaffold a control dir. Never overwrites a file that already exists — `init` must be
+    safe to re-run against a live run without clobbering RECON/PLAN work in progress."""
+    templates = {
+        "RECON.md": "# RECON\n\nProbe, don't assume. Every claim below cites a probe "
+                    "(command + literal output).\n",
+        "PLAN.md": "# PLAN\n\nRow grammar (fixed, machine-parsed by `parse_plan`):\n"
+                   "- [ ] T1 | <action> | <deliverable> | GATE: <command> | EXPECT: <observable>\n",
+        "JOURNAL.md": "# JOURNAL\n\nts | T<n> | state | action | result | next\n",
+    }
+    os.makedirs(control_dir, exist_ok=True)
+    os.makedirs(os.path.join(control_dir, "workers"), exist_ok=True)
+    created = []
+    for name, body in templates.items():
+        path = os.path.join(control_dir, name)
+        if not os.path.exists(path):
+            with open(path, "w") as fh:
+                fh.write(body)
+            created.append(name)
+    return {"control_dir": control_dir, "created": created}
+
+
+def cmd_status(control_dir: str) -> dict:
+    """MONITOR verb as a CLI read: a cheap disk meter, zero gates executed. Reports the
+    checkbox state of PLAN.md plus whether RECON.md / a valid BLOCKED.md are present — exactly
+    the sensors the gatekeeper Stop hook already keys off (see adapters/claude_code/control/
+    gatekeeper.sh), surfaced for a human or script to poll without shelling into bash."""
+    plan_path = os.path.join(control_dir, "PLAN.md")
+    tasks = parse_plan(_read_text(plan_path))
+    checked = [t.id for t in tasks if t.checked]
+    unchecked = [t.id for t in tasks if not t.checked]
+    blocked_text = _read_text(os.path.join(control_dir, "BLOCKED.md"))
+    blocked = bool(re.search(r"(?im)^class:", blocked_text))
+
+    if not tasks:
+        verdict = "NO_PLAN"
+    elif blocked:
+        verdict = "ALLOW_BLOCKED"
+    elif unchecked:
+        verdict = "BLOCK"
+    else:
+        verdict = "ALLOW_DONE"
+
+    return {
+        "control_dir": control_dir,
+        "plan_exists": os.path.isfile(plan_path),
+        "recon_exists": os.path.isfile(os.path.join(control_dir, "RECON.md")),
+        "task_count": len(tasks),
+        "checked": checked,
+        "unchecked": unchecked,
+        "blocked": blocked,
+        "verdict": verdict,
+    }
+
+
+def cmd_verify(control_dir: str, root: str, strict: bool = False, timeout: int = 120) -> dict:
+    """The DONE predicate (I2), as a CLI verb. Default is the cheap checkbox scan — safe to
+    call from *inside* a task's own GATE (it never executes a command, so a plan that gates a
+    task on `verify` cannot make the gate invoke itself). `--strict` re-runs EVERY gate fresh
+    (`verify_plan`, the V3 regression) for the ground-truth answer; that mode shells out to
+    each PLAN row's GATE command and so must not be pointed at a plan whose own GATE is this
+    same `verify` invocation, or it recurses. Keep the response key `unchecked` present in
+    both modes: it is the single field callers (and this task's own GATE) key off."""
+    plan_path = os.path.join(control_dir, "PLAN.md")
+    text = _read_text(plan_path)
+    tasks = parse_plan(text)
+    if not tasks:
+        return {"control_dir": control_dir, "task_count": 0, "unchecked": [],
+                "verdict": "NO_PLAN", "strict": strict}
+
+    if strict:
+        v = verify_plan(text, root, os.path.join(control_dir, "gates"), timeout=timeout)
+        return {
+            "control_dir": control_dir,
+            "task_count": len(tasks),
+            "passed": v.passed,
+            "unchecked": v.failed,     # gates that do not re-verify right now
+            "verdict": "DONE" if v.done else "BLOCK",
+            "strict": True,
+        }
+
+    unchecked = [t.id for t in tasks if not t.checked]
+    return {
+        "control_dir": control_dir,
+        "task_count": len(tasks),
+        "unchecked": unchecked,
+        "verdict": "BLOCK" if unchecked else "DONE",
+        "strict": False,
+    }
+
+
+def _emit(result: dict, as_json: bool) -> None:
+    if as_json:
+        print(json.dumps(result, indent=2, sort_keys=True))
+    else:
+        for key, value in result.items():
+            print(f"{key}: {value}")
+
+
+def build_parser() -> argparse.ArgumentParser:
+    ap = argparse.ArgumentParser(prog="python -m plateau.agency.control",
+                                 description="Control-loop CLI: init / status / verify a run.")
+    sub = ap.add_subparsers(dest="cmd", required=True)
+
+    p_init = sub.add_parser("init", help="scaffold a control dir (non-destructive)")
+    p_init.add_argument("--control-dir", default=".plateau/control")
+    p_init.add_argument("--json", action="store_true")
+
+    p_status = sub.add_parser("status", help="MONITOR: read PLAN.md checkbox state, no gates run")
+    p_status.add_argument("--control-dir", default=".plateau/control")
+    p_status.add_argument("--json", action="store_true")
+
+    p_verify = sub.add_parser("verify", help="the DONE predicate; --strict re-runs every gate")
+    p_verify.add_argument("--control-dir", default=".plateau/control")
+    p_verify.add_argument("--root", default=".", help="repo root gate commands run in (--strict only)")
+    p_verify.add_argument("--strict", action="store_true")
+    p_verify.add_argument("--timeout", type=int, default=120)
+    p_verify.add_argument("--json", action="store_true")
+
+    return ap
+
+
+def main(argv: Optional[list] = None) -> int:
+    args = build_parser().parse_args(argv)
+    if args.cmd == "init":
+        result = cmd_init(args.control_dir)
+    elif args.cmd == "status":
+        result = cmd_status(args.control_dir)
+    else:
+        result = cmd_verify(args.control_dir, args.root, strict=args.strict, timeout=args.timeout)
+    _emit(result, args.json)
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
