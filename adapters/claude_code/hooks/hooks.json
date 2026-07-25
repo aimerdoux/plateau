@@ -33,6 +33,12 @@
             "command": "python3 ${CLAUDE_PLUGIN_ROOT}/hook.py post --cc",
             "timeout": 15,
             "statusMessage": "Plateau: gating facts + persisting bounded signal"
+          },
+          {
+            "type": "command",
+            "command": "bash ${CLAUDE_PLUGIN_ROOT}/control/gatekeeper.sh",
+            "timeout": 150,
+            "statusMessage": "Plateau: control-loop gatekeeper (armed only during an /orchestrate run)"
           }
         ]
       }
