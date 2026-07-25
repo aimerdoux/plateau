@@ -142,3 +142,74 @@ def test_gatekeeper_strict_mode_catches_a_regressed_checked_gate(tmp_path):
     out = json.loads(_gatekeeper(tmp_path, {"RUN_GATES": "1"}))
     assert out["decision"] == "block"
     assert "Regression" in out["reason"] and "T1" in out["reason"]
+
+
+# --------------------------------------------------- dispatch safety ------
+# Preflight checks added after the self-hosting run named both as gaps: parallel dispatch
+# had no collision detection (the parent hand-sequenced two tasks that shared a file), and
+# nothing verified a gate could actually RUN before workers were spent.
+
+def test_touched_paths_extracts_paths_and_ignores_prose():
+    tasks = C.parse_plan(
+        "- [ ] T1 | a | plateau/agency/{control.py,__main__.py} | GATE: true | EXPECT: exit0\n"
+        "- [ ] T2 | a | (repo) | GATE: true | EXPECT: exit0\n"
+        "- [ ] T3 | a | demo/raw7/ + demo/out.md | GATE: true | EXPECT: exit0\n"
+    )
+    assert tasks[0].touched_paths() == {"plateau/agency/control.py",
+                                        "plateau/agency/__main__.py"}
+    assert tasks[1].touched_paths() == set()          # prose deliverable -> never collides
+    assert tasks[2].touched_paths() == {"demo/raw7", "demo/out.md"}
+
+
+def test_paths_overlap_conservative_cases():
+    assert C._paths_overlap("a/b.py", "a/b.py")                    # exact
+    assert C._paths_overlap("demo/raw7", "demo/raw7/x.json")       # dir containment
+    assert C._paths_overlap("control.py", "plateau/agency/control.py")  # bare shorthand
+    assert not C._paths_overlap("a/b.py", "a/c.py")
+    assert not C._paths_overlap("plateau/x/control.py", "plateau/y/control.py")
+
+
+def test_conflicts_catches_bare_filename_shorthand_collision():
+    """The real case from the self-hosting run: T1's deliverable wrote the shorthand
+    'control.py' while T2 wrote the full path. A string-equality check missed it."""
+    tasks = C.parse_plan(
+        "- [ ] T1 | cli | plateau/agency/__main__.py + control.py CLI | GATE: true | EXPECT: exit0\n"
+        "- [ ] T2 | helpers | plateau/agency/control.py | GATE: true | EXPECT: exit0\n"
+        "- [ ] T3 | tests | tests/test_x.py | GATE: true | EXPECT: exit0\n"
+    )
+    cfl = C.conflicts(tasks)
+    assert len(cfl) == 1
+    assert cfl[0][0] == "T1" and cfl[0][1] == "T2"
+
+
+def test_parallel_batches_are_collision_free_and_order_preserving():
+    tasks = C.parse_plan(
+        "- [ ] T1 | a | pkg/mod.py | GATE: true | EXPECT: exit0\n"
+        "- [ ] T2 | a | pkg/mod.py | GATE: true | EXPECT: exit0\n"
+        "- [ ] T3 | a | other.py | GATE: true | EXPECT: exit0\n"
+    )
+    batches = C.parallel_batches(tasks)
+    assert [t.id for t in batches[0]] == ["T1", "T3"]   # disjoint -> same batch
+    assert [t.id for t in batches[1]] == ["T2"]         # collides with T1 -> next batch
+    for batch in batches:                               # the invariant that matters
+        assert C.conflicts(batch) == []
+
+
+def test_preflight_flags_a_gate_whose_command_is_missing(tmp_path):
+    tasks = C.parse_plan(
+        "- [ ] T1 | a | x.py | GATE: echo hi | EXPECT: exit0\n"
+        "- [ ] T2 | a | y.py | GATE: definitely-not-a-real-binary-xyz --v | EXPECT: exit0\n"
+    )
+    pf = C.preflight(tasks, str(tmp_path))
+    assert pf["ok"] is False
+    assert pf["runnable"] == ["T1"]
+    assert pf["missing"][0]["task"] == "T2"
+
+
+def test_cmd_preflight_verdict_and_nonzero_exit_on_missing_command(tmp_path):
+    cdir = tmp_path / "control"
+    cdir.mkdir()
+    (cdir / "PLAN.md").write_text(
+        "- [ ] T1 | a | x.py | GATE: definitely-not-a-real-binary-xyz | EXPECT: exit0\n")
+    assert C.cmd_preflight(str(cdir), str(tmp_path))["verdict"] == "NO_GO"
+    assert C.main(["preflight", "--control-dir", str(cdir), "--root", str(tmp_path)]) == 1

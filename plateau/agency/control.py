@@ -51,6 +51,19 @@ _ROW = re.compile(
 )
 
 
+def _expand_braces(token: str) -> list:
+    """Expand one `pre{a,b}post` group into ['prea post'...]; recurse for nested groups.
+    Anything without a brace group returns unchanged."""
+    m = re.match(r"^([^{]*)\{([^{}]*)\}(.*)$", token)
+    if not m:
+        return [token]
+    pre, inner, post = m.groups()
+    out = []
+    for part in inner.split(","):
+        out.extend(_expand_braces(pre + part.strip() + post))
+    return out
+
+
 @dataclass
 class Task:
     id: str
@@ -63,6 +76,28 @@ class Task:
 
     def fact_claim(self) -> str:
         return f"{self.id} done"
+
+    def touched_paths(self) -> set:
+        """The file paths this task writes, derived from its DELIVERABLE column.
+
+        Used to detect write collisions BEFORE dispatch (see `conflicts`). No grammar
+        change was needed: the deliverable column already names what the task produces.
+        Brace groups (`pkg/{a.py,b.py}`) expand; prose words that are not path-like are
+        ignored, so a deliverable of "(none)" or "docs updated" contributes nothing and
+        such a task is simply never treated as colliding."""
+        paths = set()
+        # split on WHITESPACE first, expand brace groups, and only then on commas — a
+        # comma inside `{a.py,b.py}` belongs to the group, not to a list of deliverables.
+        for token in self.deliverable.split():
+            token = token.strip("`'\"()[]<>")
+            if not token:
+                continue
+            for expanded in _expand_braces(token):
+                for piece in expanded.split(","):
+                    piece = piece.strip("`'\"()[]<>,")
+                    if piece and ("/" in piece or re.search(r"\.[A-Za-z0-9]{1,8}$", piece)):
+                        paths.add(piece.rstrip("/"))
+        return paths
 
 
 def parse_plan(text: str) -> list[Task]:
@@ -186,6 +221,96 @@ def gate_tasks_into_signal(signal: RelationalState, text: str, root: str,
             thoughts.append(task_fact(task, v.artifacts[task.id], root))
     new_signal = apply_gate(SelfState(signal=signal, thoughts=thoughts))
     return new_signal, v
+
+
+# ------------------------------------------------- dispatch safety --------
+# Two preflight checks the self-hosting run showed were missing (both named in its own
+# report as gaps): parallel dispatch had no collision detection — the parent hand-sequenced
+# tasks that shared a file — and nothing verified that a gate could actually be RUN before
+# workers were spent producing something to run it on.
+
+
+def _paths_overlap(a: str, b: str) -> bool:
+    """Do two declared paths refer to the same write target? Deliberately CONSERVATIVE —
+    a missed collision is a clobber, a false one only costs some parallelism:
+
+      * exact match;
+      * directory containment (`demo/raw7` vs `demo/raw7/x.json`);
+      * bare-filename shorthand vs a full path with the same basename — real plans write
+        "plateau/agency/__main__.py + control.py", and that bare `control.py` IS
+        `plateau/agency/control.py`. Matching on basename alone here is what the
+        self-hosting run's own PLAN.md needed.
+    """
+    if a == b:
+        return True
+    if a.startswith(b.rstrip("/") + "/") or b.startswith(a.rstrip("/") + "/"):
+        return True
+    if ("/" in a) != ("/" in b):                 # one is bare shorthand
+        return os.path.basename(a) == os.path.basename(b)
+    return False
+
+
+def conflicts(tasks: list) -> list:
+    """Write collisions among tasks considered for PARALLEL dispatch.
+
+    Returns `[(id_a, id_b, [shared paths])]` for every pair whose deliverables overlap.
+    Two writing agents on one file is the shared-worktree clobber the Parent Agent Manual
+    calls out; this makes it detectable instead of a thing the parent must remember."""
+    out = []
+    for i, a in enumerate(tasks):
+        for b in tasks[i + 1:]:
+            shared = sorted({f"{pa}~{pb}" if pa != pb else pa
+                             for pa in a.touched_paths() for pb in b.touched_paths()
+                             if _paths_overlap(pa, pb)})
+            if shared:
+                out.append((a.id, b.id, shared))
+    return out
+
+
+def parallel_batches(tasks: list) -> list:
+    """Greedily pack tasks into ordered batches that are safe to dispatch concurrently:
+    no two tasks in a batch write the same path. Order within the plan is preserved, so a
+    task never jumps ahead of one it was written after. Every batch is collision-free by
+    construction — `conflicts(batch)` is empty for each returned batch."""
+    batches = []
+    for task in tasks:
+        placed = False
+        for batch in batches:
+            if not any(_paths_overlap(pa, pb) for other in batch
+                       for pa in task.touched_paths() for pb in other.touched_paths()):
+                batch.append(task)
+                placed = True
+                break
+        if not placed:
+            batches.append([task])
+    return batches
+
+
+def preflight(tasks: list, root: str) -> dict:
+    """RECON's R1 capability probe, made executable: can each gate actually RUN here?
+
+    For every task, probe the gate's leading command with `command -v` (a harmless
+    existence check — the gate itself is NOT executed, so this stays cheap and has no side
+    effects). A gate whose command is missing would fail at VERIFY *after* a worker had
+    already been spent on the task; catching it up front turns that into a preflight error.
+
+    Returns {ok: bool, runnable: [ids], missing: [{task, command}], batches: n,
+    conflicts: [...]} — a single go/no-go the parent can read before dispatching."""
+    runnable, missing = [], []
+    for task in tasks:
+        # leading word of the gate, ignoring env-var prefixes like FOO=bar
+        words = [w for w in task.gate.split() if "=" not in w.split("/")[0]]
+        cmd = words[0] if words else ""
+        if not cmd:
+            missing.append({"task": task.id, "command": "(empty gate)"})
+            continue
+        probe = subprocess.run(["/bin/sh", "-c", f"command -v {cmd}"], cwd=root,
+                               capture_output=True, text=True)
+        (runnable if probe.returncode == 0 else missing).append(
+            task.id if probe.returncode == 0 else {"task": task.id, "command": cmd})
+    cfl = conflicts(tasks)
+    return {"ok": not missing, "runnable": runnable, "missing": missing,
+            "batches": len(parallel_batches(tasks)), "conflicts": cfl}
 
 
 # --------------------------------------------------------------- CLI ------
@@ -384,7 +509,29 @@ def build_parser() -> argparse.ArgumentParser:
     p_verify.add_argument("--timeout", type=int, default=120)
     p_verify.add_argument("--json", action="store_true")
 
+    p_pre = sub.add_parser("preflight", help="before dispatch: can every gate run, and "
+                                             "which tasks are safe to run in parallel?")
+    p_pre.add_argument("--control-dir", default=".plateau/control")
+    p_pre.add_argument("--root", default=".", help="repo root the probes run in")
+    p_pre.add_argument("--json", action="store_true")
+
     return ap
+
+
+def cmd_preflight(control_dir: str, root: str) -> dict:
+    """Pre-dispatch go/no-go: gate runnability + the collision-free parallel batches.
+    Exit code is non-zero when a gate cannot run, so a dispatch script can gate on it."""
+    tasks = parse_plan(_read_text(os.path.join(control_dir, "PLAN.md")))
+    pf = preflight(tasks, root)
+    return {
+        "control_dir": control_dir,
+        "task_count": len(tasks),
+        "gates_runnable": len(pf["runnable"]),
+        "missing_commands": pf["missing"],
+        "collisions": [{"a": a, "b": b, "shared": s} for a, b, s in pf["conflicts"]],
+        "parallel_batches": [[t.id for t in batch] for batch in parallel_batches(tasks)],
+        "verdict": "GO" if pf["ok"] else "NO_GO",
+    }
 
 
 def main(argv: Optional[list] = None) -> int:
@@ -393,6 +540,10 @@ def main(argv: Optional[list] = None) -> int:
         result = cmd_init(args.control_dir)
     elif args.cmd == "status":
         result = cmd_status(args.control_dir)
+    elif args.cmd == "preflight":
+        result = cmd_preflight(args.control_dir, args.root)
+        _emit(result, args.json)
+        return 0 if result["verdict"] == "GO" else 1
     else:
         result = cmd_verify(args.control_dir, args.root, strict=args.strict, timeout=args.timeout)
     _emit(result, args.json)
