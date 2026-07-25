@@ -33,6 +33,7 @@ import os
 import re
 import subprocess
 from dataclasses import dataclass, field
+from datetime import datetime, timezone
 from typing import Optional
 
 from plateau import Measurement, Thought, RelationalState, SelfState, apply_gate
@@ -192,6 +193,68 @@ def gate_tasks_into_signal(signal: RelationalState, text: str, root: str,
 # shell, not just importable — the same three verbs the gatekeeper Stop hook and the parent's
 # Monitor/Verify verbs already use, exposed directly so a human or a dispatch script can ask
 # "where does this run stand" without reading control.py source.
+
+
+def append_journal(control_dir: str, task_id: str, state: str, action: str, result: str,
+                   next_step: str) -> str:
+    """E3/V1: append one JOURNAL.md row — the receipt for a EXECUTE/VERIFY step. Fixed
+    grammar `ts | T<n> | state | action | result | next` (mirrors the PLAN row grammar);
+    fields are whitespace-flattened so an embedded '|' or newline can never desync the
+    columns a reader splits on. Returns the exact line written."""
+    os.makedirs(control_dir, exist_ok=True)
+    ts = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+    def _flat(value: str) -> str:
+        return " ".join(str(value).split())
+
+    line = " | ".join([ts, _flat(task_id), _flat(state), _flat(action), _flat(result),
+                       _flat(next_step)])
+    with open(os.path.join(control_dir, "JOURNAL.md"), "a") as fh:
+        fh.write(line + "\n")
+    return line
+
+
+def write_blocked(control_dir: str, klass: str, attempts: list, unblock: str,
+                  options: list) -> str:
+    """B3: write BLOCKED.md — the legal-pause artifact the gatekeeper's ARMED check and
+    `cmd_status`'s `blocked` sensor both key off (`class:` line present). `attempts` is a
+    list of either `(what, result)` pairs or pre-formatted strings; `options` is the 2-3-item
+    decision menu B2 requires before escalating. Overwrites any prior BLOCKED.md — a run is
+    blocked on at most one obstacle at a time. Returns the path written."""
+    os.makedirs(control_dir, exist_ok=True)
+    lines = ["# BLOCKED", "", f"class: {klass}", "", "## Attempts", ""]
+    for i, attempt in enumerate(attempts, start=1):
+        if isinstance(attempt, (tuple, list)) and len(attempt) == 2:
+            what, result = attempt
+            lines.append(f"{i}. {what} -> {result}")
+        else:
+            lines.append(f"{i}. {attempt}")
+    lines += ["", "## Smallest unblocking action", "", unblock, "", "## Decision menu", ""]
+    for i, option in enumerate(options, start=1):
+        lines.append(f"{i}. {option}")
+    lines.append("")
+    path = os.path.join(control_dir, "BLOCKED.md")
+    with open(path, "w") as fh:
+        fh.write("\n".join(lines))
+    return path
+
+
+def read_status(control_dir: str) -> dict:
+    """MONITOR: read the gatekeeper's `STATE.json` cheap disk meter (written by
+    `adapters/claude_code/control/gatekeeper.sh` on every Stop) without recomputing
+    anything — the pure-read counterpart to `cmd_status`, which re-derives verdict from
+    PLAN.md/BLOCKED.md directly. Missing/unreadable state (no run has hit Stop yet, or no
+    gatekeeper wired) is not an error: it reports `verdict: NO_STATE` rather than raising, so
+    a poller can call this before a run has produced anything."""
+    path = os.path.join(control_dir, "STATE.json")
+    try:
+        with open(path) as fh:
+            data = json.load(fh)
+    except (FileNotFoundError, json.JSONDecodeError):
+        return {"ts": None, "unchecked": None, "verdict": "NO_STATE", "strict": None,
+                "_path": path}
+    data.setdefault("_path", path)
+    return data
 
 
 def _read_text(path: str) -> str:
