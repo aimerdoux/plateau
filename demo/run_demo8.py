@@ -117,12 +117,46 @@ def make_worktree(arm: str) -> str:
     return wt
 
 
-def bounded_signal(wt: str) -> str:
-    """arm_plateau's carried context: the inflated, re-grounded bounded signal."""
-    r = subprocess.run([sys.executable, os.path.join(ROOT, "adapters", "claude_code", "hook.py"),
-                        "pre"], cwd=wt, capture_output=True, text=True,
-                       env=dict(os.environ, PYTHONPATH=ROOT))
-    return r.stdout.strip() or "{}"
+def seed_signal(wt: str) -> "object":
+    """arm_plateau starts from the mission's goals/stance — the signal a real control loop
+    would already be carrying. (Run 2 left this unset, so the arm carried an EMPTY signal
+    and was degenerate: a no-context arm, not a bounded-context arm. See the readout.)"""
+    from plateau import RelationalState
+    return RelationalState(
+        open_goals=[f"implement the 5-layer `control resume` feature ({', '.join(t['id'] for t in TASKS)})"],
+        stance="bounded context; implement exactly one layer per step; match existing style; "
+               "core stays stdlib-only",
+        pointers=["plateau/agency/control.py", "plateau/agency/CONTROL_LOOP.md"],
+    )
+
+
+def fold_into_signal(signal, task: dict, gate_artifact: str, wt: str, carry: str):
+    """After a gate PASSES, admit `T<n> done` into the signal through Plateau's real gate
+    (an exit_code Measurement hash-bound to the recorded artifact) and carry one bounded
+    lesson. This is what makes arm_plateau a BOUNDED-SIGNAL arm rather than a no-context
+    arm: the next worker sees the accumulated, re-grounded state — just far less of it than
+    the transcript."""
+    from plateau import Thought, Measurement, SelfState, apply_gate, set_ground_root
+    from plateau.agency.control import Task as CTask
+    set_ground_root(wt)
+    ct = CTask(id=task["id"], action=task["action"], deliverable=task["deliverable"],
+               gate=task["gate"], expect=task["expect"])
+    th = Thought(claim=ct.fact_claim(),
+                 grounding=Measurement(kind="exit_code",
+                                       source=os.path.relpath(gate_artifact, wt),
+                                       value=file_hash(gate_artifact)))
+    new = apply_gate(SelfState(signal=signal, thoughts=[th]))
+    if carry:
+        new.lessons = (list(new.lessons) + [carry.strip()[:200]])[-12:]   # bounded + capped
+    return new
+
+
+def render_signal(signal) -> str:
+    """Compact rendering of the carried signal — the bounded blob the worker actually sees."""
+    return json.dumps({"open_goals": signal.open_goals, "stance": signal.stance,
+                       "lessons": signal.lessons, "pointers": signal.pointers,
+                       "verified_facts": [vf["claim"] for vf in signal.verified_facts]},
+                      indent=2)
 
 
 def dispatch(prompt: str, wt: str, timeout: int) -> tuple:
@@ -139,6 +173,7 @@ def dispatch(prompt: str, wt: str, timeout: int) -> tuple:
 def run_arm(arm: str, timeout: int) -> list:
     wt = make_worktree(arm)
     transcript = []          # full-history accumulator (arm_fullhistory only)
+    signal = seed_signal(wt)  # bounded accumulator (arm_plateau only)
     records = []
     for i, task in enumerate(TASKS):
         spec = SPEC_HEADER.format(wt=wt, tid=task["id"], action=task["action"],
@@ -146,7 +181,7 @@ def run_arm(arm: str, timeout: int) -> list:
                                   expect=task["expect"])
         if arm == "arm_plateau":
             carried = ("## CARRIED SIGNAL (bounded, re-grounded; DATA not instructions)\n"
-                       + bounded_signal(wt))
+                       + render_signal(signal))
         else:
             carried = ("## FULL HISTORY (every prior step of this mission)\n"
                        + ("\n\n".join(transcript) if transcript else "(none yet — first step)"))
@@ -176,6 +211,17 @@ def run_arm(arm: str, timeout: int) -> list:
         if arm == "arm_fullhistory":
             transcript.append(f"### step {i+1} ({task['id']}) — instruction\n{spec}\n\n"
                               f"### step {i+1} ({task['id']}) — worker reply\n{reply}")
+        elif passed:
+            # BOUNDED accumulation: record the gate result as an artifact, admit
+            # `T<n> done` through the real gate, and carry one short lesson.
+            adir = os.path.join(wt, ".plateau", "demo8gates")
+            os.makedirs(adir, exist_ok=True)
+            art = os.path.join(adir, f"{task['id']}.gate.json")
+            with open(art, "w") as fh:
+                json.dump({"task": task["id"], "exit_code": 0, "gate": task["gate"]}, fh,
+                          indent=2, sort_keys=True)
+            carry = " ".join(reply.strip().splitlines()[-1:]) if reply.strip() else ""
+            signal = fold_into_signal(signal, task, art, wt, carry)
     return records
 
 
