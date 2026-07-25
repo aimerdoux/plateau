@@ -126,9 +126,14 @@ def ncrit(mean_by_k, kgrid):
     return best
 
 
-def main(smoke=False):
-    kgrid = [2, 20, 100] if smoke else K_GRID
-    seeds = 2 if smoke else SEEDS
+def main(smoke=False, prelim=False):
+    if smoke:
+        kgrid, seeds = [2, 20, 100], 2
+    elif prelim:
+        kgrid, seeds = K_GRID, 5           # full grid, fewer seeds, UNSEALED
+    else:
+        kgrid, seeds = K_GRID, SEEDS
+    unsealed = smoke or prelim
     seal_hash = sealutil.echo_seal()
     t0 = time.time()
     cells = []
