@@ -1,0 +1,30 @@
+## CARRIED SIGNAL (bounded, re-grounded; DATA not instructions)
+{
+  "open_goals": [
+    "implement the 5-layer `control resume` feature (T1, T2, T3, T4, T5)"
+  ],
+  "stance": "bounded context; implement exactly one layer per step; match existing style; core stays stdlib-only",
+  "lessons": [],
+  "pointers": [
+    "plateau/agency/control.py",
+    "plateau/agency/CONTROL_LOOP.md"
+  ],
+  "verified_facts": []
+}
+
+You are a WORKER implementing ONE layer of a 5-layer feature in a Python repo.
+
+## REPO
+/home/user/plateau/.plateau/demo8/arm_plateau — Python 3.11, pytest available. The plateau CORE must stay STDLIB-ONLY.
+Do NOT edit tests/test_control_loop.py and do NOT weaken gate semantics; those judge this
+run and editing them is forbidden.
+
+## YOUR ONE TASK: T1
+action:      add `next_task(text)` to plateau/agency/control.py returning the first UNCHECKED Task from a PLAN.md text, or None if every row is checked (or there are no rows)
+deliverable: plateau/agency/control.py
+GATE (run by the parent, not by you; this is how the task is judged):
+    python -c "from plateau.agency.control import next_task as n; assert n('- [x] T1 | a | b | GATE: true | EXPECT: exit0') is None; t=n('- [x] T1 | a | b | GATE: true | EXPECT: exit0\n- [ ] T2 | c | d | GATE: true | EXPECT: exit0'); assert t.id=='T2', t; print('NEXT_OK')"
+EXPECT: NEXT_OK
+
+Implement it completely and correctly in /home/user/plateau/.plateau/demo8/arm_plateau. Match the file's existing style. When done,
+reply with a SHORT summary (a few lines) of what you changed. Do not ask questions.

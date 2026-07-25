@@ -1,0 +1,136 @@
+{
+  "prereg_sha256": "sha256:5ba4832775ec8f989c726966ffba86850150fa19fdfe9df6dbdcf32fd27e9be5",
+  "tasks": [
+    "T1",
+    "T2",
+    "T3",
+    "T4",
+    "T5"
+  ],
+  "records": [
+    {
+      "arm": "arm_plateau",
+      "step": 1,
+      "task": "T1",
+      "prompt_tokens": 425,
+      "prompt_bytes": 1556,
+      "worker_exit": 0,
+      "worker_seconds": 22.1,
+      "gate_exit": 0,
+      "gate_passed": true,
+      "gate_output_tail": "NEXT_OK\n"
+    },
+    {
+      "arm": "arm_plateau",
+      "step": 2,
+      "task": "T2",
+      "prompt_tokens": 515,
+      "prompt_bytes": 1909,
+      "worker_exit": 0,
+      "worker_seconds": 21.6,
+      "gate_exit": 0,
+      "gate_passed": true,
+      "gate_output_tail": "RESUME_OK\n"
+    },
+    {
+      "arm": "arm_plateau",
+      "step": 3,
+      "task": "T3",
+      "prompt_tokens": 446,
+      "prompt_bytes": 1792,
+      "worker_exit": 0,
+      "worker_seconds": 38.6,
+      "gate_exit": 0,
+      "gate_passed": true,
+      "gate_output_tail": "usage: python -m plateau.agency.control resume [-h]\n                                               [--control-dir CONTROL_DIR]\n                                               [--root ROOT] [--json]\n\noptions:\n  -h, --help            show this help message and exit\n  --control-dir CONTROL_DIR\n  --root ROOT           repo root (symmetry only; no gate runs)\n  --json\n"
+    },
+    {
+      "arm": "arm_plateau",
+      "step": 4,
+      "task": "T4",
+      "prompt_tokens": 507,
+      "prompt_bytes": 1979,
+      "worker_exit": 0,
+      "worker_seconds": 34.4,
+      "gate_exit": 0,
+      "gate_passed": true,
+      "gate_output_tail": ".......                                                                  [100%]\n7 passed in 0.07s\n"
+    },
+    {
+      "arm": "arm_plateau",
+      "step": 5,
+      "task": "T5",
+      "prompt_tokens": 583,
+      "prompt_bytes": 2227,
+      "worker_exit": 0,
+      "worker_seconds": 39.7,
+      "gate_exit": 0,
+      "gate_passed": true,
+      "gate_output_tail": ""
+    },
+    {
+      "arm": "arm_fullhistory",
+      "step": 1,
+      "task": "T1",
+      "prompt_tokens": 332,
+      "prompt_bytes": 1228,
+      "worker_exit": 0,
+      "worker_seconds": 21.8,
+      "gate_exit": 0,
+      "gate_passed": true,
+      "gate_output_tail": "NEXT_OK\n"
+    },
+    {
+      "arm": "arm_fullhistory",
+      "step": 2,
+      "task": "T2",
+      "prompt_tokens": 828,
+      "prompt_bytes": 3070,
+      "worker_exit": 0,
+      "worker_seconds": 22.1,
+      "gate_exit": 0,
+      "gate_passed": true,
+      "gate_output_tail": "RESUME_OK\n"
+    },
+    {
+      "arm": "arm_fullhistory",
+      "step": 3,
+      "task": "T3",
+      "prompt_tokens": 1205,
+      "prompt_bytes": 4579,
+      "worker_exit": 0,
+      "worker_seconds": 36.7,
+      "gate_exit": 0,
+      "gate_passed": true,
+      "gate_output_tail": "usage: python -m plateau.agency.control resume [-h]\n                                               [--control-dir CONTROL_DIR]\n                                               [--root ROOT] [--json]\n\noptions:\n  -h, --help            show this help message and exit\n  --control-dir CONTROL_DIR\n  --root ROOT           repo root the next task's GATE runs in\n  --json\n"
+    },
+    {
+      "arm": "arm_fullhistory",
+      "step": 4,
+      "task": "T4",
+      "prompt_tokens": 1600,
+      "prompt_bytes": 6192,
+      "worker_exit": 0,
+      "worker_seconds": 239.3,
+      "gate_exit": 0,
+      "gate_passed": true,
+      "gate_output_tail": "..........                                                               [100%]\n10 passed in 0.24s\n"
+    },
+    {
+      "arm": "arm_fullhistory",
+      "step": 5,
+      "task": "T5",
+      "prompt_tokens": 2178,
+      "prompt_bytes": 8486,
+      "worker_exit": 0,
+      "worker_seconds": 38.0,
+      "gate_exit": 0,
+      "gate_passed": true,
+      "gate_output_tail": ""
+    }
+  ],
+  "completion": {
+    "arm_plateau": 5,
+    "arm_fullhistory": 5
+  }
+}
