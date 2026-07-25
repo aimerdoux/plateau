@@ -1,0 +1,6 @@
+# Sealed run outputs are LOCAL / unpublished until operator go (PREREG.md sec.7).
+raw/
+# scratch smoke + python caches
+_smoke_*.json
+__pycache__/
+*.pyc
