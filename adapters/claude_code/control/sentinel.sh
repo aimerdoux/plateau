@@ -28,9 +28,14 @@ start="$(date +%s)"; n=0; sid=""
 log(){ printf '%s | sentinel | %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$*" | tee -a "$LOG" >&2; }
 trap 'log "interrupted (SIGINT) after $n respawn(s)"; exit 130' INT
 
+# A PLAN is "written" only once it holds at least one real task row. A freshly scaffolded
+# PLAN.md (or one with only prose) is NOT a finished plan — treating it as one would let a
+# run report DONE having never planned anything.
+has_task_rows() { [ -f "$DIR/PLAN.md" ] && grep -qE '^- \[[ xX]\] *T' "$DIR/PLAN.md"; }
+
 verdict() {
   if [ -f "$DIR/BLOCKED.md" ] && grep -qi '^class:' "$DIR/BLOCKED.md"; then echo BLOCKED; return; fi
-  if [ -f "$DIR/PLAN.md" ] && ! grep -q '^- \[ \]' "$DIR/PLAN.md"; then echo DONE; return; fi
+  if has_task_rows && ! grep -q '^- \[ \]' "$DIR/PLAN.md"; then echo DONE; return; fi
   echo RUNNING
 }
 
@@ -47,7 +52,10 @@ while :; do
   [ "$n" -ge "$MAX_RESPAWNS" ] && { log "HALT: respawn budget ($MAX_RESPAWNS)"; exit 4; }
 
   resume=""
-  if [ "$n" -eq 0 ] && [ ! -f "$DIR/PLAN.md" ] && [ ! -f "$DIR/RECON.md" ]; then
+  # Cold start = no PLAN rows yet. `init` legitimately scaffolds PLAN.md/RECON.md, so
+  # keying on file EXISTENCE sent the very first spawn down the warm path with
+  # reinstate.md and never delivered TASK.md.
+  if ! has_task_rows; then
     prompt="$(cat "$PROTO"; printf '\n\n# TASK\n'; cat "$TASK")"          # cold start
   else
     prompt="$(cat "$REINSTATE" 2>/dev/null || printf 'REINSTATE: read RECON.md, PLAN.md, JOURNAL.md under %s + inflate .plateau/signal.json; resume at first unchecked gate; legal exits: DONE or BLOCKED.md.' "$DIR")"

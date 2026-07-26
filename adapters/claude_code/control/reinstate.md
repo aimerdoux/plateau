@@ -5,7 +5,8 @@ control loop. Resume; do not restart, do not narrate — act.
    ```bash
    python3 "${CLAUDE_PLUGIN_ROOT:-adapters/claude_code}/hook.py" pre
    ```
-   then read `.plateau/control/RECON.md`, `PLAN.md`, `JOURNAL.md` (and `STATE.json` if present).
+   then read `.plateau/control/TASK.md` (THE MISSION), `RECON.md`, `PLAN.md`, `JOURNAL.md`
+   (and `STATE.json` if present).
 2. If `PLAN.md` is missing: resume the protocol at the earliest missing deliverable
    (RECON → PLAN), per `CONTROL_LOOP.md`.
 3. Otherwise resume at the first `- [ ]` row: EXECUTE (assign it to ONE bounded sub-agent

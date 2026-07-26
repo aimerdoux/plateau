@@ -42,6 +42,12 @@ if [ -f "$BLOCKED" ] && grep -qi '^class:' "$BLOCKED"; then
   exit 0
 fi
 
+# A scaffolded-but-unplanned PLAN.md (no task rows at all) is NOT done — stopping there
+# would end a run before it ever planned anything.
+if ! grep -qE '^- \[[ xX]\] *T' "$PLAN"; then
+  block "PLAN.md exists but contains no task rows. Finish RECON, then write rows in the fixed grammar ('- [ ] Tn | action | deliverable | GATE: cmd | EXPECT: result') covering the mission in TASK.md. Exit is legal only on DONE or a BLOCKED.md containing 'class:'." "-1"
+fi
+
 unchecked="$(grep -c '^- \[ \]' "$PLAN" 2>/dev/null || true)"; [ -n "$unchecked" ] || unchecked=0
 if [ "$unchecked" -gt 0 ]; then
   first="$(grep -m1 '^- \[ \]' "$PLAN" | cut -c1-140 | tr '"' "'")"

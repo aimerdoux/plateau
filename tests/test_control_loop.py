@@ -213,3 +213,37 @@ def test_cmd_preflight_verdict_and_nonzero_exit_on_missing_command(tmp_path):
         "- [ ] T1 | a | x.py | GATE: definitely-not-a-real-binary-xyz | EXPECT: exit0\n")
     assert C.cmd_preflight(str(cdir), str(tmp_path))["verdict"] == "NO_GO"
     assert C.main(["preflight", "--control-dir", str(cdir), "--root", str(tmp_path)]) == 1
+
+
+# ------------------------------------------- scaffolded != planned --------
+# A first live launch exposed this class of bug: `init` scaffolds PLAN.md/RECON.md, and
+# every consumer that keyed on FILE EXISTENCE (or on "zero unchecked rows") then treated a
+# freshly-scaffolded dir as a planned — or even finished — run.
+
+def test_init_stub_contains_no_parseable_task_row(tmp_path):
+    """The template row must NOT parse as a real task: a literal '- [ ]' in the stub armed
+    the gatekeeper on a placeholder and made the sentinel skip its cold start."""
+    cdir = tmp_path / "control"
+    C.cmd_init(str(cdir))
+    plan = (cdir / "PLAN.md").read_text()
+    assert C.parse_plan(plan) == []
+    assert "- [ ]" not in plan
+
+
+def test_init_is_idempotent_and_never_clobbers(tmp_path):
+    cdir = tmp_path / "control"
+    C.cmd_init(str(cdir))
+    (cdir / "PLAN.md").write_text("- [ ] T1 | a | b | GATE: true | EXPECT: exit0\n")
+    again = C.cmd_init(str(cdir))
+    assert again["created"] == []                      # nothing re-created
+    assert len(C.parse_plan((cdir / "PLAN.md").read_text())) == 1   # real work preserved
+
+
+@pytest.mark.skipif(not shutil.which("bash"), reason="bash required")
+def test_gatekeeper_blocks_a_scaffolded_but_unplanned_dir(tmp_path):
+    """Stopping before any task row exists is never legal — the run has not planned yet."""
+    cdir = tmp_path / ".plateau" / "control"
+    C.cmd_init(str(cdir))
+    out = json.loads(_gatekeeper(tmp_path))
+    assert out["decision"] == "block"
+    assert "no task rows" in out["reason"]

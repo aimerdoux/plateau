@@ -396,8 +396,12 @@ def cmd_init(control_dir: str) -> dict:
     templates = {
         "RECON.md": "# RECON\n\nProbe, don't assume. Every claim below cites a probe "
                     "(command + literal output).\n",
-        "PLAN.md": "# PLAN\n\nRow grammar (fixed, machine-parsed by `parse_plan`):\n"
-                   "- [ ] T1 | <action> | <deliverable> | GATE: <command> | EXPECT: <observable>\n",
+        # NOTE: the example row deliberately uses [_], NOT [ ] — a literal "- [ ]" here
+        # would be parsed by parse_plan as a REAL unchecked task, arming the gatekeeper on a
+        # placeholder and making a freshly-scaffolded dir look like a planned run.
+        "PLAN.md": "# PLAN\n\nRow grammar (fixed, machine-parsed by `parse_plan`);\n"
+                   "copy this shape, with [ ] in place of [_]:\n"
+                   "    - [_] T1 | <action> | <deliverable> | GATE: <command> | EXPECT: <observable>\n",
         "JOURNAL.md": "# JOURNAL\n\nts | T<n> | state | action | result | next\n",
     }
     os.makedirs(control_dir, exist_ok=True)
