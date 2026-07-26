@@ -160,6 +160,44 @@ export CLAUDE_ARGS="--permission-mode acceptEdits"
 bash "$PLATEAU/adapters/claude_code/control/sentinel.sh"
 ```
 
+### Sanity checks before it spends anything
+
+1. `grep -c '^- \[' .plateau/control/PLAN.md` → **0** on a fresh scaffold (the stub carries no
+   parseable task row; anything else means a stale or hand-edited PLAN is in place).
+2. The sentinel's first line must read **`spawn #1 (fresh)`**. `(-c)` means it took the warm
+   path and the agent will never receive `TASK.md` — stop and check §7.
+
+> **`$PLATEAU` does not survive a new terminal.** Every block here re-exports it for that
+> reason. A new shell with an unset `$PLATEAU` turns `bash "$PLATEAU/.../sentinel.sh"` into
+> `bash "/.../sentinel.sh"` ("No such file or directory") and `git -C "$PLATEAU" pull` into
+> "not a git repository". Re-paste the two `export` lines in any new session.
+
+## 7. Resuming or re-seeding an existing run
+
+```bash
+export PLATEAU=~/plateau
+export TARGET=~/wavex-os
+git -C "$PLATEAU" pull
+pip3 install --force-reinstall "git+https://github.com/aimerdoux/plateau.git@claude/control-loop-qk0pqx"
+cp "$PLATEAU/adapters/claude_code/control/reinstate.md" "$TARGET/.plateau/control/"
+cp "$PLATEAU/plateau/agency/CONTROL_LOOP.md" "$TARGET/.plateau/control/"
+cd "$TARGET"
+export CONTROL_DIR=.plateau/control MAX_WALL_MIN=420 MAX_RESPAWNS=20
+export CLAUDE_ARGS="--permission-mode acceptEdits"
+bash "$PLATEAU/adapters/claude_code/control/sentinel.sh"
+```
+
+Re-copy `reinstate.md` and `CONTROL_LOOP.md` whenever you pull: the control dir holds
+**copies**, so a fixed protocol in the checkout does not reach a live run by itself.
+
+To re-seed from scratch (discarding plan + receipts, keeping the mission):
+
+```bash
+rm -f .plateau/control/PLAN.md .plateau/control/RECON.md .plateau/control/JOURNAL.md \
+      .plateau/control/STATE.json .plateau/control/BLOCKED.md
+python3 -m plateau.agency.control init --control-dir .plateau/control
+```
+
 ---
 
 ## Writing a good TASK.md
