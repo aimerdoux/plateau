@@ -539,6 +539,13 @@ def build_parser() -> argparse.ArgumentParser:
                          help="append the DRIFT/REFUTED gaps to RECALIBRATE.md")
     p_adapt.add_argument("--json", action="store_true")
 
+    p_forecast = sub.add_parser("forecast", help="PREDICT: append or read FORECAST.md rows "
+                                                 "(refuses a row for an unknown task)")
+    p_forecast.add_argument("--control-dir", default=".plateau/control")
+    p_forecast.add_argument("--task", default=None, help="task id to forecast; omit to read")
+    p_forecast.add_argument("--predict", default=None, help="prediction text (with --task)")
+    p_forecast.add_argument("--json", action="store_true")
+
     p_pre = sub.add_parser("preflight", help="before dispatch: can every gate run, and "
                                              "which tasks are safe to run in parallel?")
     p_pre.add_argument("--control-dir", default=".plateau/control")
@@ -581,6 +588,45 @@ def cmd_adapt(control_dir: str, write: bool = False) -> dict:
     }
 
 
+def cmd_forecast(control_dir: str, task_id: Optional[str] = None,
+                 predict: Optional[str] = None) -> dict:
+    """The PREDICT step of predict -> observe -> gap -> recalibrate, made a CLI verb so the
+    adaptive cycle's first step is not a manual file edit.
+
+    Two modes:
+      * read  (no --task):  parse FORECAST.md and report every recorded prediction, keyed by
+        task id — exactly what `cmd_adapt` reads, so this doubles as "what have I predicted
+        so far?".
+      * write (--task + --predict): append one `<ID> | <prediction>` row. REFUSED (verdict
+        UNKNOWN_TASK, nothing written) when the id does not name a row in PLAN.md — a
+        forecast for a task that does not exist cannot ever be compared against a gate
+        artifact, so `analyze_gap` would silently never see it. Same discipline as the gate:
+        an unrecognized claim is refused, not admitted and then ignored.
+    """
+    from plateau.agency import adapt as A
+    forecast_path = os.path.join(control_dir, "FORECAST.md")
+
+    if task_id is None:
+        return {"control_dir": control_dir,
+                "forecasts": A.parse_forecast(_read_text(forecast_path)),
+                "verdict": "OK"}
+
+    task_ids = {t.id for t in parse_plan(_read_text(os.path.join(control_dir, "PLAN.md")))}
+    if task_id not in task_ids:
+        return {"control_dir": control_dir, "task": task_id, "verdict": "UNKNOWN_TASK",
+                "hint": f"{task_id} is not a row in PLAN.md — add the PLAN row before "
+                        "forecasting it"}
+
+    line = f"{task_id} | {' '.join(str(predict or '').split())}"
+    os.makedirs(control_dir, exist_ok=True)
+    is_new = not os.path.exists(forecast_path)
+    with open(forecast_path, "a") as fh:
+        if is_new:
+            fh.write("# FORECAST\n\n")
+        fh.write(line + "\n")
+    return {"control_dir": control_dir, "task": task_id, "line": line, "verdict": "RECORDED"}
+
+
 def cmd_preflight(control_dir: str, root: str) -> dict:
     """Pre-dispatch go/no-go: gate runnability + the collision-free parallel batches.
     Exit code is non-zero when a gate cannot run, so a dispatch script can gate on it."""
@@ -614,6 +660,10 @@ def main(argv: Optional[list] = None) -> int:
         result = cmd_status(args.control_dir)
     elif args.cmd == "adapt":
         result = cmd_adapt(args.control_dir, write=args.write)
+    elif args.cmd == "forecast":
+        result = cmd_forecast(args.control_dir, task_id=args.task, predict=args.predict)
+        _emit(result, args.json)
+        return 0 if result["verdict"] in ("OK", "RECORDED") else 1
     elif args.cmd == "preflight":
         result = cmd_preflight(args.control_dir, args.root)
         _emit(result, args.json)

@@ -54,6 +54,24 @@ if [ "$unchecked" -gt 0 ]; then
   block "$unchecked unchecked gate(s) in PLAN.md. Next: $first — return to EXECUTE, assign it to a bounded sub-agent (signal + one task), run its GATE, paste literal output into JOURNAL.md, check the box only when the fact is admitted. Legal exits: DONE (all gates green now) or a BLOCKED.md with 'class:'." "$unchecked"
 fi
 
+# Cheap, always-on check (no re-execution): a checked row's recorded gate artifact
+# (gates/<id>.gate.json, written by run_gate) is the ground truth for that box. If the
+# artifact on disk says the gate did NOT pass (exit_code != 0), the box was checked in
+# error — never trust "checked" over the artifact it was checked from.
+while IFS= read -r row; do
+  case "$row" in "- [x]"*|"- [X]"*) ;; *) continue ;; esac
+  tid="$(printf '%s' "$row" | sed -n 's/^- \[[xX]\][[:space:]]*\([^|]*\)|.*/\1/p' \
+         | sed 's/[[:space:]]*$//')"
+  [ -n "$tid" ] || continue
+  art="$DIR/gates/$tid.gate.json"
+  [ -f "$art" ] || continue
+  code="$(grep -o '"exit_code"[[:space:]]*:[[:space:]]*-\{0,1\}[0-9]\{1,\}' "$art" \
+          | head -1 | grep -o -- '-\{0,1\}[0-9]\{1,\}$')"
+  if [ -n "$code" ] && [ "$code" -ne 0 ] 2>/dev/null; then
+    block "Checked row $tid's recorded gate artifact ($art) says the gate FAILED (exit_code=$code) — a stale or mischecked box. Uncheck $tid, fix, re-run its GATE, and only check it once the artifact records exit_code 0." "0"
+  fi
+done < "$PLAN"
+
 # Strict regression (mirrors control-loop V3): re-run EVERY checked gate fresh. A checked
 # row is trusted only if its gate still passes now. Pass <=> exit 0 AND
 # (EXPECT=='exit0' OR EXPECT substring of output).

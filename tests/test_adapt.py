@@ -49,14 +49,15 @@ def test_failed_gate_becomes_a_classified_blocker_with_a_next_action():
     assert "not a stop" in g.note          # a blocker is the next unit of work
 
 
-def test_gate_passing_for_the_wrong_reason_is_DRIFT_not_success():
-    """The adaptive catch: the gate went green, but nothing the forecast predicted was
-    observed — often a gate too loose to prove its claim."""
+def test_gate_that_cannot_prove_its_claim_is_UNCHECKABLE_not_success():
+    """The adaptive catch, stated precisely: `Done in 0.4s` cannot settle whether an admin
+    route returned 401. That is not a clean pass (the gate proves nothing) and not a drift
+    (nothing diverged) — it is UNCHECKABLE, and still actionable."""
     g = A.analyze_gap("T2", "admin route returns 401 for anonymous callers",
                       {"exit_code": 0, "output_tail": "Done in 0.4s"})
-    assert g.klass == A.DRIFT
-    assert g.magnitude == 1
-    assert "too loose" in g.note or "not observed" in g.note
+    assert g.klass == A.UNCHECKABLE
+    assert g.magnitude == 1                      # still demands attention
+    assert "cannot settle" in g.note
 
 
 def test_forecast_borne_out_is_CONFIRMED():
@@ -110,12 +111,12 @@ def test_cmd_adapt_end_to_end_verdict_and_summary(tmp_path):
     (cdir / "FORECAST.md").write_text("T1 | 12 passed\nT2 | route returns 401\n")
     gates = cdir / "gates"
     _artifact(gates, "T1", 0, "collected 12 items ... 12 passed")     # CONFIRMED
-    _artifact(gates, "T2", 0, "ok")                                    # DRIFT (not observed)
+    _artifact(gates, "T2", 0, "ok")                            # UNCHECKABLE (output proves nothing)
     # T3 has no artifact -> UNVERIFIED
     out = C.cmd_adapt(str(cdir), write=True)
     assert out["verdict"] == "ADAPT"
     assert out["summary"]["counts"][A.CONFIRMED] == 1
-    assert out["summary"]["counts"][A.DRIFT] == 1
+    assert out["summary"]["counts"][A.UNCHECKABLE] == 1
     assert out["summary"]["counts"][A.UNVERIFIED] == 1
     assert out["summary"]["needs_recalibration"] == 1
     assert os.path.exists(out["recalibrate_path"])
@@ -178,3 +179,32 @@ def test_missing_forecast_does_not_silently_become_confirmed_for_a_failed_gate()
     must never launder a failure into a pass."""
     g = A.analyze_gap("H9", "", {"exit_code": 1, "output_tail": "ENOENT: no such file"})
     assert g.klass == A.REFUTED and g.blocker == "MISSING-INFO"
+
+
+def test_terse_gate_output_does_not_manufacture_drift():
+    """A pytest one-liner cannot contain a prose forecast's words. Firing DRIFT on that
+    absence is a systematic false positive — it would drown a multi-hour run in noise.
+    Observed live on the first autoloop task (forecast prose vs '24 passed in 0.24s')."""
+    g = A.analyze_gap("H1", "test_control_loop reports ~22 passed incl. a new "
+                            "contradicted-checkbox block; risk: the artifact path differs",
+                      {"exit_code": 0, "output_tail": "....... [100%]\n24 passed in 0.24s"})
+    assert g.klass == A.UNCHECKABLE          # not a false DRIFT, and not a free pass either
+    assert "cannot settle" in g.note
+
+
+def test_explicit_expectation_is_checked_precisely():
+    """`expect:"<literal>"` makes a forecast machine-checkable: present -> CONFIRMED,
+    absent -> DRIFT, with no dependence on prose overlap."""
+    hit = A.analyze_gap("H1", 'expect:"24 passed" | risk: gate too loose',
+                        {"exit_code": 0, "output_tail": "24 passed in 0.24s"})
+    assert hit.klass == A.CONFIRMED
+    miss = A.analyze_gap("H1", 'expect:"25 passed" | risk: gate too loose',
+                         {"exit_code": 0, "output_tail": "24 passed in 0.24s"})
+    assert miss.klass == A.DRIFT and "absent" in miss.note
+
+
+def test_rich_output_still_detects_real_drift():
+    """The relaxation must not disable genuine drift detection on informative output."""
+    g = A.analyze_gap("H2", "anonymous GET /admin returns 401 unauthorized for every route",
+                      {"exit_code": 0, "output_tail": "x" * 250})
+    assert g.klass == A.DRIFT

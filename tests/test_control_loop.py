@@ -134,6 +134,34 @@ def test_gatekeeper_releases_on_done_and_on_blocked(tmp_path):
 
 
 @pytest.mark.skipif(not shutil.which("bash"), reason="bash required")
+def test_gatekeeper_blocks_a_checked_row_whose_artifact_says_failed(tmp_path):
+    """A box can be checked in error (or go stale): if gates/<id>.gate.json — the ground
+    truth written by run_gate — records exit_code != 0 for a CHECKED row, the gatekeeper
+    must not let the run stop. This check is always on, no RUN_GATES needed."""
+    cdir = tmp_path / ".plateau" / "control"
+    cdir.mkdir(parents=True)
+    (cdir / "PLAN.md").write_text("- [x] T1 | a | b | GATE: false | EXPECT: exit0\n")
+    gates = cdir / "gates"
+    task = C.parse_plan((cdir / "PLAN.md").read_text())[0]
+    C.run_gate(task, str(tmp_path), str(gates))       # writes T1.gate.json, exit_code != 0
+    out = json.loads(_gatekeeper(tmp_path))
+    assert out["decision"] == "block"
+    assert "T1" in out["reason"] and "FAILED" in out["reason"]
+
+
+@pytest.mark.skipif(not shutil.which("bash"), reason="bash required")
+def test_gatekeeper_trusts_a_checked_row_whose_artifact_says_passed(tmp_path):
+    """The converse: a genuinely passing artifact must not block the checked row it backs."""
+    cdir = tmp_path / ".plateau" / "control"
+    cdir.mkdir(parents=True)
+    (cdir / "PLAN.md").write_text("- [x] T1 | a | b | GATE: true | EXPECT: exit0\n")
+    gates = cdir / "gates"
+    task = C.parse_plan((cdir / "PLAN.md").read_text())[0]
+    C.run_gate(task, str(tmp_path), str(gates))       # writes T1.gate.json, exit_code == 0
+    assert _gatekeeper(tmp_path) == ""
+
+
+@pytest.mark.skipif(not shutil.which("bash"), reason="bash required")
 def test_gatekeeper_strict_mode_catches_a_regressed_checked_gate(tmp_path):
     """V3: a checked box whose gate no longer passes must not be allowed to stop."""
     cdir = tmp_path / ".plateau" / "control"

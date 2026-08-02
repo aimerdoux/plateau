@@ -60,7 +60,25 @@ _BLOCKER_DEFAULT = ("AMBIGUITY",
 
 # Gap classes, ordinal by how far reality drifted from the plan.
 CONFIRMED, DRIFT, REFUTED, UNVERIFIED = "CONFIRMED", "DRIFT", "REFUTED", "UNVERIFIED"
-_DRIFT_MAGNITUDE = {CONFIRMED: 0, DRIFT: 1, REFUTED: 2, UNVERIFIED: -1}
+# A fourth outcome, distinct from both a pass and a drift: the gate PASSED, but its output
+# cannot possibly settle whether the forecast happened. Calling that CONFIRMED hides a
+# too-loose gate; calling it DRIFT floods a long run with false alarms. It is its own
+# actionable state — make the claim checkable.
+UNCHECKABLE = "UNCHECKABLE"
+
+# Below this many characters a gate's output cannot plausibly contain a prose forecast's
+# vocabulary, so token overlap is meaningless and DRIFT must not fire on absence alone.
+_MIN_OBSERVABLE = 200
+_EXPECT_RE = re.compile(r'expect:\s*"([^"]*)"', re.I)
+
+
+def _explicit_expectation(forecast: str):
+    """The literal string a forecast promises the gate output will contain, written
+    `expect:"..."`. Returns None when the forecast makes no checkable promise — the caller
+    then must NOT treat mere absence as drift."""
+    m = _EXPECT_RE.search(forecast or "")
+    return m.group(1).strip() if m else None
+_DRIFT_MAGNITUDE = {CONFIRMED: 0, UNCHECKABLE: 1, DRIFT: 1, REFUTED: 2, UNVERIFIED: -1}
 
 
 def classify_blocker(output: str) -> tuple:
@@ -128,6 +146,28 @@ def analyze_gap(task_id: str, forecast: str, artifact: dict | None) -> Gap:
     observed = (artifact.get("output_tail") or "").strip()
     passed = artifact.get("exit_code") == 0
     if passed:
+        expected = _explicit_expectation(forecast)
+        if expected is not None:
+            # An explicitly checkable expectation: DRIFT iff the named string is absent.
+            if expected and expected.lower() not in observed.lower():
+                return Gap(task=task_id, klass=DRIFT, predicted=forecast,
+                           observed=observed[:200], magnitude=_DRIFT_MAGNITUDE[DRIFT],
+                           note=f"gate passed but the expected observation {expected!r} is "
+                                "absent — tighten the gate or correct the forecast")
+            return Gap(task=task_id, klass=CONFIRMED, predicted=forecast,
+                       observed=observed[:200], magnitude=_DRIFT_MAGNITUDE[CONFIRMED])
+        if forecast and _forecast_borne_out(forecast, observed):
+            return Gap(task=task_id, klass=CONFIRMED, predicted=forecast,
+                       observed=observed[:200], magnitude=_DRIFT_MAGNITUDE[CONFIRMED])
+        if forecast and len(observed) < _MIN_OBSERVABLE:
+            # A terse gate output (e.g. "24 passed in 0.24s") carries almost no vocabulary,
+            # so a prose forecast can never be found in it. This is NOT drift (we did not
+            # observe a divergence) and NOT a clean pass (the gate did not prove the claim).
+            return Gap(task=task_id, klass=UNCHECKABLE, predicted=forecast,
+                       observed=observed[:200], magnitude=_DRIFT_MAGNITUDE[UNCHECKABLE],
+                       note="gate passed but its output cannot settle the forecast — add "
+                            'expect:"<literal>" to FORECAST.md, or tighten the gate so it '
+                            "emits the evidence")
         if forecast and not _forecast_borne_out(forecast, observed):
             return Gap(task=task_id, klass=DRIFT, predicted=forecast, observed=observed[:200],
                        magnitude=_DRIFT_MAGNITUDE[DRIFT],
@@ -175,7 +215,7 @@ def analyze_plan(tasks, forecasts: dict, gates_dir: str) -> list:
 def recalibration_entries(gaps: list) -> list:
     """The subset of gaps that DEMAND a plan adjustment: DRIFT and REFUTED. CONFIRMED needs
     nothing; UNVERIFIED just hasn't run yet."""
-    return [g for g in gaps if g.klass in (DRIFT, REFUTED)]
+    return [g for g in gaps if g.klass in (DRIFT, REFUTED, UNCHECKABLE)]
 
 
 def write_recalibration(control_dir: str, gaps: list, note: str = "") -> str:
@@ -206,9 +246,9 @@ def write_recalibration(control_dir: str, gaps: list, note: str = "") -> str:
 
 def summarize(gaps: list) -> dict:
     """One-line health read of a run's adaptivity: counts per class + total drift."""
-    counts = {CONFIRMED: 0, DRIFT: 0, REFUTED: 0, UNVERIFIED: 0}
+    counts = {CONFIRMED: 0, UNCHECKABLE: 0, DRIFT: 0, REFUTED: 0, UNVERIFIED: 0}
     for g in gaps:
         counts[g.klass] = counts.get(g.klass, 0) + 1
     total_drift = sum(max(0, g.magnitude) for g in gaps)
     return {"counts": counts, "total_drift": total_drift,
-            "needs_recalibration": counts[DRIFT] + counts[REFUTED]}
+            "needs_recalibration": counts[DRIFT] + counts[REFUTED] + counts[UNCHECKABLE]}
