@@ -146,6 +146,38 @@ is not "I checked them once," it is "they all pass *now*."
 
 ---
 
+## 5b. ADAPT — forecast, gap-analyse, recalibrate (why this needs no babysitting)
+
+A plan written at PLAN time is a *prior*. Execution is the *evidence*. The loop closes that
+cycle explicitly, so the plan is continuously re-grounded instead of being followed off a
+cliff:
+
+1. **FORECAST (before a task runs).** The parent writes one line per task into `FORECAST.md`:
+   `T<n> | what the gate should be observed to output, and the risk`. No PLAN grammar change.
+2. **OBSERVE.** The validator runs the gate and records the artifact (`gates/T<n>.gate.json`).
+3. **GAP.** `python3 -m plateau.agency.control adapt` compares forecast to artifact and
+   classifies each task:
+   - **CONFIRMED** — passed, for the predicted reason. Nothing to do.
+   - **DRIFT** — passed, but *the predicted observation never appeared*. Usually a gate too
+     loose to prove its claim. This is the failure mode a green checkbox normally hides.
+   - **REFUTED** — the gate failed. Auto-classified into a blocker
+     (`PERMISSION | CAPABILITY | EXTERNAL | MISSING-INFO | AMBIGUITY`) **with a smallest
+     unblocking action**, so the parent acts instead of stalling for a human.
+   - **UNVERIFIED** — not run yet.
+4. **RECALIBRATE.** `adapt --write` appends every DRIFT/REFUTED to `RECALIBRATE.md` with its
+   blocker and next action. The parent then adjusts `PLAN.md` **from ground truth** — reopen a
+   task, tighten a gate, add a missing prerequisite — and logs the change.
+
+`adapt` is **read-only**: it never executes a gate, so it is safe to poll mid-run and safe to
+call from inside a task's own GATE.
+
+**A blocker is the next unit of work, not a stop.** Only `AMBIGUITY` legitimately needs a
+judgment call, and even that is resolved by the last-decision-maker rule (choose the safest
+reasonable option and log it) rather than by waiting. The only thing that escalates to a
+human is `BLOCKED.md` after `alt_budget` distinct attempts have genuinely failed.
+
+---
+
 ## 6. BLOCKED
 
 `B1.` Classify: `MISSING-INFO | PERMISSION | CAPABILITY | AMBIGUITY | EXTERNAL`.

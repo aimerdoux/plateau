@@ -513,6 +513,13 @@ def build_parser() -> argparse.ArgumentParser:
     p_verify.add_argument("--timeout", type=int, default=120)
     p_verify.add_argument("--json", action="store_true")
 
+    p_adapt = sub.add_parser("adapt", help="GAP ANALYSIS: compare FORECAST.md to the recorded "
+                                           "gate artifacts; classify blockers; write RECALIBRATE.md")
+    p_adapt.add_argument("--control-dir", default=".plateau/control")
+    p_adapt.add_argument("--write", action="store_true",
+                         help="append the DRIFT/REFUTED gaps to RECALIBRATE.md")
+    p_adapt.add_argument("--json", action="store_true")
+
     p_pre = sub.add_parser("preflight", help="before dispatch: can every gate run, and "
                                              "which tasks are safe to run in parallel?")
     p_pre.add_argument("--control-dir", default=".plateau/control")
@@ -520,6 +527,30 @@ def build_parser() -> argparse.ArgumentParser:
     p_pre.add_argument("--json", action="store_true")
 
     return ap
+
+
+def cmd_adapt(control_dir: str, write: bool = False) -> dict:
+    """The predict -> observe -> gap -> recalibrate read. Compares each task's FORECAST to its
+    recorded gate ARTIFACT, classifies every failure into a blocker class with a smallest
+    unblocking action, and (with --write) appends the DRIFT/REFUTED gaps to RECALIBRATE.md.
+
+    Reads only — it never runs a gate, so it is safe to poll mid-run and safe to call from a
+    task's own GATE. `verdict` is ADAPT when something needs recalibration, STEADY otherwise."""
+    from plateau.agency import adapt as A
+    tasks = parse_plan(_read_text(os.path.join(control_dir, "PLAN.md")))
+    forecasts = A.parse_forecast(_read_text(os.path.join(control_dir, "FORECAST.md")))
+    gaps = A.analyze_plan(tasks, forecasts, os.path.join(control_dir, "gates"))
+    summary = A.summarize(gaps)
+    written = A.write_recalibration(control_dir, gaps) if write else ""
+    return {
+        "control_dir": control_dir,
+        "task_count": len(tasks),
+        "forecasts": len(forecasts),
+        "gaps": [g.as_dict() for g in gaps],
+        "summary": summary,
+        "recalibrate_path": written,
+        "verdict": "ADAPT" if summary["needs_recalibration"] else "STEADY",
+    }
 
 
 def cmd_preflight(control_dir: str, root: str) -> dict:
@@ -544,6 +575,8 @@ def main(argv: Optional[list] = None) -> int:
         result = cmd_init(args.control_dir)
     elif args.cmd == "status":
         result = cmd_status(args.control_dir)
+    elif args.cmd == "adapt":
+        result = cmd_adapt(args.control_dir, write=args.write)
     elif args.cmd == "preflight":
         result = cmd_preflight(args.control_dir, args.root)
         _emit(result, args.json)
