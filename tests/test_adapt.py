@@ -138,3 +138,23 @@ def test_cmd_adapt_never_runs_a_gate(tmp_path):
         f"- [ ] T1 | a | b | GATE: touch {sentinel} | EXPECT: exit0\n")
     C.cmd_adapt(str(cdir), write=True)
     assert not sentinel.exists()
+
+
+def test_no_plan_is_NOT_reported_as_steady(tmp_path):
+    """A missing/empty PLAN.md must not read as a clean bill of health. Observed live: run
+    from the wrong directory, `adapt` printed verdict STEADY with task_count 0 — which looks
+    like "all good" and means "nothing here"."""
+    cdir = tmp_path / "control"
+    cdir.mkdir()
+    out = C.cmd_adapt(str(cdir))
+    assert out["verdict"] == "NO_PLAN"
+    assert out["task_count"] == 0
+    assert "hint" in out and "target repo" in out["hint"]
+    assert os.path.isabs(out["control_dir"])      # echo where it actually looked
+
+
+def test_plan_with_only_prose_is_also_NO_PLAN(tmp_path):
+    cdir = tmp_path / "control"
+    cdir.mkdir()
+    (cdir / "PLAN.md").write_text("# PLAN\n\nsome prose, no rows yet\n")
+    assert C.cmd_adapt(str(cdir))["verdict"] == "NO_PLAN"

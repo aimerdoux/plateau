@@ -538,6 +538,15 @@ def cmd_adapt(control_dir: str, write: bool = False) -> dict:
     task's own GATE. `verdict` is ADAPT when something needs recalibration, STEADY otherwise."""
     from plateau.agency import adapt as A
     tasks = parse_plan(_read_text(os.path.join(control_dir, "PLAN.md")))
+    if not tasks:
+        # No plan here (usually: run from the wrong directory, or RECON has not produced one
+        # yet). Reporting STEADY would be a FALSE ALL-CLEAR — "nothing to adapt" and "nothing
+        # is here" must never share a verdict. Mirrors cmd_verify's NO_PLAN.
+        return {"control_dir": os.path.abspath(control_dir), "task_count": 0, "forecasts": 0,
+                "gaps": [], "summary": A.summarize([]), "recalibrate_path": "",
+                "verdict": "NO_PLAN",
+                "hint": "no parseable PLAN.md rows at this path — run from the target repo "
+                        "(cd <repo>) or check --control-dir"}
     forecasts = A.parse_forecast(_read_text(os.path.join(control_dir, "FORECAST.md")))
     gaps = A.analyze_plan(tasks, forecasts, os.path.join(control_dir, "gates"))
     summary = A.summarize(gaps)
