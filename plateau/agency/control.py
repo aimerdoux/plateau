@@ -233,6 +233,15 @@ def gate_tasks_into_signal(signal: RelationalState, text: str, root: str,
     return new_signal, v
 
 
+def apply_gate_to_signal(signal: RelationalState, task: "Task", artifact_path: str,
+                         root: str) -> RelationalState:
+    """Fold ONE passed task into the carried signal through the real gate. Used by the
+    long-horizon runner after a parent-run gate passes: the fact is admitted only because a
+    recorded, unchanged artifact says exit_code == 0 — never because a worker said so."""
+    return apply_gate(SelfState(signal=signal,
+                                thoughts=[task_fact(task, artifact_path, root)]))
+
+
 # ------------------------------------------------- dispatch safety --------
 # Two preflight checks the self-hosting run showed were missing (both named in its own
 # report as gaps): parallel dispatch had no collision detection — the parent hand-sequenced

@@ -90,8 +90,11 @@ def test_recalibration_file_records_only_actionable_gaps(tmp_path):
     ]
     path = A.write_recalibration(str(tmp_path), gaps, note="step 3")
     body = open(path).read()
-    assert "T2" in body and "T3" in body
-    assert "T1" not in body and "T4" not in body      # nothing to adjust for those
+    # Match the STRUCTURED marker, never a bare id: the ISO timestamp in the header
+    # (2026-08-02T13:47Z) contains "T1" for any hour 10-19, so a substring assertion here
+    # passes in the morning and fails in the afternoon. Caught exactly that way.
+    assert "**T2 [" in body and "**T3 [" in body
+    assert "**T1 [" not in body and "**T4 [" not in body   # nothing to adjust for those
     assert "EXTERNAL" in body and "retry with backoff" in body
 
 
