@@ -40,15 +40,25 @@ from plateau import Measurement, Thought, RelationalState, SelfState, apply_gate
 from plateau.integrity import file_hash
 
 # PLAN row grammar (fixed):
-#   - [ ] T<n> | <action> | <deliverable> | GATE: <command or check> | EXPECT: <observable>
+#   - [ ] <ID> | <action> | <deliverable> | GATE: <command or check> | EXPECT: <observable>
 # Checked rows use "- [x]". Everything after GATE:/EXPECT: is taken verbatim.
+#
+# The ID is any identifier starting with a LETTER (T1, H0, SEC-3 ...). It was once hardcoded
+# to `T`, which silently dropped every row using another prefix — an unenforced constraint
+# whose only symptom was an empty parse. `_ID_GREP` below is the shell equivalent; the
+# sentinel and gatekeeper use it so their view of "has task rows" can never disagree with
+# this parser's.
 _ROW = re.compile(
-    r"^- \[(?P<mark>[ xX])\]\s*(?P<id>T[^|]*?)\s*\|"
+    r"^- \[(?P<mark>[ xX])\]\s*(?P<id>[A-Za-z][^|]*?)\s*\|"
     r"\s*(?P<action>.*?)\s*\|"
     r"\s*(?P<deliverable>.*?)\s*\|"
     r"\s*GATE:\s*(?P<gate>.*?)\s*\|"
     r"\s*EXPECT:\s*(?P<expect>.*?)\s*$"
 )
+
+
+# Shell-side equivalent of _ROW's "is this a task row" test. Keep in lockstep with _ROW.
+_ID_GREP = r'^- \[[ xX]\] *[A-Za-z]'
 
 
 def _expand_braces(token: str) -> list:
@@ -566,6 +576,15 @@ def cmd_preflight(control_dir: str, root: str) -> dict:
     """Pre-dispatch go/no-go: gate runnability + the collision-free parallel batches.
     Exit code is non-zero when a gate cannot run, so a dispatch script can gate on it."""
     tasks = parse_plan(_read_text(os.path.join(control_dir, "PLAN.md")))
+    if not tasks:
+        # GO on a plan with zero rows is a false all-clear — the same class of bug as
+        # `adapt` reporting STEADY with no plan. "Nothing to check" is not "cleared".
+        return {"control_dir": os.path.abspath(control_dir), "task_count": 0,
+                "gates_runnable": 0, "missing_commands": [], "collisions": [],
+                "parallel_batches": [], "verdict": "NO_PLAN",
+                "hint": "no parseable PLAN.md rows — check the row grammar "
+                        "('- [ ] ID | action | deliverable | GATE: cmd | EXPECT: result') "
+                        "and that you are in the target repo"}
     pf = preflight(tasks, root)
     return {
         "control_dir": control_dir,

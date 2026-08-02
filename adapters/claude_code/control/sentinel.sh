@@ -31,7 +31,7 @@ trap 'log "interrupted (SIGINT) after $n respawn(s)"; exit 130' INT
 # A PLAN is "written" only once it holds at least one real task row. A freshly scaffolded
 # PLAN.md (or one with only prose) is NOT a finished plan — treating it as one would let a
 # run report DONE having never planned anything.
-has_task_rows() { [ -f "$DIR/PLAN.md" ] && grep -qE '^- \[[ xX]\] *T' "$DIR/PLAN.md"; }
+has_task_rows() { [ -f "$DIR/PLAN.md" ] && grep -qE '^- \[[ xX]\] *[A-Za-z]' "$DIR/PLAN.md"; }
 
 verdict() {
   if [ -f "$DIR/BLOCKED.md" ] && grep -qi '^class:' "$DIR/BLOCKED.md"; then echo BLOCKED; return; fi

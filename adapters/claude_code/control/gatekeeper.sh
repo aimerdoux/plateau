@@ -44,7 +44,7 @@ fi
 
 # A scaffolded-but-unplanned PLAN.md (no task rows at all) is NOT done — stopping there
 # would end a run before it ever planned anything.
-if ! grep -qE '^- \[[ xX]\] *T' "$PLAN"; then
+if ! grep -qE '^- \[[ xX]\] *[A-Za-z]' "$PLAN"; then
   block "PLAN.md exists but contains no task rows. Finish RECON, then write rows in the fixed grammar ('- [ ] Tn | action | deliverable | GATE: cmd | EXPECT: result') covering the mission in TASK.md. Exit is legal only on DONE or a BLOCKED.md containing 'class:'." "-1"
 fi
 

@@ -78,7 +78,11 @@ def parse_forecast(text: str) -> dict:
     Lines that are not forecast rows (headers, prose) are ignored."""
     out = {}
     for line in (text or "").splitlines():
-        m = re.match(r"^\s*(T[\w.-]+)\s*\|\s*(.+?)\s*$", line)
+        # id = any identifier starting with a LETTER, matching control._ROW. This once
+        # required a leading `T`, which silently dropped every forecast for a plan using
+        # another prefix — and a missing forecast degrades to CONFIRMED, so the drift check
+        # quietly stopped working rather than erroring.
+        m = re.match(r"^\s*([A-Za-z][\w.-]*)\s*\|\s*(.+?)\s*$", line)
         if m:
             out[m.group(1)] = m.group(2)
     return out

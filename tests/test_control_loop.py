@@ -247,3 +247,40 @@ def test_gatekeeper_blocks_a_scaffolded_but_unplanned_dir(tmp_path):
     out = json.loads(_gatekeeper(tmp_path))
     assert out["decision"] == "block"
     assert "no task rows" in out["reason"]
+
+
+# --------------------------------------------- id grammar / false GO ------
+# Both found by dogfooding: a hardening plan using ids H0..H4 parsed to ZERO tasks, and
+# preflight still reported GO on that empty parse.
+
+def test_task_ids_are_not_restricted_to_the_letter_T():
+    """The id was once hardcoded to `T`, so any other prefix was SILENTLY dropped — the only
+    symptom was an empty parse, which then read as a clean plan."""
+    plan = ("- [ ] H0 | a | x.py | GATE: true | EXPECT: exit0\n"
+            "- [x] SEC-3 | b | y.py | GATE: true | EXPECT: exit0\n"
+            "- [ ] T1 | c | z.py | GATE: true | EXPECT: exit0\n")
+    ids = [t.id for t in C.parse_plan(plan)]
+    assert ids == ["H0", "SEC-3", "T1"]
+
+
+def test_shell_row_pattern_agrees_with_the_parser():
+    """The sentinel and gatekeeper grep for task rows in shell. If that pattern and `_ROW`
+    disagree, the loop's verdict and its enforcement diverge — so pin them together."""
+    import re
+    for line in ("- [ ] H0 | a | b | GATE: true | EXPECT: exit0",
+                 "- [x] T1 | a | b | GATE: true | EXPECT: exit0"):
+        assert C.parse_plan(line), line
+        assert re.search(C._ID_GREP, line), line
+    for line in ("# PLAN", "- [_] T1 | template row", "some prose"):
+        assert not C.parse_plan(line)
+        assert not re.search(C._ID_GREP, line), line
+
+
+def test_preflight_on_an_empty_plan_is_NO_PLAN_not_GO(tmp_path):
+    cdir = tmp_path / "control"
+    cdir.mkdir()
+    (cdir / "PLAN.md").write_text("# PLAN\n\nno rows yet\n")
+    out = C.cmd_preflight(str(cdir), str(tmp_path))
+    assert out["verdict"] == "NO_PLAN"
+    assert out["task_count"] == 0
+    assert "hint" in out

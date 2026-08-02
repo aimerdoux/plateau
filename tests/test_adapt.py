@@ -158,3 +158,20 @@ def test_plan_with_only_prose_is_also_NO_PLAN(tmp_path):
     cdir.mkdir()
     (cdir / "PLAN.md").write_text("# PLAN\n\nsome prose, no rows yet\n")
     assert C.cmd_adapt(str(cdir))["verdict"] == "NO_PLAN"
+
+
+def test_forecast_ids_are_not_restricted_to_the_letter_T():
+    """Same hardcoded-`T` bug as the PLAN parser, in the adaptive layer. It is worse here:
+    a dropped forecast degrades silently to CONFIRMED, so the DRIFT check stops working
+    without ever erroring."""
+    f = A.parse_forecast("H0 | the suite reports 22 passed\nSEC-3 | anon GET returns 401\n"
+                         "T1 | still works\n")
+    assert f == {"H0": "the suite reports 22 passed", "SEC-3": "anon GET returns 401",
+                 "T1": "still works"}
+
+
+def test_missing_forecast_does_not_silently_become_confirmed_for_a_failed_gate():
+    """A task with no forecast still REFUTES on a failed gate — the absence of a prediction
+    must never launder a failure into a pass."""
+    g = A.analyze_gap("H9", "", {"exit_code": 1, "output_tail": "ENOENT: no such file"})
+    assert g.klass == A.REFUTED and g.blocker == "MISSING-INFO"
