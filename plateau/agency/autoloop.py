@@ -152,9 +152,24 @@ def run(control_dir: str, root: str, hours: float, batch: int = 4, worker_timeou
     forecast_path = os.path.join(control_dir, "FORECAST.md")
     workers_dir = os.path.join(control_dir, "workers")
     gates_dir = os.path.join(control_dir, "gates")
-    mission = _read(os.path.join(control_dir, "TASK.md")) or "(no TASK.md)"
+    mission = _read(os.path.join(control_dir, "TASK.md")).strip()
+    if not mission:
+        # A worker with no mission does the row in front of it and nothing more; a PLANNER
+        # with no mission has nothing to extend FROM and will invent or stall. Halting is the
+        # honest failure — the same rule the sentinel already applies.
+        raise SystemExit(f"[autoloop] HALT: no TASK.md in {control_dir} — write the mission "
+                         "as one observable end state before launching")
     deadline = time.time() + hours * 3600
     sig = load_signal(control_dir)
+    if not (sig.open_goals or sig.stance):
+        # An empty carried signal makes every worker a NO-CONTEXT worker — the confound that
+        # invalidated a demo8 arm. Seed goals/stance from the mission so the FIRST dispatch
+        # already carries real state.
+        sig.open_goals = [ln.strip("#- ").strip() for ln in mission.splitlines()
+                          if ln.strip().startswith("- ")][:6] or [mission.splitlines()[0][:120]]
+        sig.stance = ("bounded context; one task per worker; parent runs every gate; "
+                      "no gate may be weakened to pass")
+        save_signal(control_dir, sig)
     stats = {"workers": 0, "planners": 0, "passed": 0, "refuted": 0, "rounds": 0}
 
     while time.time() < deadline:
