@@ -146,8 +146,21 @@ def dispatch(prompt: str, root: str, timeout: int, label: str, workers_dir: str,
     return out, code, secs
 
 
+def _read_artifact(gates_dir: str, tid: str):
+    try:
+        with open(os.path.join(gates_dir, f"{tid}.gate.json")) as fh:
+            return json.load(fh)
+    except (OSError, ValueError):
+        return None
+
+
+def _is_blocked(control_dir: str, tid: str) -> bool:
+    return tid in _read(os.path.join(control_dir, "BLOCKED.md"))
+
+
 def run(control_dir: str, root: str, hours: float, batch: int = 4, worker_timeout: int = 900,
-        claude_bin: str = "claude", extra_args: str = "", dry_run: bool = False) -> dict:
+        claude_bin: str = "claude", extra_args: str = "", dry_run: bool = False,
+        retry_budget: int = 3) -> dict:
     plan_path = os.path.join(control_dir, "PLAN.md")
     forecast_path = os.path.join(control_dir, "FORECAST.md")
     workers_dir = os.path.join(control_dir, "workers")
@@ -170,7 +183,9 @@ def run(control_dir: str, root: str, hours: float, batch: int = 4, worker_timeou
         sig.stance = ("bounded context; one task per worker; parent runs every gate; "
                       "no gate may be weakened to pass")
         save_signal(control_dir, sig)
-    stats = {"workers": 0, "planners": 0, "passed": 0, "refuted": 0, "rounds": 0}
+    stats = {"workers": 0, "planners": 0, "passed": 0, "refuted": 0, "rounds": 0,
+             "blocked": 0}
+    attempts: dict = {}          # task id -> consecutive failed dispatches
 
     while time.time() < deadline:
         stats["rounds"] += 1
@@ -200,8 +215,36 @@ def run(control_dir: str, root: str, hours: float, batch: int = 4, worker_timeou
                 break
             continue
 
-        # --- otherwise EXECUTE the first unchecked task with a bounded worker
-        task = todo[0]
+        # --- E4: a task that has burned its retry budget becomes a BLOCKER, not an
+        # infinite retry. Without this the runner re-dispatches the SAME failing task
+        # forever — observed live: 16 consecutive workers on one gate, ~25 minutes of
+        # compute, zero progress. The protocol always specified retry_budget=3; the runner
+        # simply did not implement it.
+        task = None
+        for cand in todo:
+            if attempts.get(cand.id, 0) < retry_budget:
+                task = cand
+                break
+            if not _is_blocked(control_dir, cand.id):
+                art = _read_artifact(gates_dir, cand.id)
+                klass, unblock = A.classify_blocker((art or {}).get("output_tail", ""))
+                C.write_blocked(control_dir, klass,
+                                [(f"dispatch {i+1}/{retry_budget}", "gate still failed")
+                                 for i in range(retry_budget)],
+                                unblock,
+                                [f"fix {cand.id} by hand and re-run",
+                                 f"rewrite {cand.id}'s GATE in PLAN.md if it is the gate that "
+                                 "is wrong",
+                                 f"drop {cand.id} from the plan and record why"])
+                C.append_journal(control_dir, cand.id, "BLOCKED", cand.action[:60],
+                                 f"{klass}: {retry_budget} dispatches, gate never passed",
+                                 "human decision")
+                stats["blocked"] += 1
+                print(f"[autoloop] {cand.id}: BLOCKED after {retry_budget} attempts "
+                      f"({klass}) — skipping to the next task", flush=True)
+        if task is None:
+            print("[autoloop] every remaining task is blocked — halting", flush=True)
+            break
         label = f"{task.id}_{stats['workers']:03d}"
         prompt = WORKER_HEADER.format(
             signal=render_signal(sig), root=root, mission=mission[:1500], tid=task.id,
@@ -226,11 +269,13 @@ def run(control_dir: str, root: str, hours: float, batch: int = 4, worker_timeou
 
         if passed:
             stats["passed"] += 1
+            attempts.pop(task.id, None)
             sig = C.apply_gate_to_signal(sig, task, art["_path"], root) \
                 if hasattr(C, "apply_gate_to_signal") else sig
             _check_row(plan_path, task.id)
         else:
             stats["refuted"] += 1
+            attempts[task.id] = attempts.get(task.id, 0) + 1
 
         # --- ADAPT every round: gap-analyse and recalibrate from ground truth
         gaps = A.analyze_plan(C.parse_plan(_read(plan_path)),
@@ -263,9 +308,11 @@ def main(argv=None) -> int:
     ap.add_argument("--claude-bin", default="claude")
     ap.add_argument("--claude-args", default="")
     ap.add_argument("--dry-run", action="store_true")
+    ap.add_argument("--retry-budget", type=int, default=3,
+                    help="consecutive failed dispatches before a task is BLOCKED (E4)")
     a = ap.parse_args(argv)
     stats = run(a.control_dir, os.path.abspath(a.root), a.hours, a.batch, a.worker_timeout,
-                a.claude_bin, a.claude_args, a.dry_run)
+                a.claude_bin, a.claude_args, a.dry_run, a.retry_budget)
     print("[autoloop] " + json.dumps(stats, sort_keys=True))
     return 0
 
