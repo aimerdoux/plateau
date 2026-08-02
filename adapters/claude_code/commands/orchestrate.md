@@ -38,6 +38,12 @@ For the **first unchecked task only**:
    ```bash
    python3 "${CLAUDE_PLUGIN_ROOT}/hook.py" pre
    ```
+1b. **FORECAST before dispatch** — the PREDICT half of the ADAPT cycle (§5b of
+   `CONTROL_LOOP.md`). Record what the gate should observe, and the risk, so GAP has something
+   to compare against:
+   ```bash
+   python3 -m plateau.agency.control forecast --task T<n> --predict "<expected observation / risk>"
+   ```
 2. **Assign it to ONE fresh sub-agent (the Task tool)** whose prompt is **only** the inflated
    `carried_self_state` + this one task. Never paste prior steps or the conversation. Tell it
    to do the sub-task, write the **deliverable/result artifact** the GATE inspects, and return
@@ -54,13 +60,25 @@ For the **first unchecked task only**:
    Check the box **only if the fact was admitted**. "The sub-agent said it's done" is never
    admitted — only a recorded, unchanged, successful artifact is (that is the injection-safe
    boundary: you never execute the sub-agent's words, only hash-check its artifact).
+4b. **GAP + RECALIBRATE.** OBSERVE already happened in step 4 (the gate artifact). Now close
+   the loop against the forecast from 1b:
+   ```bash
+   python3 -m plateau.agency.control adapt --write
+   ```
+   CONFIRMED needs nothing. DRIFT/UNCHECKABLE/REFUTED are appended to `RECALIBRATE.md` with a
+   classified blocker and a smallest unblocking action — adjust `PLAN.md` from that ground
+   truth (reopen a task, tighten a gate, add a missing prerequisite) and log the change before
+   moving on. `adapt` is read-only, so run it even on a green gate to catch DRIFT a passing
+   checkbox would otherwise hide.
 5. On failure: retry with **one changed variable** (never an identical retry), up to
    `retry_budget=3`; then BLOCKED. Never skip a task; never check an unverified box.
 
 ## DONE / BLOCKED
 - **DONE:** all boxes checked → **re-run every gate fresh, in order** (regression). All green
-  → report the gate list, the literal passing output (or JOURNAL refs), and the deliverable
-  paths. Any red → uncheck it → EXECUTE.
+  → run `python3 -m plateau.agency.control adapt` once more for the whole plan and confirm
+  `needs_recalibration == 0` → report the gate list, the literal passing output (or JOURNAL
+  refs), and the deliverable paths. Any red, or any outstanding DRIFT/REFUTED → uncheck it →
+  EXECUTE.
 - **BLOCKED:** after 3 distinct alternatives fail, write `.plateau/control/BLOCKED.md` with a
   `class:` line (MISSING-INFO | PERMISSION | CAPABILITY | AMBIGUITY | EXTERNAL), the attempts
   + literal results, the smallest unblocking action, and a 2–3 option decision menu. This is a

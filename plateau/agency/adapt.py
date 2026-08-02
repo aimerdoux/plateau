@@ -71,6 +71,13 @@ UNCHECKABLE = "UNCHECKABLE"
 _MIN_OBSERVABLE = 200
 _EXPECT_RE = re.compile(r'expect:\s*"([^"]*)"', re.I)
 
+# RECALIBRATE.md is append-only across a run, so left uncapped it grows without bound over a
+# long autoloop. Bound it in bytes (like driver.py's LESS_CAP bounds the carried lessons list)
+# and roll the OLDEST recalibration blocks off once the cap is hit, so the file always reflects
+# the most recent — and most actionable — gaps rather than silently ballooning.
+_RECALIBRATE_MAX_BYTES = 50_000
+_BLOCK_SEP = "\n## "
+
 
 def _explicit_expectation(forecast: str):
     """The literal string a forecast promises the gate output will contain, written
@@ -241,7 +248,42 @@ def write_recalibration(control_dir: str, gaps: list, note: str = "") -> str:
             fh.write("# RECALIBRATE — gap analysis: where execution diverged from the plan\n")
     with open(path, "a") as fh:
         fh.write("\n".join(lines) + "\n")
+    _cap_recalibration(path)
     return path
+
+
+def _cap_recalibration(path: str, max_bytes: int = None) -> None:
+    """Keep RECALIBRATE.md bounded: once it exceeds `max_bytes`, drop the OLDEST recalibration
+    blocks (split on the `\\n## ` block header written above) until it fits again, rather than
+    letting the ledger grow forever across a long run. The leading `# RECALIBRATE` title line
+    is always kept. A single block that is itself over the cap is left alone — there is nothing
+    older to roll, and truncating mid-block would corrupt it."""
+    if max_bytes is None:
+        # Resolved at call time, not bind time, so tests can monkeypatch the module-level cap.
+        max_bytes = _RECALIBRATE_MAX_BYTES
+    try:
+        with open(path) as fh:
+            text = fh.read()
+    except OSError:
+        return
+    if len(text.encode("utf-8")) <= max_bytes:
+        return
+    title, sep, rest = text.partition(_BLOCK_SEP)
+    if not sep:
+        return  # no blocks to roll — an oversized title/note alone, nothing to do
+    blocks = rest.split(_BLOCK_SEP)
+    while len(blocks) > 1 and _blocks_size(title, blocks) > max_bytes:
+        blocks.pop(0)
+    with open(path, "w") as fh:
+        fh.write(_render_blocks(title, blocks))
+
+
+def _blocks_size(title: str, blocks: list) -> int:
+    return len(_render_blocks(title, blocks).encode("utf-8"))
+
+
+def _render_blocks(title: str, blocks: list) -> str:
+    return title + "".join(_BLOCK_SEP + b for b in blocks)
 
 
 def summarize(gaps: list) -> dict:
