@@ -160,9 +160,6 @@ def ingest(control_dir: str) -> dict:
     stamped (timestamps come from the journal), so re-ingesting unchanged inputs is a no-op.
     Returns node/edge counts by kind/rel."""
     g = Graph(os.path.join(control_dir, "graph.db"))
-    read = lambda n: A._read(os.path.join(control_dir, n)) if hasattr(A, "_read") \
-        else _read_file(os.path.join(control_dir, n))
-
     mission_text = _read_file(os.path.join(control_dir, "TASK.md")).strip()
     m_key = hashlib.sha256(mission_text.encode()).hexdigest()[:12] if mission_text else "none"
     mission = g.put_node("Mission", m_key, {"text": mission_text[:400]})
@@ -297,3 +294,52 @@ def _load_json(path: str):
             return json.load(fh)
     except (OSError, ValueError):
         return None
+
+
+# ------------------------------------------------------------------- CLI ---
+# `python -m plateau.agency.graph {ingest,detect,q}` — read-only navigation over the index,
+# safe to poll during a run (nothing here executes a gate). The bounded-signal thesis applied
+# to structure: `q khop <id>` is the extract a future abductive worker would receive.
+
+
+def _cli(argv=None):
+    import argparse
+    ap = argparse.ArgumentParser(prog="python -m plateau.agency.graph")
+    sub = ap.add_subparsers(dest="cmd", required=True)
+    for name in ("ingest", "detect", "open-anomalies"):
+        s = sub.add_parser(name)
+        s.add_argument("--control-dir", default=".plateau/control")
+    for name, arg in (("neighbors", "node"), ("provenance", "node"),
+                      ("khop", "node"), ("touching", "path")):
+        s = sub.add_parser(name)
+        s.add_argument("--control-dir", default=".plateau/control")
+        s.add_argument(arg)
+        if name == "khop":
+            s.add_argument("-k", type=int, default=1)
+    a = ap.parse_args(argv)
+
+    if a.cmd == "ingest":
+        print(json.dumps(ingest(a.control_dir), indent=2, sort_keys=True)); return 0
+    if a.cmd == "detect":
+        print(json.dumps(detect(a.control_dir), indent=2, sort_keys=True)); return 0
+    if a.cmd == "open-anomalies":
+        print(json.dumps(open_anomalies(a.control_dir), indent=2, sort_keys=True)); return 0
+
+    g = Graph(os.path.join(a.control_dir, "graph.db"))
+    try:
+        if a.cmd == "neighbors":
+            print(json.dumps(g.neighbors(a.node), indent=2, sort_keys=True))
+        elif a.cmd == "provenance":
+            print(json.dumps([g.node(n) for n in g.provenance(a.node)], indent=2, sort_keys=True))
+        elif a.cmd == "khop":
+            print(json.dumps(sorted(g.khop(a.node, a.k)), indent=2))
+        elif a.cmd == "touching":
+            hood = g.khop(_nid("Path", a.path), 1)
+            print(json.dumps(sorted(n for n in hood if n.startswith("Task:")), indent=2))
+    finally:
+        g.close()
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(_cli())

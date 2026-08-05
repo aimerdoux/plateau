@@ -147,3 +147,19 @@ def test_provenance_walks_back_to_the_mission(tmp_path):
     kinds = {g.node(n)["kind"] for n in g.provenance("Task:T1")}
     assert "Mission" in kinds
     g.close()
+
+
+def test_cli_touching_is_a_query_over_the_index(tmp_path):
+    """`graph touching <path>` returns the tasks that write it — monitorable from a shell,
+    read-only (never executes a gate)."""
+    import subprocess, sys
+    cd = str(tmp_path / "c")
+    _mk(cd, "- [ ] T1 | a | shared.py | GATE: x | EXPECT: exit0\n"
+            "- [ ] T2 | b | shared.py | GATE: y | EXPECT: exit0\n")
+    env = dict(os.environ, PYTHONPATH=os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    subprocess.run([sys.executable, "-m", "plateau.agency.graph", "ingest",
+                    "--control-dir", cd], check=True, env=env, capture_output=True)
+    r = subprocess.run([sys.executable, "-m", "plateau.agency.graph", "touching",
+                        "--control-dir", cd, "shared.py"], env=env, capture_output=True, text=True)
+    out = json.loads(r.stdout)
+    assert out == ["Task:T1", "Task:T2"]
