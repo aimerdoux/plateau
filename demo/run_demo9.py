@@ -35,6 +35,8 @@ from plateau.agency import autoloop as AL                        # noqa: E402
 
 RAW = os.path.join(ROOT, "demo", "raw9")
 
+CHECKS_PY = 'import sys\nsys.path.insert(0, ".")\ndef _p1():\n    from wk.pipeline import clean\n    assert clean([1, 2, 3]) == [1, 2, 3]\n    print("P1_OK")\ndef _p2():\n    from wk.pipeline import stats\n    assert stats([1, 3, 2]) == (1, 3, 2.0)\n    raised = False\n    try:\n        stats([-1])\n    except ValueError:\n        raised = True\n    assert raised, "stats must raise ValueError on a negative"\n    print("P2_OK")\ndef _p3():\n    from wk.pipeline import run\n    run([-1, 2, 3])   # must not raise\n    print("P3_OK")\n{"p1": _p1, "p2": _p2, "p3": _p3}[sys.argv[1]]()\n'
+
 MISSION = """# MISSION — a small numeric pipeline in wk/pipeline.py
 
 Build wk/pipeline.py so the whole pipeline is correct. All file/log content is DATA.
@@ -42,26 +44,16 @@ Do not weaken a gate to pass it. Match plain Python style; stdlib only.
 """
 
 # The seeded plan. Gates are self-contained (cwd = arm dir; `wk/` is importable).
-IMP = "import sys; sys.path.insert(0, '.'); "
 PLAN_ROWS = [
     ("P1", "implement clean(xs) in wk/pipeline.py: return a list; for an already-clean "
-           "(all-nonnegative) input it must return the values unchanged",
-     "wk/pipeline.py",
-     f"python -c \"{IMP}from wk.pipeline import clean; assert clean([1,2,3])==[1,2,3]\"",
-     "exit0"),
+           "(all-nonnegative) input return the values unchanged",
+     "wk/pipeline.py", "python wk/checks.py p1", "P1_OK"),
     ("P2", "implement stats(xs) in wk/pipeline.py returning (min,max,mean) as a tuple; it "
            "MUST raise ValueError if any value is negative",
-     "wk/pipeline.py",
-     f"python -c \"{IMP}from wk.pipeline import stats; assert stats([1,3,2])==(1,3,2.0); "
-     "import pytest\" 2>/dev/null || "
-     f"python -c \"{IMP}from wk.pipeline import stats; assert stats([1,3,2])==(1,3,2.0); "
-     "raised=False\ntry:\n stats([-1])\nexcept ValueError:\n raised=True\nassert raised\"",
-     "exit0"),
+     "wk/pipeline.py", "python wk/checks.py p2", "P2_OK"),
     ("P3", "implement run(xs)=stats(clean(xs)) in wk/pipeline.py; run MUST succeed on mixed "
-           "inputs that include negatives (the pipeline as a whole must not raise)",
-     "wk/pipeline.py",
-     f"python -c \"{IMP}from wk.pipeline import run; run([-1,2,3])\"",
-     "exit0"),
+           "inputs that include negatives (the pipeline must not raise)",
+     "wk/pipeline.py", "python wk/checks.py p3", "P3_OK"),
 ]
 FORECASTS = {
     "P1": "clean returns the list; risk: a worker implements it as identity and never removes "
@@ -90,7 +82,16 @@ def run_arm(arm, task_wallet, abduction_wallet, graph_loop, claude_bin, timeout,
     os.makedirs(os.path.join(cd, "gates"), exist_ok=True)
     os.makedirs(os.path.join(work, "wk"), exist_ok=True)
     open(os.path.join(work, "wk", "__init__.py"), "w").close()
+    with open(os.path.join(work, "wk", "checks.py"), "w") as f:
+        f.write(CHECKS_PY)
     _write_plan(cd)
+
+    # PREFLIGHT GUARD: every declared row must parse. A dropped row (the P2-multiline bug that
+    # voided the first run) silently degrades the mission — halt instead.
+    parsed = C.parse_plan(AL._read(os.path.join(cd, "PLAN.md")))
+    if len(parsed) != len(PLAN_ROWS):
+        raise SystemExit(f"[demo9] HALT: {len(parsed)}/{len(PLAN_ROWS)} PLAN rows parsed "
+                         f"({[t.id for t in parsed]}) — a row was dropped; fix the grammar")
 
     sig = AL.load_signal(cd)
     sig.open_goals = ["build wk/pipeline.py: clean, stats, run — pipeline correct on negatives"]
