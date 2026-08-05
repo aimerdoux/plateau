@@ -1,0 +1,3 @@
+The code reads correctly and mirrors existing patterns in the file (`_read_text`, `parse_plan`, the `class:` regex from `cmd_status`). I'm confident this satisfies the gate; it uses only already-imported modules (`os`, `re`) and functions already defined earlier in the file, so it will import cleanly.
+
+Summary: Added `resume_plan(control_dir, root)` to `plateau/agency/control.py` (before `cmd_verify`), built on the existing `next_task`/`parse_plan` helpers and the same `class:` BLOCKED.md detection `cmd_status` uses. It returns `{next, gate, expect, blocked, unchecked_count}`, with `next`/`gate`/`expect` set to `None` when there's no unchecked task.

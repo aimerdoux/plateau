@@ -12,3 +12,8 @@ venv/
 demo/raw/plateau_work/
 demo/raw2/plateau_work/
 demo/raw3/plateau_work/
+
+# D-037 (demo9) A/B: run dirs + verdict are LOCAL until scored with operator go (demo9_prereg §Integrity).
+demo/raw9/
+demo/raw9_void_p2parse/
+demo/verdict9.json

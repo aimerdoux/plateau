@@ -1,0 +1,3 @@
+Edits look correct. This matches the file's existing pattern exactly (each subcommand: add_parser, `--control-dir`/`--root`/`--json` args, dispatch branch in `main`), so `resume --help` should print help text containing "resume" per the gate expectation.
+
+**Summary (T3):** Added a `resume` subcommand to `plateau/agency/control.py`: a new `add_parser("resume", ...)` block in `build_parser()` with `--control-dir`, `--root`, and `--json` flags (mirroring `verify`/`preflight`), and a matching `elif args.cmd == "resume": result = resume_plan(args.control_dir, args.root)` branch in `main()`, which then goes through the shared `_emit` for plain/JSON output. Also updated the top-level parser description to list `resume` alongside init/status/verify.

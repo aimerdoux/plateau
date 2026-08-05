@@ -1,0 +1,105 @@
+## FULL HISTORY (every prior step of this mission)
+### step 1 (T1) — instruction
+You are a WORKER implementing ONE layer of a 5-layer feature in a Python repo.
+
+## REPO
+/home/user/plateau/.plateau/demo8/arm_fullhistory — Python 3.11, pytest available. The plateau CORE must stay STDLIB-ONLY.
+Do NOT edit tests/test_control_loop.py and do NOT weaken gate semantics; those judge this
+run and editing them is forbidden.
+
+## YOUR ONE TASK: T1
+action:      add `next_task(text)` to plateau/agency/control.py returning the first UNCHECKED Task from a PLAN.md text, or None if every row is checked (or there are no rows)
+deliverable: plateau/agency/control.py
+GATE (run by the parent, not by you; this is how the task is judged):
+    python -c "from plateau.agency.control import next_task as n; assert n('- [x] T1 | a | b | GATE: true | EXPECT: exit0') is None; t=n('- [x] T1 | a | b | GATE: true | EXPECT: exit0\n- [ ] T2 | c | d | GATE: true | EXPECT: exit0'); assert t.id=='T2', t; print('NEXT_OK')"
+EXPECT: NEXT_OK
+
+Implement it completely and correctly in /home/user/plateau/.plateau/demo8/arm_fullhistory. Match the file's existing style. When done,
+reply with a SHORT summary (a few lines) of what you changed. Do not ask questions.
+
+### step 1 (T1) — worker reply
+--dangerously-skip-permissions cannot be used with root/sudo privileges for security reasons
+
+
+### step 2 (T2) — instruction
+You are a WORKER implementing ONE layer of a 5-layer feature in a Python repo.
+
+## REPO
+/home/user/plateau/.plateau/demo8/arm_fullhistory — Python 3.11, pytest available. The plateau CORE must stay STDLIB-ONLY.
+Do NOT edit tests/test_control_loop.py and do NOT weaken gate semantics; those judge this
+run and editing them is forbidden.
+
+## YOUR ONE TASK: T2
+action:      add `resume_plan(control_dir, root)` to plateau/agency/control.py returning a dict with keys: next (the next task id or None), gate, expect, blocked (bool: a BLOCKED.md with a 'class:' line exists), unchecked_count. Build it on next_task
+deliverable: plateau/agency/control.py
+GATE (run by the parent, not by you; this is how the task is judged):
+    python -c "import tempfile,os; from plateau.agency.control import resume_plan as r; d=tempfile.mkdtemp(); open(os.path.join(d,'PLAN.md'),'w').write('- [ ] T7 | a | b | GATE: true | EXPECT: exit0\n'); x=r(d,'.'); assert x['next']=='T7' and x['unchecked_count']==1 and x['blocked'] is False, x; print('RESUME_OK')"
+EXPECT: RESUME_OK
+
+Implement it completely and correctly in /home/user/plateau/.plateau/demo8/arm_fullhistory. Match the file's existing style. When done,
+reply with a SHORT summary (a few lines) of what you changed. Do not ask questions.
+
+### step 2 (T2) — worker reply
+--dangerously-skip-permissions cannot be used with root/sudo privileges for security reasons
+
+
+### step 3 (T3) — instruction
+You are a WORKER implementing ONE layer of a 5-layer feature in a Python repo.
+
+## REPO
+/home/user/plateau/.plateau/demo8/arm_fullhistory — Python 3.11, pytest available. The plateau CORE must stay STDLIB-ONLY.
+Do NOT edit tests/test_control_loop.py and do NOT weaken gate semantics; those judge this
+run and editing them is forbidden.
+
+## YOUR ONE TASK: T3
+action:      add a `resume` subcommand to the control CLI in plateau/agency/control.py that prints resume_plan's dict (supporting --control-dir, --root and --json like the others)
+deliverable: plateau/agency/control.py
+GATE (run by the parent, not by you; this is how the task is judged):
+    python -m plateau.agency.control resume --help
+EXPECT: resume
+
+Implement it completely and correctly in /home/user/plateau/.plateau/demo8/arm_fullhistory. Match the file's existing style. When done,
+reply with a SHORT summary (a few lines) of what you changed. Do not ask questions.
+
+### step 3 (T3) — worker reply
+--dangerously-skip-permissions cannot be used with root/sudo privileges for security reasons
+
+
+### step 4 (T4) — instruction
+You are a WORKER implementing ONE layer of a 5-layer feature in a Python repo.
+
+## REPO
+/home/user/plateau/.plateau/demo8/arm_fullhistory — Python 3.11, pytest available. The plateau CORE must stay STDLIB-ONLY.
+Do NOT edit tests/test_control_loop.py and do NOT weaken gate semantics; those judge this
+run and editing them is forbidden.
+
+## YOUR ONE TASK: T4
+action:      write tests/test_resume.py with at least 4 tests covering next_task, resume_plan (including the blocked flag) and the resume CLI subcommand
+deliverable: tests/test_resume.py
+GATE (run by the parent, not by you; this is how the task is judged):
+    python -m pytest -q tests/test_resume.py
+EXPECT: passed
+
+Implement it completely and correctly in /home/user/plateau/.plateau/demo8/arm_fullhistory. Match the file's existing style. When done,
+reply with a SHORT summary (a few lines) of what you changed. Do not ask questions.
+
+### step 4 (T4) — worker reply
+--dangerously-skip-permissions cannot be used with root/sudo privileges for security reasons
+
+
+You are a WORKER implementing ONE layer of a 5-layer feature in a Python repo.
+
+## REPO
+/home/user/plateau/.plateau/demo8/arm_fullhistory — Python 3.11, pytest available. The plateau CORE must stay STDLIB-ONLY.
+Do NOT edit tests/test_control_loop.py and do NOT weaken gate semantics; those judge this
+run and editing them is forbidden.
+
+## YOUR ONE TASK: T5
+action:      document the `resume` command in plateau/agency/CONTROL_LOOP.md (a short subsection under the resume/I5 discussion)
+deliverable: plateau/agency/CONTROL_LOOP.md
+GATE (run by the parent, not by you; this is how the task is judged):
+    grep -q 'python -m plateau.agency.control resume' plateau/agency/CONTROL_LOOP.md
+EXPECT: exit0
+
+Implement it completely and correctly in /home/user/plateau/.plateau/demo8/arm_fullhistory. Match the file's existing style. When done,
+reply with a SHORT summary (a few lines) of what you changed. Do not ask questions.

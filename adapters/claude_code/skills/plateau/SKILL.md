@@ -46,6 +46,30 @@ version control, as you prefer — it is just the bounded signal blob).
   stays lean and the gate keeps carried facts honest. The one command that actually bounds context
   in a session (partial — the orchestrator thread still grows by signal+result per step; the
   standalone `plateau.driver` is the fully-flat form).
+- **`/plateau:orchestrate <mission>`** — run a long-horizon mission under the **CONTROL LOOP**
+  (`RECON → PLAN → EXECUTE → VERIFY → DONE`). You act as the PARENT: decompose into tasks with
+  **gates written before work**, assign each to a fresh bounded subagent (signal + one task), and
+  admit `T<n> done` only when its gate re-verifies. State lives under `.plateau/control/` so context
+  loss is a non-event, and **DONE is a predicate** — done ⇔ every gate passes when re-run now.
+
+## Control loop — DONE made mechanical
+
+The control loop is Plateau's own discipline one level up: *a task is done only while a
+Measurement re-verifies it now.* A `PLAN.md` row `- [ ] T3 | … | GATE: <cmd> | EXPECT: <result>`
+is a Measurement; `plateau.agency.control` runs the parent-authored gate, records a result
+artifact, and folds passing tasks into the signal as `T<n> done` verified_facts — so the checked
+boxes and the carried facts are the same set. Two mechanisms make "no silent stop" real:
+
+- **`control/gatekeeper.sh`** — a **Stop hook, armed only when `.plateau/control/PLAN.md` exists**,
+  that blocks stopping while unchecked gates remain (releases on DONE or a `BLOCKED.md` with a
+  `class:` line; strict mode re-runs every gate). It runs alongside the signal Stop hook and is
+  inert in ordinary sessions.
+- **`control/sentinel.sh`** — an external supervisor that respawns `claude -p` on any illegal exit
+  ("involuntary reinstatement"), carrying the signal across restarts via `control/reinstate.md`.
+
+**Injection-safe by design:** parent-authored `PLAN.md` gates are executed only by the validator;
+a subagent's "done" claim is never executed — it is admitted only by hash-binding its recorded,
+unchanged, successful artifact (`exit_code` Measurement). Full protocol: `control/CONTROL_LOOP.md`.
 
 ## Proposing a fact (the gate)
 

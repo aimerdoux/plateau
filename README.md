@@ -107,6 +107,17 @@ Plateau ships three things that stack:
    holds the parent's footprint at O(agents + resumes), independent of how many internal steps the
    work takes. It is the top of the three-layer agency contract (parent → orchestrator → worker);
    see [`plateau/agency/README.md`](plateau/agency/README.md).
+4. **The file-state control loop** ([`plateau/agency/CONTROL_LOOP.md`](plateau/agency/CONTROL_LOOP.md))
+   — `RECON → PLAN → EXECUTE → VERIFY → {DONE | BLOCKED}` with state on disk (`RECON.md`,
+   `PLAN.md`, `JOURNAL.md`), so **DONE is a predicate, never a feeling**: done ⇔ every
+   parent-authored `PLAN.md` gate re-verifies *now*. The parent only monitors, controls, assigns,
+   and verifies — a fresh bounded sub-agent does each task, seeing the carried signal + one task,
+   never the transcript. `plateau/agency/control.py` is the bridge that makes this literal: it
+   parses `PLAN.md` rows, runs each gate as the validator, and folds only the passing tasks into
+   the signal as `T<n> done` — through Plateau's own gate, so a sub-agent's claim is never trusted,
+   only its recorded, unchanged, successful artifact is (`tests/test_control_loop.py`). Installed
+   as the Claude Code `/plateau:orchestrate` command; see
+   [`adapters/claude_code/README.md`](adapters/claude_code/README.md#control-loop-plateauorchestrate--done-made-mechanical).
 
 ---
 
@@ -385,6 +396,8 @@ plateau/        core: signal (gate), continuum (emit/inflate/ground), orchestrat
 plateau/agency/ bounded background QA driver (plateau-agency) + the 3 layer contracts
                   (PARENT_AGENT_MANUAL.md, ORCHESTRATOR_PROMPT.md, BACKGROUND_AGENCY.md)
                   + bench_summary.py (prints the sourced wavex-os run metrics)
+                  + control.py + CONTROL_LOOP.md — the file-state control loop (RECON/PLAN/
+                  EXECUTE/VERIFY/DONE), tested by tests/test_control_loop.py
 examples/       bare_loop.py (host-free proof) + the continuum story
 demo/           pre-registered demos (recall + real-code C6), sealed raw, verdicts, FINDINGS.md
 adapters/       claude_code/ — installable Claude Code plugin (plugin.json, skill, hooks, commands)
