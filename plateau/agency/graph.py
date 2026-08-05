@@ -257,6 +257,26 @@ def detect(control_dir: str) -> list:
         if len(ts) >= 2:
             emit("recurrence", sig, {"tasks": sorted(ts), "signature": sig}, None)
 
+    # (4) CONTRADICTION — one Path touched by >= 2 tasks whose artifacts DISAGREE (at least
+    # one gate passed, at least one failed). The shared file has conflicting requirements: a
+    # composition surprise no single task's tail reveals. This is the seeded-contradiction
+    # detector for D-037's rounds-to-detection metric.
+    path_outcomes: dict = {}
+    for t in g.nodes_of("Task"):
+        for e in g.neighbors(t["id"])["out"]:
+            if e["rel"] != "touches":
+                continue
+            # the artifact for this task, if any
+            for a in g.nodes_of("Artifact"):
+                if a["data"].get("task") == t["key"]:
+                    path_outcomes.setdefault(e["dst"], {}).setdefault(
+                        "pass" if a["data"].get("exit_code") == 0 else "fail", set()).add(t["key"])
+    for path, outc in path_outcomes.items():
+        if outc.get("pass") and outc.get("fail"):
+            emit("contradiction", path.split(":", 1)[-1],
+                 {"path": path.split(":", 1)[-1], "passed": sorted(outc["pass"]),
+                  "failed": sorted(outc["fail"])}, path)
+
     g.commit()
     g.close()
     return anomalies

@@ -163,3 +163,19 @@ def test_cli_touching_is_a_query_over_the_index(tmp_path):
                         "--control-dir", cd, "shared.py"], env=env, capture_output=True, text=True)
     out = json.loads(r.stdout)
     assert out == ["Task:T1", "Task:T2"]
+
+
+def test_contradiction_detector_flags_a_shared_path_with_disagreeing_gates(tmp_path):
+    """Two tasks write the same file; one gate passed, one failed -> the shared file has
+    conflicting requirements. The seeded-contradiction detector for D-037."""
+    cd = str(tmp_path / "c")
+    _mk(cd, "- [x] T1 | validate | wk/pipeline.py | GATE: x | EXPECT: exit0\n"
+            "- [ ] T2 | summarize (full pipeline) | wk/pipeline.py | GATE: y | EXPECT: exit0\n",
+        artifacts={
+            "T1": {"task": "T1", "exit_code": 0, "output_tail": "ok"},
+            "T2": {"task": "T2", "exit_code": 1, "output_tail": "ValueError: validate rejected -1"}})
+    G.ingest(cd)
+    con = [a for a in G.detect(cd) if a["detector"] == "contradiction"]
+    assert len(con) == 1
+    assert con[0]["evidence"]["path"] == "wk/pipeline.py"
+    assert con[0]["evidence"]["passed"] == ["T1"] and con[0]["evidence"]["failed"] == ["T2"]
