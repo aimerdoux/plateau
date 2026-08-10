@@ -32,7 +32,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["plateau", "plateau.agency"]
+packages = ["plateau", "plateau.agency", "plateau.sigma"]
 # the agency layer ships its prose contracts (the parent/orchestrator/worker manuals are the
 # product, not just code) plus the example override configs — neither *.md nor *.json is
 # auto-included by hatchling, so list them as explicit artifacts.
