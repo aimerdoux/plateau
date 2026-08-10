@@ -1,0 +1,13 @@
+{
+  "name": "paperclip-adapter-plateau-local",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Paperclip external adapter: run a spawned agent as a bounded plateau-agency orchestrator+worker fleet.",
+  "type": "module",
+  "exports": {
+    ".": "./main.ts"
+  },
+  "paperclip": {
+    "adapterType": "plateau_local"
+  }
+}
