@@ -105,6 +105,64 @@ What to do:
     )
 
 
+ROLE_RETURN_CONTRACT = """\
+Return EXACTLY one JSON object as your final message, matching this shape:
+{
+  "did": "<what you actually did this one step>",
+  "evidence": [
+    {"check": "<what you verified>", "location": "<file:line / path>", "observed": "<fact>"}
+  ],
+  "edited_files": ["<repo-relative path>", ...],   // [] if you edited nothing this step
+  "summary_line": "<=200 chars carried forward to the next step>",
+  "goal_complete": true | false,                   // true ONLY if the GOAL is fully done
+  "next_hint": "<the single next concrete step>"
+}
+No prose, no code fences -- the JSON object is your entire final message."""
+
+
+def build_role_subtask(goal, running_summary, lessons, repo, step):
+    """General bounded-context worker prompt for `role` mode.
+
+    The worker's entire memory of the run is {goal + bounded running_summary +
+    last <=8 lessons + step}; it advances the goal by EXACTLY ONE step and
+    returns one JSON object. No worklist, no audit tiers."""
+    last_lessons = lessons[-8:] if lessons else []
+    lessons_block = "\n".join("  - %s" % l for l in last_lessons) or "  (none yet)"
+    return """\
+REPO ROOT: {repo}  (your cwd is the repo root; use repo-relative paths)
+STEP: {step}
+
+GOAL (the long-horizon objective -- you advance it, you do NOT finish it in one step):
+{goal}
+
+PROGRESS SO FAR (bounded running summary -- treat as ground truth, do not re-derive):
+{running_summary}
+
+RECENT LESSONS (last {nl}):
+{lessons_block}
+
+What to do THIS step:
+- Advance the GOAL by EXACTLY ONE concrete, bounded step, right now, using your
+  tools (Read/Grep/Bash for inspection; Edit/Write for the smallest change).
+- Do NOT attempt the whole goal. Do NOT plan far ahead. One real step only.
+- Anchor what you observe with file:line or an exact path in `evidence`.
+- If you make a file change, list every changed repo-relative path in edited_files.
+- If genuinely blocked (missing cred / external network / live service), do the
+  smallest safe thing you can and put the blocker in summary_line + next_hint.
+- Set goal_complete=true ONLY when the entire GOAL is verifiably done.
+
+{contract}
+""".format(
+        repo=repo,
+        step=step,
+        goal=goal,
+        running_summary=running_summary or "(nothing yet -- this is the first step)",
+        nl=len(last_lessons),
+        lessons_block=lessons_block,
+        contract=ROLE_RETURN_CONTRACT,
+    )
+
+
 # Tool allowlists passed to `claude -p`. Subagents NEVER get git/gh/supabase.
 AUDIT_TOOLS = [
     "Read", "Grep", "Glob",

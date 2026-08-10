@@ -63,14 +63,18 @@ def extract_json(text):
 
 # ------------------------------------------------------------ spawn step --
 
-def spawn_agent(prompt_text, mode, repo, max_turns=20):
+def spawn_agent(prompt_text, mode, repo, max_turns=20, worker_model=None):
     """One fresh `claude -p` process. Returns parsed agent dict or an error."""
     tools = prompts.AUDIT_TOOLS if mode == "audit" else prompts.WRITE_TOOLS
-    cmd = [
-        "claude", "-p", prompt_text,
-        "--output-format", "json",
-        "--permission-mode", "acceptEdits",
-        "--max-turns", str(max_turns),
+    cmd = ["claude", "-p", prompt_text, "--output-format", "json",
+           "--permission-mode", "acceptEdits", "--max-turns", str(max_turns),
+           # lean workers: no inherited MCP connectors (~274K tok of schemas) -> the
+           # subtask stays in STANDARD context, dodging the 1M-context credits gate and
+           # cutting per-worker cost ~20-50x. These workers only need Read/Grep/Bash.
+           "--strict-mcp-config"]
+    if worker_model:
+        cmd += ["--model", worker_model]   # cost lever: cheap workers for long runs
+    cmd += [
         "--allowedTools", *tools,
         "--disallowedTools", *prompts.DISALLOWED_TOOLS,
         "--append-system-prompt", prompts.SAFETY_FLOOR,
@@ -195,12 +199,154 @@ def write_resume(run_dir, sig, last_step, cov_path, by_tier, counters):
     return rp
 
 
+# ----------------------------------------------------------- role mode ----
+
+ROLE_SUMMARY_CAP = 2000   # bounded running_summary: keep only the tail
+ROLE_LESSON_CAP = 8       # carry only the last few lessons into the next worker
+ROLE_STALL_CEIL = 5       # consecutive no-progress steps -> stop "stalled"
+
+
+def _resolve_goal(args):
+    """goal-file content wins over --goal; returns the goal text or None."""
+    if args.goal_file:
+        return Path(args.goal_file).read_text().strip()
+    if args.goal:
+        return args.goal.strip()
+    return None
+
+
+def stub_role(goal, step):
+    """Deterministic canned role worker (no claude). Completes at step>=2."""
+    return {
+        "class": "role",
+        "did": "stub step",
+        "evidence": [{"check": "stub", "location": "-", "observed": "-"}],
+        "edited_files": [],
+        "summary_line": "stub progress %d" % step,
+        "goal_complete": step >= 2,
+        "next_hint": "continue",
+    }
+
+
+def run_role(args, repo, run_dir):
+    """Bounded orchestrator loop for a GENERAL goal. The orchestrator's only
+    memory is a small signal dict on disk; workers are fresh-and-discarded.
+
+    signal = {goal, running_summary, lessons, step, done}. Each step builds a
+    lean worker prompt from {goal + bounded running_summary + last <=8 lessons +
+    step}, never a growing transcript."""
+    sig_path = run_dir / "signal.json"
+    kpis = run_dir / "kpis.jsonl"
+
+    if args.resume:
+        signal = state.load_json(args.resume, None)
+        if not isinstance(signal, dict):
+            print("RESUME file unreadable:", args.resume); return
+        signal.setdefault("goal", "")
+        signal.setdefault("running_summary", "")
+        signal.setdefault("lessons", [])
+        signal.setdefault("step", 0)
+        signal.setdefault("done", False)
+    else:
+        goal = _resolve_goal(args)
+        if not goal:
+            print("role mode requires --goal or --goal-file"); return
+        signal = {"goal": goal, "running_summary": "", "lessons": [],
+                  "step": 0, "done": False}
+    # bind run_id into the signal so --resume lands in the ORIGINAL run dir.
+    signal["run_id"] = run_dir.name
+    state.save_json(sig_path, signal)
+
+    run_start = now()
+    stall = 0
+    stop_reason = "loop-exited"
+
+    while (signal["step"] < args.max_steps and not signal["done"]
+           and (now() - run_start) < args.target_seconds):
+        step = signal["step"]
+        if args.stub:
+            agent = stub_role(signal["goal"], step)
+            ptext = ""
+        else:
+            ptext = prompts.build_role_subtask(
+                signal["goal"], signal["running_summary"],
+                signal["lessons"], repo, step)
+            agent = spawn_agent(ptext, "role", repo, worker_model=args.worker_model)
+
+        # General progress gate (no audit gate).
+        if agent.get("class") == "blocked":
+            state.add_lesson(signal, "blocked: " + agent.get("carry", ""))
+            stall += 1
+            last = "blocked"
+        else:
+            summary_line = (agent.get("summary_line") or "").strip()
+            if summary_line:
+                merged = (signal["running_summary"] + " | " + summary_line
+                          if signal["running_summary"] else summary_line)
+                signal["running_summary"] = merged[-ROLE_SUMMARY_CAP:]  # keep the tail
+            state.add_lesson(signal, agent.get("next_hint") or summary_line)
+            if agent.get("goal_complete") is True:
+                signal["done"] = True
+            progressed = bool(agent.get("evidence") or agent.get("edited_files")
+                              or summary_line)
+            stall = 0 if progressed else stall + 1
+            last = summary_line[:60] or "no-op"
+
+        # cap lessons to the last few (bounded context is the whole point).
+        signal["lessons"] = signal["lessons"][-ROLE_LESSON_CAP:]
+        state.enforce_caps(signal)
+        signal["step"] = step + 1
+        state.save_json(sig_path, signal)
+
+        elapsed = now() - run_start
+        append_jsonl(kpis, {
+            "step": step, "elapsed_s": round(elapsed), "mode": "role",
+            "done": signal["done"], "stall_counter": stall,
+            "orch_signal_tokens": max(1, len(json.dumps(signal)) // 4),
+            "worker_prompt_tokens": (max(1, len(ptext) // 4) if ptext else 0),
+            "worker_usage": agent.get("_usage"),
+        })
+        print("step %d | t=%ds | role | last=%s" % (step, round(elapsed), last))
+
+        if stall >= ROLE_STALL_CEIL:
+            stop_reason = "stalled"
+            break
+
+    steps = signal["step"]
+    if signal["done"]:
+        stop_reason = "goal_complete"
+    elif stop_reason == "stalled":
+        pass
+    elif (now() - run_start) >= args.target_seconds:
+        stop_reason = "target_met"
+    elif signal["step"] >= args.max_steps:
+        # mid-goal budget hit -> checkpoint a bounded resume signal.
+        rp = run_dir / "resume.json"
+        state.save_json(rp, signal)
+        stop_reason = "step_budget_checkpoint"
+        print("CHECKPOINT step_budget. resume:")
+        print("  plateau-agency --repo %s --mode role --resume %s" % (repo, rp))
+
+    state.save_json(run_dir / "role_result.json", {
+        "goal": signal["goal"], "done": signal["done"], "steps": steps,
+        "running_summary": signal["running_summary"], "lessons": signal["lessons"],
+        "stop_reason": stop_reason,
+    })
+    state.save_json(sig_path, signal)
+    print("STOP reason=%s steps=%d" % (stop_reason, steps))
+    print("artifacts: %s" % run_dir)
+
+
 # -------------------------------------------------------------- main ------
 
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--repo", required=True)
-    ap.add_argument("--mode", choices=["audit", "write"], default="audit")
+    ap.add_argument("--mode", choices=["audit", "write", "role"], default="audit")
+    ap.add_argument("--goal", default=None,
+                    help="role mode: the long-horizon objective (string)")
+    ap.add_argument("--goal-file", default=None,
+                    help="role mode: path to a file whose content is the goal (wins over --goal)")
     ap.add_argument("--run-id", default=time.strftime("%Y%m%dT%H%M%S"))
     ap.add_argument("--max-steps", type=int, default=80)   # STEP_BUDGET
     ap.add_argument("--target-seconds", type=int, default=7200)
@@ -208,6 +354,11 @@ def main():
     ap.add_argument("--resume", default=None)
     ap.add_argument("--stub", action="store_true",
                     help="use a canned agent result (no claude call) to test machinery")
+    ap.add_argument("--worker-model", default=None,
+                    help="model for fresh claude -p workers (cost lever); default = CLI default")
+    ap.add_argument("--include-source", action="store_true",
+                    help="also audit source modules (scan_source), not just web surfaces -- "
+                         "enriches the backlog for long-horizon runs")
     ap.add_argument("--config", default=None,
                     help="JSON config override path; else auto-detected from the repo")
     ap.add_argument("--base", default="main", help="base branch for PRs (write mode)")
@@ -217,6 +368,19 @@ def main():
 
     repo = str(Path(args.repo).resolve())
     cfg = load_config(repo, args.config)
+
+    # GENERAL bounded-context role executor. No worklist/coverage/audit gate;
+    # the orchestrator derives the next subtask from the GOAL + bounded progress.
+    if args.mode == "role":
+        run_id = args.run_id
+        if args.resume:
+            prior = state.load_json(args.resume, None)
+            if isinstance(prior, dict) and prior.get("run_id"):
+                run_id = prior["run_id"]
+        run_dir = HERE / "runs" / run_id
+        run_dir.mkdir(parents=True, exist_ok=True)
+        run_role(args, repo, run_dir)
+        return
 
     # Resume must bind to the ORIGINAL run's dir, not a fresh timestamp.
     resume_blob = None
@@ -258,6 +422,9 @@ def main():
         run_start = now()
         sig = state.new_signal(run_id, run_start)
         coverage = bootstrap.build_coverage(repo, cfg)
+        if args.include_source:                       # enrich backlog for long-horizon runs
+            have = {e["id"] for e in coverage}
+            coverage += [e for e in bootstrap.scan_source(repo, cfg) if e["id"] not in have]
         state.save_json(cov_path, coverage)
         start_step = 1
 
@@ -315,7 +482,7 @@ def main():
         else:
             ptext = prompts.build_subtask(
                 state.compact_signal(sig), item, args.mode, repo, args.run_id, step)
-            agent = spawn_agent(ptext, args.mode, repo)
+            agent = spawn_agent(ptext, args.mode, repo, worker_model=args.worker_model)
 
         cls = agent.get("class", "blocked")
         pk = agent.get("pattern_key")
