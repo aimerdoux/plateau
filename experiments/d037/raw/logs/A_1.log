@@ -1,0 +1,3 @@
+wrote 13 tasks, fixture 2650 words, seed 1 -> experiments/d037/raw/A/1/work
+{"k": 1, "rc": 0, "seconds": 19.1, "session_id": "e2bc9ff2-ed85-45ef-9ff5-171fad924a3e", "subtype": "success", "cost": 0.1407504, "models": ["claude-haiku-4-5-20251001", "claude-sonnet-5"], "num_turns": 10}
+{"k": 2, "rc": 0, "seconds": 11.2, "session_id": "e2bc9ff2-ed85-45ef-9ff5-171fad924a3e", "subtype": "success", "cost": 0.07908119999999999, "models": ["claude-sonnet-5"], "num_turns": 6}

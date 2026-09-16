@@ -1,0 +1,16 @@
+1789569676.535 receipt r1 Bash
+1789569678.107 receipt r2 Read
+1789569678.463 receipt r3 Read
+1789569679.877 receipt r4 Bash
+1789569681.971 receipt r5 Read
+1789569684.009 receipt r6 Write
+1789569685.787 receipt r7 Edit
+1789569693.520 inject ev=UserPromptSubmit q=520ch nodes=9/12 chars=1175 budget=1200
+1789569695.884 receipt r8 Read
+1789569695.964 receipt r9 Read
+1789569697.955 receipt r10 Write
+1789569699.598 receipt r11 Edit
+1789569705.248 inject ev=UserPromptSubmit q=539ch nodes=8/21 chars=1137 budget=1200
+1789569709.646 receipt r12 Read
+1789569711.823 receipt r13 Write
+1789569712.874 receipt r14 Write
