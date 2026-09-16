@@ -1,3 +1,4 @@
 wrote 13 tasks, fixture 2650 words, seed 1 -> experiments/d037/raw/B/1/work
 {"k": 1, "rc": 0, "seconds": 19.6, "session_id": "e0608d6d-60a2-4f1a-b190-6ec3ed013c12", "subtype": "success", "cost": 0.1082348, "models": ["claude-haiku-4-5-20251001", "claude-sonnet-5"], "num_turns": 7}
 {"k": 2, "rc": 0, "seconds": 15.9, "session_id": "e0608d6d-60a2-4f1a-b190-6ec3ed013c12", "subtype": "success", "cost": 0.0783822, "models": ["claude-sonnet-5"], "num_turns": 6}
+{"k": 3, "rc": 0, "seconds": 17.7, "session_id": "e0608d6d-60a2-4f1a-b190-6ec3ed013c12", "subtype": "success", "cost": 0.0883286, "models": ["claude-sonnet-5"], "num_turns": 6}
