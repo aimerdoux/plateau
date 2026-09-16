@@ -2,3 +2,4 @@
 # Read output). It never enters this public tree; hash_raw.py records its hashes in raw_hashes.txt, which is committed.
 raw/
 selftest_out/
+preflight/

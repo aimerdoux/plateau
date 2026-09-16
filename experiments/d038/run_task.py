@@ -90,6 +90,7 @@ def main():
     ap.add_argument("--probes-per-turn", type=int, default=2); ap.add_argument("--probe-mode", choices=("fork", "inline"), default="fork")
     ap.add_argument("--cost-cap", type=float, default=25.0); ap.add_argument("--max-turns", type=int, default=0)
     ap.add_argument("--dry-run", action="store_true", help="assemble the worktree, run the gate, no worker")
+    ap.add_argument("--preflight", action="store_true", help="after the task turns, one extra turn that runs lookup.py (arm C) so preflight can verify it executes")
     a = ap.parse_args()
     token = a.token or "wt_" + secrets.token_hex(3); run_dir = os.path.join(a.out_root, str(a.run)); out = os.path.join(run_dir, token)
     if os.path.exists(out): sys.exit(f"refuse: {out} exists (never overwritten)")
@@ -136,17 +137,27 @@ def main():
             probed.add(f["id"]); q = PROBE_PREFIX + f["q"]
             pc = ["claude", "-p", q, "--resume", sid, "--disallowedTools", PROBE_DISALLOWED, "--output-format", "json"]
             if a.probe_mode == "fork": pc.append("--fork-session")
+            lines_before = sum(1 for _ in open(tp))
             prc, pdt, pj = claude(pc, work, env, os.path.join(out, f"probe_{i}_{f['id']}.json"), os.path.join(out, f"probe_{i}_{f['id']}.err"), timeout=300)
+            lines_after = sum(1 for _ in open(tp))
             if a.probe_mode == "fork" and pj.get("session_id") and pj["session_id"] != sid: fork_sids.append(pj["session_id"])
             ans = pj.get("result") if isinstance(pj.get("result"), str) else ""
             p = {"turn": i, "turn_id": t["id"], "id": f["id"], "cls": f["cls"], "kind": f["kind"], "q": f["q"], "expected": f["expected"], "answer": ans.strip(),
                  "fact_line": f["last_line"], "fact_first_line": f["first_line"], "fact_pos": f["last_pos"], "probe_pos": scan["pos"],
                  "tokens_since": scan["pos"] - f["last_pos"], "compactions_crossed": scan["compactions"] - f["last_comp"],
                  "lag_bucket": probes.lag_bucket(scan["pos"] - f["last_pos"]), "comp_bucket": probes.comp_bucket(scan["compactions"] - f["last_comp"]),
-                 "mode": a.probe_mode, "probe_contaminates": a.probe_mode == "inline", "probe_session": pj.get("session_id"), "rc": prc, "cost": pj.get("total_cost_usd")}
+                 "mode": a.probe_mode, "probe_contaminates": a.probe_mode == "inline", "probe_session": pj.get("session_id"), "rc": prc, "cost": pj.get("total_cost_usd"),
+                 "main_lines_before": lines_before, "main_lines_after": lines_after}
             probes_f.write(json.dumps(p) + "\n"); probes_f.flush(); manifest["probes"] += 1; manifest["probe_cost_usd"] += p["cost"] or 0
         if manifest["task_cost_usd"] >= a.cost_cap: manifest["status"] = "COST_CAP"; print("cost cap reached; scoring what exists"); break
     probes_f.close()
+    if a.preflight and sid and manifest["status"] in ("OK", "COST_CAP"):
+        q = ("Preflight check: run exactly this command with Bash and then paste every line it printed, verbatim: "
+             "`python3 .claude/hooks/d037/lookup.py error handler server`")
+        cmd = list(base); cmd[2] = q; cmd += ["--resume", sid]
+        rc, dt, j = claude(cmd, work, env, os.path.join(out, "out_preflight_lookup.json"), os.path.join(out, "err_preflight_lookup.txt"))
+        manifest["preflight_lookup_turn"] = {"rc": rc, "seconds": round(dt, 1), "cost": j.get("total_cost_usd"), "result": (j.get("result") or "")[:2000]}
+        manifest["task_cost_usd"] += j.get("total_cost_usd") or 0
     td = os.path.join(out, "transcript"); os.makedirs(td, exist_ok=True)
     for s in [sid] + fork_sids:
         tp = find_transcript(s) if s else None
