@@ -1,0 +1,3354 @@
+{
+ "runs": {
+  "A": {
+   "1": {
+    "arm": "A",
+    "run": 1,
+    "seed": 1,
+    "status": "OK",
+    "transcript": "e2bc9ff2-ed85-45ef-9ff5-171fad924a3e.jsonl",
+    "compactions": [
+     {
+      "task": 5,
+      "line": 158
+     },
+     {
+      "task": 9,
+      "line": 302
+     },
+     {
+      "task": 12,
+      "line": 420
+     }
+    ],
+    "n_compactions": 3,
+    "R_S": [
+     1.0,
+     7
+    ],
+    "R_NS": [
+     1.0,
+     3
+    ],
+    "R_S_eff": [
+     1.0,
+     9
+    ],
+    "R_NS_eff": [
+     1.0,
+     1
+    ],
+    "S_tasks": [
+     6,
+     7,
+     8,
+     10,
+     11,
+     12,
+     13
+    ],
+    "NS_tasks": [
+     4,
+     5,
+     9
+    ],
+    "nonce_rate": 1.0,
+    "rederivations": 8,
+    "rederivation_lines": [
+     [
+      214,
+      "/home/user/plateau/experiments/d037/raw/A/1/work/d037_target/mod1.py"
+     ],
+     [
+      242,
+      "/home/user/plateau/experiments/d037/raw/A/1/work/d037_target/mod0.py"
+     ],
+     [
+      244,
+      "/home/user/plateau/experiments/d037/raw/A/1/work/d037_target/mod2.py"
+     ],
+     [
+      278,
+      "/home/user/plateau/experiments/d037/raw/A/1/work/d037_target/mod1.py"
+     ],
+     [
+      280,
+      "/home/user/plateau/experiments/d037/raw/A/1/work/d037_target/mod3.py"
+     ],
+     [
+      335,
+      "/home/user/plateau/experiments/d037/raw/A/1/work/d037_target/mod4.py"
+     ],
+     [
+      365,
+      "/home/user/plateau/experiments/d037/raw/A/1/work/d037_target/mod5.py"
+     ],
+     [
+      393,
+      "/home/user/plateau/experiments/d037/raw/A/1/work/d037_target/mod0.py"
+     ]
+    ],
+    "dep_rereads": 0,
+    "tokens_per_task_in": 260779.07692307694,
+    "tokens_per_task_out": 1211.3846153846155,
+    "tokens_per_task": 261990.46153846153,
+    "inject_events": 0,
+    "inject_chars": 0,
+    "inject_over_budget": [],
+    "cost_usd": 1.8557620999999997,
+    "confounded": [],
+    "items": [
+     {
+      "k": 1,
+      "prompt_line": 4,
+      "cite": "e2bc9ff2-ed85-45ef-9ff5-171fad924a3e.jsonl",
+      "nonce_ok": true,
+      "tokens_in": 340735,
+      "tokens_out": 1229,
+      "api_calls": 8
+     },
+     {
+      "k": 2,
+      "prompt_line": 59,
+      "cite": "e2bc9ff2-ed85-45ef-9ff5-171fad924a3e.jsonl",
+      "nonce_ok": true,
+      "tokens_in": 201075,
+      "tokens_out": 746,
+      "api_calls": 4
+     },
+     {
+      "k": 3,
+      "prompt_line": 83,
+      "cite": "e2bc9ff2-ed85-45ef-9ff5-171fad924a3e.jsonl",
+      "nonce_ok": true,
+      "tokens_in": 236893,
+      "tokens_out": 1296,
+      "api_calls": 4
+     },
+     {
+      "k": 4,
+      "prompt_line": 111,
+      "cite": "e2bc9ff2-ed85-45ef-9ff5-171fad924a3e.jsonl",
+      "nonce_ok": true,
+      "dep_k": 1,
+      "facts": [
+       "MOD0_ITEM_LIMIT"
+      ],
+      "used": true,
+      "why": "link_4=present refs\u2229facts=['MOD0_ITEM_LIMIT']",
+      "link_edit_line": 130,
+      "straddle_spec": false,
+      "straddle_eff": false,
+      "compactions_between": [],
+      "dep_reread": [],
+      "tokens_in": 272638,
+      "tokens_out": 1261,
+      "api_calls": 4
+     },
+     {
+      "k": 5,
+      "prompt_line": 140,
+      "cite": "e2bc9ff2-ed85-45ef-9ff5-171fad924a3e.jsonl",
+      "nonce_ok": true,
+      "dep_k": 2,
+      "facts": [
+       "seven_handler"
+      ],
+      "used": true,
+      "why": "link_5=present refs\u2229facts=['seven_handler']",
+      "link_edit_line": 182,
+      "straddle_spec": false,
+      "straddle_eff": true,
+      "compactions_between": [
+       158
+      ],
+      "dep_reread": [],
+      "tokens_in": 187472,
+      "tokens_out": 1214,
+      "api_calls": 4
+     },
+     {
+      "k": 6,
+      "prompt_line": 198,
+      "cite": "e2bc9ff2-ed85-45ef-9ff5-171fad924a3e.jsonl",
+      "nonce_ok": true,
+      "dep_k": 3,
+      "facts": [
+       "ping_util"
+      ],
+      "used": true,
+      "why": "link_6=present refs\u2229facts=['ping_util']",
+      "link_edit_line": 218,
+      "straddle_spec": true,
+      "straddle_eff": true,
+      "compactions_between": [
+       158
+      ],
+      "dep_reread": [],
+      "tokens_in": 252177,
+      "tokens_out": 1382,
+      "api_calls": 5
+     },
+     {
+      "k": 7,
+      "prompt_line": 229,
+      "cite": "e2bc9ff2-ed85-45ef-9ff5-171fad924a3e.jsonl",
+      "nonce_ok": true,
+      "dep_k": 4,
+      "facts": [
+       "MOD3_BATCH_LIMIT"
+      ],
+      "used": true,
+      "why": "link_7=present refs\u2229facts=['MOD3_BATCH_LIMIT']",
+      "link_edit_line": 251,
+      "straddle_spec": true,
+      "straddle_eff": true,
+      "compactions_between": [
+       158
+      ],
+      "dep_reread": [],
+      "tokens_in": 299064,
+      "tokens_out": 1609,
+      "api_calls": 5
+     },
+     {
+      "k": 8,
+      "prompt_line": 265,
+      "cite": "e2bc9ff2-ed85-45ef-9ff5-171fad924a3e.jsonl",
+      "nonce_ok": true,
+      "dep_k": 5,
+      "facts": [
+       "fixed_seven_handler"
+      ],
+      "used": true,
+      "why": "link_8=present refs\u2229facts=['fixed_seven_handler']",
+      "link_edit_line": 285,
+      "straddle_spec": true,
+      "straddle_eff": true,
+      "compactions_between": [
+       158
+      ],
+      "dep_reread": [],
+      "tokens_in": 347216,
+      "tokens_out": 1340,
+      "api_calls": 5
+     },
+     {
+      "k": 9,
+      "prompt_line": 296,
+      "cite": "e2bc9ff2-ed85-45ef-9ff5-171fad924a3e.jsonl",
+      "nonce_ok": true,
+      "dep_k": 6,
+      "facts": [
+       "echo_util"
+      ],
+      "used": true,
+      "why": "link_9=present refs\u2229facts=['echo_util']",
+      "link_edit_line": 339,
+      "straddle_spec": false,
+      "straddle_eff": true,
+      "compactions_between": [
+       302
+      ],
+      "dep_reread": [],
+      "tokens_in": 225689,
+      "tokens_out": 1107,
+      "api_calls": 5
+     },
+     {
+      "k": 10,
+      "prompt_line": 350,
+      "cite": "e2bc9ff2-ed85-45ef-9ff5-171fad924a3e.jsonl",
+      "nonce_ok": true,
+      "dep_k": 7,
+      "facts": [
+       "MOD0_RETRY_LIMIT"
+      ],
+      "used": true,
+      "why": "link_10=present refs\u2229facts=['MOD0_RETRY_LIMIT']",
+      "link_edit_line": 369,
+      "straddle_spec": true,
+      "straddle_eff": true,
+      "compactions_between": [
+       302
+      ],
+      "dep_reread": [],
+      "tokens_in": 291712,
+      "tokens_out": 1252,
+      "api_calls": 5
+     },
+     {
+      "k": 11,
+      "prompt_line": 379,
+      "cite": "e2bc9ff2-ed85-45ef-9ff5-171fad924a3e.jsonl",
+      "nonce_ok": true,
+      "dep_k": 8,
+      "facts": [
+       "lucky_seven_handler"
+      ],
+      "used": true,
+      "why": "link_11=present refs\u2229facts=['lucky_seven_handler']",
+      "link_edit_line": 397,
+      "straddle_spec": true,
+      "straddle_eff": true,
+      "compactions_between": [
+       302
+      ],
+      "dep_reread": [],
+      "tokens_in": 337607,
+      "tokens_out": 1165,
+      "api_calls": 5
+     },
+     {
+      "k": 12,
+      "prompt_line": 407,
+      "cite": "e2bc9ff2-ed85-45ef-9ff5-171fad924a3e.jsonl",
+      "nonce_ok": true,
+      "dep_k": 9,
+      "facts": [
+       "relay_util"
+      ],
+      "used": true,
+      "why": "link_12=present refs\u2229facts=['relay_util']",
+      "link_edit_line": 444,
+      "straddle_spec": true,
+      "straddle_eff": true,
+      "compactions_between": [
+       302,
+       420
+      ],
+      "dep_reread": [],
+      "tokens_in": 191898,
+      "tokens_out": 1018,
+      "api_calls": 4
+     },
+     {
+      "k": 13,
+      "prompt_line": 459,
+      "cite": "e2bc9ff2-ed85-45ef-9ff5-171fad924a3e.jsonl",
+      "nonce_ok": true,
+      "dep_k": 10,
+      "facts": [
+       "MOD3_QUEUE_LIMIT"
+      ],
+      "used": true,
+      "why": "link_13=present refs\u2229facts=['MOD3_QUEUE_LIMIT']",
+      "link_edit_line": 475,
+      "straddle_spec": true,
+      "straddle_eff": true,
+      "compactions_between": [
+       420
+      ],
+      "dep_reread": [],
+      "tokens_in": 205952,
+      "tokens_out": 1129,
+      "api_calls": 4
+     }
+    ],
+    "rho": null
+   },
+   "2": {
+    "arm": "A",
+    "run": 2,
+    "seed": 2,
+    "status": "OK",
+    "transcript": "8f1e4145-64aa-43c9-a9e6-27d3e7861981.jsonl",
+    "compactions": [
+     {
+      "task": 5,
+      "line": 146
+     },
+     {
+      "task": 8,
+      "line": 291
+     },
+     {
+      "task": 11,
+      "line": 415
+     }
+    ],
+    "n_compactions": 3,
+    "R_S": [
+     1.0,
+     8
+    ],
+    "R_NS": [
+     1.0,
+     2
+    ],
+    "R_S_eff": [
+     1.0,
+     9
+    ],
+    "R_NS_eff": [
+     1.0,
+     1
+    ],
+    "S_tasks": [
+     6,
+     7,
+     8,
+     9,
+     10,
+     11,
+     12,
+     13
+    ],
+    "NS_tasks": [
+     4,
+     5
+    ],
+    "nonce_rate": 1.0,
+    "rederivations": 11,
+    "rederivation_lines": [
+     [
+      170,
+      "/home/user/plateau/experiments/d037/raw/A/2/work/d037_target/mod0.py"
+     ],
+     [
+      208,
+      "/home/user/plateau/experiments/d037/raw/A/2/work/d037_target/mod1.py"
+     ],
+     [
+      237,
+      "/home/user/plateau/experiments/d037/raw/A/2/work/d037_target/mod0.py"
+     ],
+     [
+      239,
+      "/home/user/plateau/experiments/d037/raw/A/2/work/d037_target/mod2.py"
+     ],
+     [
+      275,
+      "/home/user/plateau/experiments/d037/raw/A/2/work/d037_target/mod1.py"
+     ],
+     [
+      277,
+      "/home/user/plateau/experiments/d037/raw/A/2/work/d037_target/mod3.py"
+     ],
+     [
+      339,
+      "/home/user/plateau/experiments/d037/raw/A/2/work/d037_target/mod4.py"
+     ],
+     [
+      368,
+      "/home/user/plateau/experiments/d037/raw/A/2/work/d037_target/mod3.py"
+     ],
+     [
+      370,
+      "/home/user/plateau/experiments/d037/raw/A/2/work/d037_target/mod5.py"
+     ],
+     [
+      406,
+      "/home/user/plateau/experiments/d037/raw/A/2/work/d037_target/mod4.py"
+     ],
+     [
+      408,
+      "/home/user/plateau/experiments/d037/raw/A/2/work/d037_target/mod0.py"
+     ]
+    ],
+    "dep_rereads": 0,
+    "tokens_per_task_in": 275790.76923076925,
+    "tokens_per_task_out": 1392.5384615384614,
+    "tokens_per_task": 277183.3076923077,
+    "inject_events": 0,
+    "inject_chars": 0,
+    "inject_over_budget": [],
+    "cost_usd": 1.8871604,
+    "confounded": [],
+    "items": [
+     {
+      "k": 1,
+      "prompt_line": 4,
+      "cite": "8f1e4145-64aa-43c9-a9e6-27d3e7861981.jsonl",
+      "nonce_ok": true,
+      "tokens_in": 208064,
+      "tokens_out": 881,
+      "api_calls": 5
+     },
+     {
+      "k": 2,
+      "prompt_line": 45,
+      "cite": "8f1e4145-64aa-43c9-a9e6-27d3e7861981.jsonl",
+      "nonce_ok": true,
+      "tokens_in": 198358,
+      "tokens_out": 689,
+      "api_calls": 4
+     },
+     {
+      "k": 3,
+      "prompt_line": 69,
+      "cite": "8f1e4145-64aa-43c9-a9e6-27d3e7861981.jsonl",
+      "nonce_ok": true,
+      "tokens_in": 232001,
+      "tokens_out": 814,
+      "api_calls": 4
+     },
+     {
+      "k": 4,
+      "prompt_line": 94,
+      "cite": "8f1e4145-64aa-43c9-a9e6-27d3e7861981.jsonl",
+      "nonce_ok": true,
+      "dep_k": 1,
+      "facts": [
+       "MOD0_HELPER_LIMIT"
+      ],
+      "used": true,
+      "why": "link_4=present refs\u2229facts=['MOD0_HELPER_LIMIT']",
+      "link_edit_line": 113,
+      "straddle_spec": false,
+      "straddle_eff": false,
+      "compactions_between": [],
+      "dep_reread": [],
+      "tokens_in": 337430,
+      "tokens_out": 1537,
+      "api_calls": 5
+     },
+     {
+      "k": 5,
+      "prompt_line": 128,
+      "cite": "8f1e4145-64aa-43c9-a9e6-27d3e7861981.jsonl",
+      "nonce_ok": true,
+      "dep_k": 2,
+      "facts": [
+       "mod1_request_handler"
+      ],
+      "used": true,
+      "why": "link_5=present refs\u2229facts=['mod1_request_handler']",
+      "link_edit_line": 181,
+      "straddle_spec": false,
+      "straddle_eff": true,
+      "compactions_between": [
+       146
+      ],
+      "dep_reread": [],
+      "tokens_in": 225995,
+      "tokens_out": 1510,
+      "api_calls": 5
+     },
+     {
+      "k": 6,
+      "prompt_line": 192,
+      "cite": "8f1e4145-64aa-43c9-a9e6-27d3e7861981.jsonl",
+      "nonce_ok": true,
+      "dep_k": 3,
+      "facts": [
+       "ping_util"
+      ],
+      "used": true,
+      "why": "link_6=present refs\u2229facts=['ping_util']",
+      "link_edit_line": 214,
+      "straddle_spec": true,
+      "straddle_eff": true,
+      "compactions_between": [
+       146
+      ],
+      "dep_reread": [],
+      "tokens_in": 253553,
+      "tokens_out": 1576,
+      "api_calls": 5
+     },
+     {
+      "k": 7,
+      "prompt_line": 225,
+      "cite": "8f1e4145-64aa-43c9-a9e6-27d3e7861981.jsonl",
+      "nonce_ok": true,
+      "dep_k": 4,
+      "facts": [
+       "MOD3_RETRY_LIMIT"
+      ],
+      "used": true,
+      "why": "link_7=present refs\u2229facts=['MOD3_RETRY_LIMIT']",
+      "link_edit_line": 249,
+      "straddle_spec": true,
+      "straddle_eff": true,
+      "compactions_between": [
+       146
+      ],
+      "dep_reread": [],
+      "tokens_in": 302287,
+      "tokens_out": 1585,
+      "api_calls": 5
+     },
+     {
+      "k": 8,
+      "prompt_line": 263,
+      "cite": "8f1e4145-64aa-43c9-a9e6-27d3e7861981.jsonl",
+      "nonce_ok": true,
+      "dep_k": 5,
+      "facts": [
+       "mod4_task_handler"
+      ],
+      "used": true,
+      "why": "link_8=present refs\u2229facts=['mod4_task_handler']",
+      "link_edit_line": 284,
+      "straddle_spec": true,
+      "straddle_eff": true,
+      "compactions_between": [
+       146,
+       291
+      ],
+      "dep_reread": [],
+      "tokens_in": 285309,
+      "tokens_out": 1366,
+      "api_calls": 5
+     },
+     {
+      "k": 9,
+      "prompt_line": 323,
+      "cite": "8f1e4145-64aa-43c9-a9e6-27d3e7861981.jsonl",
+      "nonce_ok": true,
+      "dep_k": 6,
+      "facts": [
+       "beacon_util"
+      ],
+      "used": true,
+      "why": "link_9=present refs\u2229facts=['beacon_util']",
+      "link_edit_line": 345,
+      "straddle_spec": true,
+      "straddle_eff": true,
+      "compactions_between": [
+       291
+      ],
+      "dep_reread": [],
+      "tokens_in": 256472,
+      "tokens_out": 1649,
+      "api_calls": 5
+     },
+     {
+      "k": 10,
+      "prompt_line": 355,
+      "cite": "8f1e4145-64aa-43c9-a9e6-27d3e7861981.jsonl",
+      "nonce_ok": true,
+      "dep_k": 7,
+      "facts": [
+       "MOD0_BATCH_LIMIT"
+      ],
+      "used": true,
+      "why": "link_10=present refs\u2229facts=['MOD0_BATCH_LIMIT']",
+      "link_edit_line": 380,
+      "straddle_spec": true,
+      "straddle_eff": true,
+      "compactions_between": [
+       291
+      ],
+      "dep_reread": [],
+      "tokens_in": 304967,
+      "tokens_out": 1714,
+      "api_calls": 5
+     },
+     {
+      "k": 11,
+      "prompt_line": 394,
+      "cite": "8f1e4145-64aa-43c9-a9e6-27d3e7861981.jsonl",
+      "nonce_ok": true,
+      "dep_k": 8,
+      "facts": [
+       "mod1_status_handler"
+      ],
+      "used": true,
+      "why": "link_11=present refs\u2229facts=['mod1_status_handler']",
+      "link_edit_line": 445,
+      "straddle_spec": true,
+      "straddle_eff": true,
+      "compactions_between": [
+       291,
+       415
+      ],
+      "dep_reread": [],
+      "tokens_in": 296623,
+      "tokens_out": 1402,
+      "api_calls": 6
+     },
+     {
+      "k": 12,
+      "prompt_line": 455,
+      "cite": "8f1e4145-64aa-43c9-a9e6-27d3e7861981.jsonl",
+      "nonce_ok": true,
+      "dep_k": 9,
+      "facts": [
+       "signal_util"
+      ],
+      "used": true,
+      "why": "link_12=present refs\u2229facts=['signal_util']",
+      "link_edit_line": 476,
+      "straddle_spec": true,
+      "straddle_eff": true,
+      "compactions_between": [
+       415
+      ],
+      "dep_reread": [],
+      "tokens_in": 313816,
+      "tokens_out": 1780,
+      "api_calls": 6
+     },
+     {
+      "k": 13,
+      "prompt_line": 486,
+      "cite": "8f1e4145-64aa-43c9-a9e6-27d3e7861981.jsonl",
+      "nonce_ok": true,
+      "dep_k": 10,
+      "facts": [
+       "MOD3_QUEUE_LIMIT"
+      ],
+      "used": true,
+      "why": "link_13=present refs\u2229facts=['MOD3_QUEUE_LIMIT']",
+      "link_edit_line": 508,
+      "straddle_spec": true,
+      "straddle_eff": true,
+      "compactions_between": [
+       415
+      ],
+      "dep_reread": [],
+      "tokens_in": 370405,
+      "tokens_out": 1600,
+      "api_calls": 6
+     }
+    ],
+    "rho": null
+   },
+   "3": {
+    "arm": "A",
+    "run": 3,
+    "seed": 3,
+    "status": "OK",
+    "transcript": "335908c0-cc3a-43ee-9cfb-c46c806db8b0.jsonl",
+    "compactions": [
+     {
+      "task": 5,
+      "line": 166
+     },
+     {
+      "task": 8,
+      "line": 312
+     },
+     {
+      "task": 12,
+      "line": 450
+     }
+    ],
+    "n_compactions": 3,
+    "R_S": [
+     1.0,
+     7
+    ],
+    "R_NS": [
+     1.0,
+     3
+    ],
+    "R_S_eff": [
+     1.0,
+     9
+    ],
+    "R_NS_eff": [
+     1.0,
+     1
+    ],
+    "S_tasks": [
+     6,
+     7,
+     8,
+     9,
+     10,
+     11,
+     13
+    ],
+    "NS_tasks": [
+     4,
+     5,
+     12
+    ],
+    "nonce_rate": 1.0,
+    "rederivations": 9,
+    "rederivation_lines": [
+     [
+      199,
+      "/home/user/plateau/experiments/d037/raw/A/3/work/d037_target/mod0.py"
+     ],
+     [
+      230,
+      "/home/user/plateau/experiments/d037/raw/A/3/work/d037_target/mod1.py"
+     ],
+     [
+      256,
+      "/home/user/plateau/experiments/d037/raw/A/3/work/d037_target/mod0.py"
+     ],
+     [
+      258,
+      "/home/user/plateau/experiments/d037/raw/A/3/work/d037_target/mod2.py"
+     ],
+     [
+      289,
+      "/home/user/plateau/experiments/d037/raw/A/3/work/d037_target/mod1.py"
+     ],
+     [
+      291,
+      "/home/user/plateau/experiments/d037/raw/A/3/work/d037_target/mod3.py"
+     ],
+     [
+      363,
+      "/home/user/plateau/experiments/d037/raw/A/3/work/d037_target/mod4.py"
+     ],
+     [
+      470,
+      "/home/user/plateau/experiments/d037/raw/A/3/work/d037_target/mod1.py"
+     ],
+     [
+      501,
+      "/home/user/plateau/experiments/d037/raw/A/3/work/d037_target/mod2.py"
+     ]
+    ],
+    "dep_rereads": 0,
+    "tokens_per_task_in": 273639.3846153846,
+    "tokens_per_task_out": 1440.923076923077,
+    "tokens_per_task": 275080.3076923077,
+    "inject_events": 0,
+    "inject_chars": 0,
+    "inject_over_budget": [],
+    "cost_usd": 1.900477,
+    "confounded": [],
+    "items": [
+     {
+      "k": 1,
+      "prompt_line": 4,
+      "cite": "335908c0-cc3a-43ee-9cfb-c46c806db8b0.jsonl",
+      "nonce_ok": true,
+      "tokens_in": 296305,
+      "tokens_out": 1306,
+      "api_calls": 7
+     },
+     {
+      "k": 2,
+      "prompt_line": 53,
+      "cite": "335908c0-cc3a-43ee-9cfb-c46c806db8b0.jsonl",
+      "nonce_ok": true,
+      "tokens_in": 200777,
+      "tokens_out": 754,
+      "api_calls": 4
+     },
+     {
+      "k": 3,
+      "prompt_line": 77,
+      "cite": "335908c0-cc3a-43ee-9cfb-c46c806db8b0.jsonl",
+      "nonce_ok": true,
+      "tokens_in": 234185,
+      "tokens_out": 815,
+      "api_calls": 4
+     },
+     {
+      "k": 4,
+      "prompt_line": 102,
+      "cite": "335908c0-cc3a-43ee-9cfb-c46c806db8b0.jsonl",
+      "nonce_ok": true,
+      "dep_k": 1,
+      "facts": [
+       "MOD0_ITEM_LIMIT"
+      ],
+      "used": true,
+      "why": "link_4=present refs\u2229facts=['MOD0_ITEM_LIMIT']",
+      "link_edit_line": 121,
+      "straddle_spec": false,
+      "straddle_eff": false,
+      "compactions_between": [],
+      "dep_reread": [],
+      "tokens_in": 482133,
+      "tokens_out": 1847,
+      "api_calls": 7
+     },
+     {
+      "k": 5,
+      "prompt_line": 148,
+      "cite": "335908c0-cc3a-43ee-9cfb-c46c806db8b0.jsonl",
+      "nonce_ok": true,
+      "dep_k": 2,
+      "facts": [
+       "seven_handler"
+      ],
+      "used": true,
+      "why": "link_5=present refs\u2229facts=['seven_handler']",
+      "link_edit_line": 202,
+      "straddle_spec": false,
+      "straddle_eff": true,
+      "compactions_between": [
+       166
+      ],
+      "dep_reread": [],
+      "tokens_in": 264110,
+      "tokens_out": 1454,
+      "api_calls": 6
+     },
+     {
+      "k": 6,
+      "prompt_line": 212,
+      "cite": "335908c0-cc3a-43ee-9cfb-c46c806db8b0.jsonl",
+      "nonce_ok": true,
+      "dep_k": 3,
+      "facts": [
+       "ping_util"
+      ],
+      "used": true,
+      "why": "link_6=present refs\u2229facts=['ping_util']",
+      "link_edit_line": 237,
+      "straddle_spec": true,
+      "straddle_eff": true,
+      "compactions_between": [
+       166
+      ],
+      "dep_reread": [],
+      "tokens_in": 357927,
+      "tokens_out": 1859,
+      "api_calls": 7
+     },
+     {
+      "k": 7,
+      "prompt_line": 251,
+      "cite": "335908c0-cc3a-43ee-9cfb-c46c806db8b0.jsonl",
+      "nonce_ok": true,
+      "dep_k": 4,
+      "facts": [
+       "MOD3_ITEM_LIMIT"
+      ],
+      "used": true,
+      "why": "link_7=present refs\u2229facts=['MOD3_ITEM_LIMIT']",
+      "link_edit_line": 274,
+      "straddle_spec": true,
+      "straddle_eff": true,
+      "compactions_between": [
+       166
+      ],
+      "dep_reread": [],
+      "tokens_in": 241783,
+      "tokens_out": 1964,
+      "api_calls": 4
+     },
+     {
+      "k": 8,
+      "prompt_line": 284,
+      "cite": "335908c0-cc3a-43ee-9cfb-c46c806db8b0.jsonl",
+      "nonce_ok": true,
+      "dep_k": 5,
+      "facts": [
+       "eight_handler"
+      ],
+      "used": true,
+      "why": "link_8=present refs\u2229facts=['eight_handler']",
+      "link_edit_line": 305,
+      "straddle_spec": true,
+      "straddle_eff": true,
+      "compactions_between": [
+       166,
+       312
+      ],
+      "dep_reread": [],
+      "tokens_in": 213224,
+      "tokens_out": 1476,
+      "api_calls": 4
+     },
+     {
+      "k": 9,
+      "prompt_line": 343,
+      "cite": "335908c0-cc3a-43ee-9cfb-c46c806db8b0.jsonl",
+      "nonce_ok": true,
+      "dep_k": 6,
+      "facts": [
+       "delta_util"
+      ],
+      "used": true,
+      "why": "link_9=present refs\u2229facts=['delta_util']",
+      "link_edit_line": 359,
+      "straddle_spec": true,
+      "straddle_eff": true,
+      "compactions_between": [
+       312
+      ],
+      "dep_reread": [],
+      "tokens_in": 302957,
+      "tokens_out": 1549,
+      "api_calls": 6
+     },
+     {
+      "k": 10,
+      "prompt_line": 383,
+      "cite": "335908c0-cc3a-43ee-9cfb-c46c806db8b0.jsonl",
+      "nonce_ok": true,
+      "dep_k": 7,
+      "facts": [
+       "MOD0_BATCH_LIMIT"
+      ],
+      "used": true,
+      "why": "link_10=present refs\u2229facts=['MOD0_BATCH_LIMIT']",
+      "link_edit_line": 401,
+      "straddle_spec": true,
+      "straddle_eff": true,
+      "compactions_between": [
+       312
+      ],
+      "dep_reread": [],
+      "tokens_in": 237325,
+      "tokens_out": 1336,
+      "api_calls": 4
+     },
+     {
+      "k": 11,
+      "prompt_line": 411,
+      "cite": "335908c0-cc3a-43ee-9cfb-c46c806db8b0.jsonl",
+      "nonce_ok": true,
+      "dep_k": 8,
+      "facts": [
+       "nine_handler"
+      ],
+      "used": true,
+      "why": "link_11=present refs\u2229facts=['nine_handler']",
+      "link_edit_line": 427,
+      "straddle_spec": true,
+      "straddle_eff": true,
+      "compactions_between": [
+       312
+      ],
+      "dep_reread": [],
+      "tokens_in": 273091,
+      "tokens_out": 1083,
+      "api_calls": 4
+     },
+     {
+      "k": 12,
+      "prompt_line": 437,
+      "cite": "335908c0-cc3a-43ee-9cfb-c46c806db8b0.jsonl",
+      "nonce_ok": true,
+      "dep_k": 9,
+      "facts": [
+       "echo_util"
+      ],
+      "used": true,
+      "why": "link_12=present refs\u2229facts=['echo_util']",
+      "link_edit_line": 485,
+      "straddle_spec": false,
+      "straddle_eff": true,
+      "compactions_between": [
+       450
+      ],
+      "dep_reread": [],
+      "tokens_in": 238167,
+      "tokens_out": 1580,
+      "api_calls": 5
+     },
+     {
+      "k": 13,
+      "prompt_line": 495,
+      "cite": "335908c0-cc3a-43ee-9cfb-c46c806db8b0.jsonl",
+      "nonce_ok": true,
+      "dep_k": 10,
+      "facts": [
+       "MOD3_BATCH_LIMIT"
+      ],
+      "used": true,
+      "why": "link_13=present refs\u2229facts=['MOD3_BATCH_LIMIT']",
+      "link_edit_line": 517,
+      "straddle_spec": true,
+      "straddle_eff": true,
+      "compactions_between": [
+       450
+      ],
+      "dep_reread": [],
+      "tokens_in": 215328,
+      "tokens_out": 1709,
+      "api_calls": 4
+     }
+    ],
+    "rho": null
+   }
+  },
+  "B": {
+   "1": {
+    "arm": "B",
+    "run": 1,
+    "seed": 1,
+    "status": "OK",
+    "transcript": "e0608d6d-60a2-4f1a-b190-6ec3ed013c12.jsonl",
+    "compactions": [
+     {
+      "task": 5,
+      "line": 146
+     },
+     {
+      "task": 8,
+      "line": 274
+     },
+     {
+      "task": 11,
+      "line": 404
+     }
+    ],
+    "n_compactions": 3,
+    "R_S": [
+     1.0,
+     8
+    ],
+    "R_NS": [
+     1.0,
+     2
+    ],
+    "R_S_eff": [
+     1.0,
+     9
+    ],
+    "R_NS_eff": [
+     1.0,
+     1
+    ],
+    "S_tasks": [
+     6,
+     7,
+     8,
+     9,
+     10,
+     11,
+     12,
+     13
+    ],
+    "NS_tasks": [
+     4,
+     5
+    ],
+    "nonce_rate": 1.0,
+    "rederivations": 17,
+    "rederivation_lines": [
+     [
+      181,
+      "/home/user/plateau/experiments/d037/raw/B/1/work/d037_target/mod4.py"
+     ],
+     [
+      200,
+      "/home/user/plateau/experiments/d037/raw/B/1/work/d037_target/mod1.py"
+     ],
+     [
+      232,
+      "/home/user/plateau/experiments/d037/raw/B/1/work/d037_target/mod0.py"
+     ],
+     [
+      234,
+      "/home/user/plateau/experiments/d037/raw/B/1/work/d037_target/mod2.py"
+     ],
+     [
+      260,
+      "/home/user/plateau/experiments/d037/raw/B/1/work/d037_target/mod1.py"
+     ],
+     [
+      263,
+      "/home/user/plateau/experiments/d037/raw/B/1/work/d037_target/mod3.py"
+     ],
+     [
+      296,
+      "/home/user/plateau/experiments/d037/raw/B/1/work/d037_target/mod3.py"
+     ],
+     [
+      328,
+      "/home/user/plateau/experiments/d037/raw/B/1/work/d037_target/mod2.py"
+     ],
+     [
+      330,
+      "/home/user/plateau/experiments/d037/raw/B/1/work/d037_target/mod4.py"
+     ],
+     [
+      358,
+      "/home/user/plateau/experiments/d037/raw/B/1/work/d037_target/mod3.py"
+     ],
+     [
+      360,
+      "/home/user/plateau/experiments/d037/raw/B/1/work/d037_target/mod5.py"
+     ],
+     [
+      391,
+      "/home/user/plateau/experiments/d037/raw/B/1/work/d037_target/mod4.py"
+     ],
+     [
+      393,
+      "/home/user/plateau/experiments/d037/raw/B/1/work/d037_target/mod0.py"
+     ],
+     [
+      451,
+      "/home/user/plateau/experiments/d037/raw/B/1/work/d037_target/mod5.py"
+     ],
+     [
+      453,
+      "/home/user/plateau/experiments/d037/raw/B/1/work/d037_target/mod1.py"
+     ],
+     [
+      479,
+      "/home/user/plateau/experiments/d037/raw/B/1/work/d037_target/mod0.py"
+     ],
+     [
+      482,
+      "/home/user/plateau/experiments/d037/raw/B/1/work/d037_target/mod2.py"
+     ]
+    ],
+    "dep_rereads": 0,
+    "tokens_per_task_in": 245340.84615384616,
+    "tokens_per_task_out": 1505.1538461538462,
+    "tokens_per_task": 246846,
+    "inject_events": 3,
+    "inject_chars": 4397,
+    "inject_over_budget": [],
+    "cost_usd": 1.8269909000000002,
+    "confounded": [],
+    "items": [
+     {
+      "k": 1,
+      "prompt_line": 3,
+      "cite": "e0608d6d-60a2-4f1a-b190-6ec3ed013c12.jsonl",
+      "nonce_ok": true,
+      "tokens_in": 208044,
+      "tokens_out": 892,
+      "api_calls": 5
+     },
+     {
+      "k": 2,
+      "prompt_line": 45,
+      "cite": "e0608d6d-60a2-4f1a-b190-6ec3ed013c12.jsonl",
+      "nonce_ok": true,
+      "tokens_in": 198325,
+      "tokens_out": 733,
+      "api_calls": 4
+     },
+     {
+      "k": 3,
+      "prompt_line": 69,
+      "cite": "e0608d6d-60a2-4f1a-b190-6ec3ed013c12.jsonl",
+      "nonce_ok": true,
+      "tokens_in": 232183,
+      "tokens_out": 957,
+      "api_calls": 4
+     },
+     {
+      "k": 4,
+      "prompt_line": 94,
+      "cite": "e0608d6d-60a2-4f1a-b190-6ec3ed013c12.jsonl",
+      "nonce_ok": true,
+      "dep_k": 1,
+      "facts": [
+       "MOD0_RETRY_LIMIT"
+      ],
+      "used": true,
+      "why": "link_4=present refs\u2229facts=['MOD0_RETRY_LIMIT']",
+      "link_edit_line": 113,
+      "straddle_spec": false,
+      "straddle_eff": false,
+      "compactions_between": [],
+      "dep_reread": [],
+      "tokens_in": 337449,
+      "tokens_out": 1438,
+      "api_calls": 5
+     },
+     {
+      "k": 5,
+      "prompt_line": 128,
+      "cite": "e0608d6d-60a2-4f1a-b190-6ec3ed013c12.jsonl",
+      "nonce_ok": true,
+      "dep_k": 2,
+      "facts": [
+       "seven_handler"
+      ],
+      "used": true,
+      "why": "link_5=present refs\u2229facts=['seven_handler']",
+      "link_edit_line": 172,
+      "straddle_spec": false,
+      "straddle_eff": true,
+      "compactions_between": [
+       146
+      ],
+      "dep_reread": [],
+      "tokens_in": 272749,
+      "tokens_out": 1686,
+      "api_calls": 6
+     },
+     {
+      "k": 6,
+      "prompt_line": 194,
+      "cite": "e0608d6d-60a2-4f1a-b190-6ec3ed013c12.jsonl",
+      "nonce_ok": true,
+      "dep_k": 3,
+      "facts": [
+       "ping_util"
+      ],
+      "used": true,
+      "why": "link_6=present refs\u2229facts=['ping_util']",
+      "link_edit_line": 212,
+      "straddle_spec": true,
+      "straddle_eff": true,
+      "compactions_between": [
+       146
+      ],
+      "dep_reread": [],
+      "tokens_in": 264083,
+      "tokens_out": 1936,
+      "api_calls": 5
+     },
+     {
+      "k": 7,
+      "prompt_line": 227,
+      "cite": "e0608d6d-60a2-4f1a-b190-6ec3ed013c12.jsonl",
+      "nonce_ok": true,
+      "dep_k": 4,
+      "facts": [
+       "MOD3_BATCH_LIMIT"
+      ],
+      "used": true,
+      "why": "link_7=present refs\u2229facts=['MOD3_BATCH_LIMIT']",
+      "link_edit_line": 246,
+      "straddle_spec": true,
+      "straddle_eff": true,
+      "compactions_between": [
+       146
+      ],
+      "dep_reread": [],
+      "tokens_in": 248205,
+      "tokens_out": 1310,
+      "api_calls": 4
+     },
+     {
+      "k": 8,
+      "prompt_line": 256,
+      "cite": "e0608d6d-60a2-4f1a-b190-6ec3ed013c12.jsonl",
+      "nonce_ok": true,
+      "dep_k": 5,
+      "facts": [
+       "lucky_handler"
+      ],
+      "used": true,
+      "why": "link_8=present refs\u2229facts=['lucky_handler']",
+      "link_edit_line": 311,
+      "straddle_spec": true,
+      "straddle_eff": true,
+      "compactions_between": [
+       146,
+       274
+      ],
+      "dep_reread": [],
+      "tokens_in": 232329,
+      "tokens_out": 2297,
+      "api_calls": 5
+     },
+     {
+      "k": 9,
+      "prompt_line": 322,
+      "cite": "e0608d6d-60a2-4f1a-b190-6ec3ed013c12.jsonl",
+      "nonce_ok": true,
+      "dep_k": 6,
+      "facts": [
+       "signal_util"
+      ],
+      "used": true,
+      "why": "link_9=present refs\u2229facts=['signal_util']",
+      "link_edit_line": 342,
+      "straddle_spec": true,
+      "straddle_eff": true,
+      "compactions_between": [
+       274
+      ],
+      "dep_reread": [],
+      "tokens_in": 217005,
+      "tokens_out": 2204,
+      "api_calls": 4
+     },
+     {
+      "k": 10,
+      "prompt_line": 353,
+      "cite": "e0608d6d-60a2-4f1a-b190-6ec3ed013c12.jsonl",
+      "nonce_ok": true,
+      "dep_k": 7,
+      "facts": [
+       "MOD0_QUEUE_LIMIT"
+      ],
+      "used": true,
+      "why": "link_10=present refs\u2229facts=['MOD0_QUEUE_LIMIT']",
+      "link_edit_line": 376,
+      "straddle_spec": true,
+      "straddle_eff": true,
+      "compactions_between": [
+       274
+      ],
+      "dep_reread": [],
+      "tokens_in": 323446,
+      "tokens_out": 1757,
+      "api_calls": 5
+     },
+     {
+      "k": 11,
+      "prompt_line": 386,
+      "cite": "e0608d6d-60a2-4f1a-b190-6ec3ed013c12.jsonl",
+      "nonce_ok": true,
+      "dep_k": 8,
+      "facts": [
+       "tally_handler"
+      ],
+      "used": true,
+      "why": "link_11=present refs\u2229facts=['tally_handler']",
+      "link_edit_line": 430,
+      "straddle_spec": true,
+      "straddle_eff": true,
+      "compactions_between": [
+       274,
+       404
+      ],
+      "dep_reread": [],
+      "tokens_in": 191892,
+      "tokens_out": 1290,
+      "api_calls": 4
+     },
+     {
+      "k": 12,
+      "prompt_line": 445,
+      "cite": "e0608d6d-60a2-4f1a-b190-6ec3ed013c12.jsonl",
+      "nonce_ok": true,
+      "dep_k": 9,
+      "facts": [
+       "beacon_util"
+      ],
+      "used": true,
+      "why": "link_12=present refs\u2229facts=['beacon_util']",
+      "link_edit_line": 465,
+      "straddle_spec": true,
+      "straddle_eff": true,
+      "compactions_between": [
+       404
+      ],
+      "dep_reread": [],
+      "tokens_in": 212516,
+      "tokens_out": 1583,
+      "api_calls": 4
+     },
+     {
+      "k": 13,
+      "prompt_line": 475,
+      "cite": "e0608d6d-60a2-4f1a-b190-6ec3ed013c12.jsonl",
+      "nonce_ok": true,
+      "dep_k": 10,
+      "facts": [
+       "MOD3_RATE_LIMIT"
+      ],
+      "used": true,
+      "why": "link_13=present refs\u2229facts=['MOD3_RATE_LIMIT']",
+      "link_edit_line": 494,
+      "straddle_spec": true,
+      "straddle_eff": true,
+      "compactions_between": [
+       404
+      ],
+      "dep_reread": [],
+      "tokens_in": 251205,
+      "tokens_out": 1484,
+      "api_calls": 4
+     }
+    ],
+    "rho": null
+   },
+   "2": {
+    "arm": "B",
+    "run": 2,
+    "seed": 2,
+    "status": "OK",
+    "transcript": "d307742b-2e4a-488a-8f0f-995c0e19c9d8.jsonl",
+    "compactions": [
+     {
+      "task": 5,
+      "line": 152
+     },
+     {
+      "task": 8,
+      "line": 277
+     },
+     {
+      "task": 11,
+      "line": 416
+     }
+    ],
+    "n_compactions": 3,
+    "R_S": [
+     1.0,
+     8
+    ],
+    "R_NS": [
+     1.0,
+     2
+    ],
+    "R_S_eff": [
+     1.0,
+     9
+    ],
+    "R_NS_eff": [
+     1.0,
+     1
+    ],
+    "S_tasks": [
+     6,
+     7,
+     8,
+     9,
+     10,
+     11,
+     12,
+     13
+    ],
+    "NS_tasks": [
+     4,
+     5
+    ],
+    "nonce_rate": 1.0,
+    "rederivations": 7,
+    "rederivation_lines": [
+     [
+      299,
+      "/home/user/plateau/experiments/d037/raw/B/2/work/d037_target/mod3.py"
+     ],
+     [
+      341,
+      "/home/user/plateau/experiments/d037/raw/B/2/work/d037_target/mod4.py"
+     ],
+     [
+      376,
+      "/home/user/plateau/experiments/d037/raw/B/2/work/d037_target/mod3.py"
+     ],
+     [
+      383,
+      "/home/user/plateau/experiments/d037/raw/B/2/work/d037_target/mod5.py"
+     ],
+     [
+      449,
+      "/home/user/plateau/experiments/d037/raw/B/2/work/d037_target/mod0.py"
+     ],
+     [
+      482,
+      "/home/user/plateau/experiments/d037/raw/B/2/work/d037_target/mod1.py"
+     ],
+     [
+      517,
+      "/home/user/plateau/experiments/d037/raw/B/2/work/d037_target/mod2.py"
+     ]
+    ],
+    "dep_rereads": 0,
+    "tokens_per_task_in": 325800.6153846154,
+    "tokens_per_task_out": 1272.076923076923,
+    "tokens_per_task": 327072.6923076923,
+    "inject_events": 3,
+    "inject_chars": 4278,
+    "inject_over_budget": [],
+    "cost_usd": 2.0719755999999996,
+    "confounded": [],
+    "items": [
+     {
+      "k": 1,
+      "prompt_line": 4,
+      "cite": "d307742b-2e4a-488a-8f0f-995c0e19c9d8.jsonl",
+      "nonce_ok": true,
+      "tokens_in": 252188,
+      "tokens_out": 892,
+      "api_calls": 6
+     },
+     {
+      "k": 2,
+      "prompt_line": 52,
+      "cite": "d307742b-2e4a-488a-8f0f-995c0e19c9d8.jsonl",
+      "nonce_ok": true,
+      "tokens_in": 199308,
+      "tokens_out": 655,
+      "api_calls": 4
+     },
+     {
+      "k": 3,
+      "prompt_line": 76,
+      "cite": "d307742b-2e4a-488a-8f0f-995c0e19c9d8.jsonl",
+      "nonce_ok": true,
+      "tokens_in": 235392,
+      "tokens_out": 1285,
+      "api_calls": 4
+     },
+     {
+      "k": 4,
+      "prompt_line": 103,
+      "cite": "d307742b-2e4a-488a-8f0f-995c0e19c9d8.jsonl",
+      "nonce_ok": true,
+      "dep_k": 1,
+      "facts": [
+       "MOD0_ITEM_LIMIT"
+      ],
+      "used": true,
+      "why": "link_4=present refs\u2229facts=['MOD0_ITEM_LIMIT']",
+      "link_edit_line": 124,
+      "straddle_spec": false,
+      "straddle_eff": false,
+      "compactions_between": [],
+      "dep_reread": [],
+      "tokens_in": 271305,
+      "tokens_out": 1149,
+      "api_calls": 4
+     },
+     {
+      "k": 5,
+      "prompt_line": 134,
+      "cite": "d307742b-2e4a-488a-8f0f-995c0e19c9d8.jsonl",
+      "nonce_ok": true,
+      "dep_k": 2,
+      "facts": [
+       "mod1_seven_handler"
+      ],
+      "used": true,
+      "why": "link_5=present refs\u2229facts=['mod1_seven_handler']",
+      "link_edit_line": 186,
+      "straddle_spec": false,
+      "straddle_eff": true,
+      "compactions_between": [
+       152
+      ],
+      "dep_reread": [],
+      "tokens_in": 234082,
+      "tokens_out": 1382,
+      "api_calls": 5
+     },
+     {
+      "k": 6,
+      "prompt_line": 196,
+      "cite": "d307742b-2e4a-488a-8f0f-995c0e19c9d8.jsonl",
+      "nonce_ok": true,
+      "dep_k": 3,
+      "facts": [
+       "ping_util"
+      ],
+      "used": true,
+      "why": "link_6=present refs\u2229facts=['ping_util']",
+      "link_edit_line": 217,
+      "straddle_spec": true,
+      "straddle_eff": true,
+      "compactions_between": [
+       152
+      ],
+      "dep_reread": [],
+      "tokens_in": 316920,
+      "tokens_out": 1539,
+      "api_calls": 6
+     },
+     {
+      "k": 7,
+      "prompt_line": 227,
+      "cite": "d307742b-2e4a-488a-8f0f-995c0e19c9d8.jsonl",
+      "nonce_ok": true,
+      "dep_k": 4,
+      "facts": [
+       "MOD3_ITEM_LIMIT"
+      ],
+      "used": true,
+      "why": "link_7=present refs\u2229facts=['MOD3_ITEM_LIMIT']",
+      "link_edit_line": 247,
+      "straddle_spec": true,
+      "straddle_eff": true,
+      "compactions_between": [
+       152
+      ],
+      "dep_reread": [],
+      "tokens_in": 371413,
+      "tokens_out": 1294,
+      "api_calls": 6
+     },
+     {
+      "k": 8,
+      "prompt_line": 257,
+      "cite": "d307742b-2e4a-488a-8f0f-995c0e19c9d8.jsonl",
+      "nonce_ok": true,
+      "dep_k": 5,
+      "facts": [
+       "mod4_seven_handler"
+      ],
+      "used": true,
+      "why": "link_8=present refs\u2229facts=['mod4_seven_handler']",
+      "link_edit_line": 311,
+      "straddle_spec": true,
+      "straddle_eff": true,
+      "compactions_between": [
+       152,
+       277
+      ],
+      "dep_reread": [],
+      "tokens_in": 346464,
+      "tokens_out": 1621,
+      "api_calls": 7
+     },
+     {
+      "k": 9,
+      "prompt_line": 321,
+      "cite": "d307742b-2e4a-488a-8f0f-995c0e19c9d8.jsonl",
+      "nonce_ok": true,
+      "dep_k": 6,
+      "facts": [
+       "echo_util"
+      ],
+      "used": true,
+      "why": "link_9=present refs\u2229facts=['echo_util']",
+      "link_edit_line": 347,
+      "straddle_spec": true,
+      "straddle_eff": true,
+      "compactions_between": [
+       277
+      ],
+      "dep_reread": [],
+      "tokens_in": 435442,
+      "tokens_out": 1457,
+      "api_calls": 8
+     },
+     {
+      "k": 10,
+      "prompt_line": 362,
+      "cite": "d307742b-2e4a-488a-8f0f-995c0e19c9d8.jsonl",
+      "nonce_ok": true,
+      "dep_k": 7,
+      "facts": [
+       "MOD0_TASK7_LIMIT"
+      ],
+      "used": true,
+      "why": "link_10=present refs\u2229facts=['MOD0_TASK7_LIMIT']",
+      "link_edit_line": 389,
+      "straddle_spec": true,
+      "straddle_eff": true,
+      "compactions_between": [
+       277
+      ],
+      "dep_reread": [],
+      "tokens_in": 576662,
+      "tokens_out": 1414,
+      "api_calls": 9
+     },
+     {
+      "k": 11,
+      "prompt_line": 403,
+      "cite": "d307742b-2e4a-488a-8f0f-995c0e19c9d8.jsonl",
+      "nonce_ok": true,
+      "dep_k": 8,
+      "facts": [
+       "mod1_eight_handler"
+      ],
+      "used": true,
+      "why": "link_11=present refs\u2229facts=['mod1_eight_handler']",
+      "link_edit_line": 454,
+      "straddle_spec": true,
+      "straddle_eff": true,
+      "compactions_between": [
+       277,
+       416
+      ],
+      "dep_reread": [],
+      "tokens_in": 280057,
+      "tokens_out": 1262,
+      "api_calls": 6
+     },
+     {
+      "k": 12,
+      "prompt_line": 464,
+      "cite": "d307742b-2e4a-488a-8f0f-995c0e19c9d8.jsonl",
+      "nonce_ok": true,
+      "dep_k": 9,
+      "facts": [
+       "relay_util"
+      ],
+      "used": true,
+      "why": "link_12=present refs\u2229facts=['relay_util']",
+      "link_edit_line": 488,
+      "straddle_spec": true,
+      "straddle_eff": true,
+      "compactions_between": [
+       416
+      ],
+      "dep_reread": [],
+      "tokens_in": 329950,
+      "tokens_out": 1310,
+      "api_calls": 6
+     },
+     {
+      "k": 13,
+      "prompt_line": 501,
+      "cite": "d307742b-2e4a-488a-8f0f-995c0e19c9d8.jsonl",
+      "nonce_ok": true,
+      "dep_k": 10,
+      "facts": [
+       "MOD3_TASK10_LIMIT"
+      ],
+      "used": true,
+      "why": "link_13=present refs\u2229facts=['MOD3_TASK10_LIMIT']",
+      "link_edit_line": 522,
+      "straddle_spec": true,
+      "straddle_eff": true,
+      "compactions_between": [
+       416
+      ],
+      "dep_reread": [],
+      "tokens_in": 386225,
+      "tokens_out": 1277,
+      "api_calls": 6
+     }
+    ],
+    "rho": null
+   },
+   "3": {
+    "arm": "B",
+    "run": 3,
+    "seed": 3,
+    "status": "OK",
+    "transcript": "4bc864df-6065-42d9-83e2-b4f256d806b9.jsonl",
+    "compactions": [
+     {
+      "task": 5,
+      "line": 150
+     },
+     {
+      "task": 8,
+      "line": 276
+     },
+     {
+      "task": 11,
+      "line": 394
+     }
+    ],
+    "n_compactions": 3,
+    "R_S": [
+     1.0,
+     8
+    ],
+    "R_NS": [
+     1.0,
+     2
+    ],
+    "R_S_eff": [
+     1.0,
+     9
+    ],
+    "R_NS_eff": [
+     1.0,
+     1
+    ],
+    "S_tasks": [
+     6,
+     7,
+     8,
+     9,
+     10,
+     11,
+     12,
+     13
+    ],
+    "NS_tasks": [
+     4,
+     5
+    ],
+    "nonce_rate": 1.0,
+    "rederivations": 15,
+    "rederivation_lines": [
+     [
+      185,
+      "/home/user/plateau/experiments/d037/raw/B/3/work/d037_target/mod4.py"
+     ],
+     [
+      206,
+      "/home/user/plateau/experiments/d037/raw/B/3/work/d037_target/mod1.py"
+     ],
+     [
+      234,
+      "/home/user/plateau/experiments/d037/raw/B/3/work/d037_target/mod0.py"
+     ],
+     [
+      236,
+      "/home/user/plateau/experiments/d037/raw/B/3/work/d037_target/mod2.py"
+     ],
+     [
+      263,
+      "/home/user/plateau/experiments/d037/raw/B/3/work/d037_target/mod1.py"
+     ],
+     [
+      265,
+      "/home/user/plateau/experiments/d037/raw/B/3/work/d037_target/mod3.py"
+     ],
+     [
+      322,
+      "/home/user/plateau/experiments/d037/raw/B/3/work/d037_target/mod2.py"
+     ],
+     [
+      324,
+      "/home/user/plateau/experiments/d037/raw/B/3/work/d037_target/mod4.py"
+     ],
+     [
+      352,
+      "/home/user/plateau/experiments/d037/raw/B/3/work/d037_target/mod3.py"
+     ],
+     [
+      354,
+      "/home/user/plateau/experiments/d037/raw/B/3/work/d037_target/mod5.py"
+     ],
+     [
+      381,
+      "/home/user/plateau/experiments/d037/raw/B/3/work/d037_target/mod4.py"
+     ],
+     [
+      383,
+      "/home/user/plateau/experiments/d037/raw/B/3/work/d037_target/mod0.py"
+     ],
+     [
+      457,
+      "/home/user/plateau/experiments/d037/raw/B/3/work/d037_target/mod1.py"
+     ],
+     [
+      476,
+      "/home/user/plateau/experiments/d037/raw/B/3/work/d037_target/mod0.py"
+     ],
+     [
+      478,
+      "/home/user/plateau/experiments/d037/raw/B/3/work/d037_target/mod2.py"
+     ]
+    ],
+    "dep_rereads": 0,
+    "tokens_per_task_in": 247659.92307692306,
+    "tokens_per_task_out": 1275.5384615384614,
+    "tokens_per_task": 248935.46153846153,
+    "inject_events": 3,
+    "inject_chars": 4327,
+    "inject_over_budget": [],
+    "cost_usd": 1.8246249,
+    "confounded": [],
+    "items": [
+     {
+      "k": 1,
+      "prompt_line": 3,
+      "cite": "4bc864df-6065-42d9-83e2-b4f256d806b9.jsonl",
+      "nonce_ok": true,
+      "tokens_in": 294569,
+      "tokens_out": 1174,
+      "api_calls": 7
+     },
+     {
+      "k": 2,
+      "prompt_line": 50,
+      "cite": "4bc864df-6065-42d9-83e2-b4f256d806b9.jsonl",
+      "nonce_ok": true,
+      "tokens_in": 199906,
+      "tokens_out": 713,
+      "api_calls": 4
+     },
+     {
+      "k": 3,
+      "prompt_line": 74,
+      "cite": "4bc864df-6065-42d9-83e2-b4f256d806b9.jsonl",
+      "nonce_ok": true,
+      "tokens_in": 294456,
+      "tokens_out": 881,
+      "api_calls": 5
+     },
+     {
+      "k": 4,
+      "prompt_line": 103,
+      "cite": "4bc864df-6065-42d9-83e2-b4f256d806b9.jsonl",
+      "nonce_ok": true,
+      "dep_k": 1,
+      "facts": [
+       "MOD0_RETRY_LIMIT"
+      ],
+      "used": true,
+      "why": "link_4=present refs\u2229facts=['MOD0_RETRY_LIMIT']",
+      "link_edit_line": 122,
+      "straddle_spec": false,
+      "straddle_eff": false,
+      "compactions_between": [],
+      "dep_reread": [],
+      "tokens_in": 269718,
+      "tokens_out": 1091,
+      "api_calls": 4
+     },
+     {
+      "k": 5,
+      "prompt_line": 132,
+      "cite": "4bc864df-6065-42d9-83e2-b4f256d806b9.jsonl",
+      "nonce_ok": true,
+      "dep_k": 2,
+      "facts": [
+       "seven_handler"
+      ],
+      "used": true,
+      "why": "link_5=present refs\u2229facts=['seven_handler']",
+      "link_edit_line": 176,
+      "straddle_spec": false,
+      "straddle_eff": true,
+      "compactions_between": [
+       150
+      ],
+      "dep_reread": [],
+      "tokens_in": 273204,
+      "tokens_out": 1912,
+      "api_calls": 6
+     },
+     {
+      "k": 6,
+      "prompt_line": 200,
+      "cite": "4bc864df-6065-42d9-83e2-b4f256d806b9.jsonl",
+      "nonce_ok": true,
+      "dep_k": 3,
+      "facts": [
+       "pingpong_util"
+      ],
+      "used": true,
+      "why": "link_6=present refs\u2229facts=['pingpong_util']",
+      "link_edit_line": 218,
+      "straddle_spec": true,
+      "straddle_eff": true,
+      "compactions_between": [
+       150
+      ],
+      "dep_reread": [],
+      "tokens_in": 208562,
+      "tokens_out": 1248,
+      "api_calls": 4
+     },
+     {
+      "k": 7,
+      "prompt_line": 229,
+      "cite": "4bc864df-6065-42d9-83e2-b4f256d806b9.jsonl",
+      "nonce_ok": true,
+      "dep_k": 4,
+      "facts": [
+       "MOD3_BATCH_LIMIT"
+      ],
+      "used": true,
+      "why": "link_7=present refs\u2229facts=['MOD3_BATCH_LIMIT']",
+      "link_edit_line": 248,
+      "straddle_spec": true,
+      "straddle_eff": true,
+      "compactions_between": [
+       150
+      ],
+      "dep_reread": [],
+      "tokens_in": 245735,
+      "tokens_out": 1357,
+      "api_calls": 4
+     },
+     {
+      "k": 8,
+      "prompt_line": 258,
+      "cite": "4bc864df-6065-42d9-83e2-b4f256d806b9.jsonl",
+      "nonce_ok": true,
+      "dep_k": 5,
+      "facts": [
+       "lucky_handler"
+      ],
+      "used": true,
+      "why": "link_8=present refs\u2229facts=['lucky_handler']",
+      "link_edit_line": 302,
+      "straddle_spec": true,
+      "straddle_eff": true,
+      "compactions_between": [
+       150,
+       276
+      ],
+      "dep_reread": [],
+      "tokens_in": 190253,
+      "tokens_out": 1458,
+      "api_calls": 4
+     },
+     {
+      "k": 9,
+      "prompt_line": 317,
+      "cite": "4bc864df-6065-42d9-83e2-b4f256d806b9.jsonl",
+      "nonce_ok": true,
+      "dep_k": 6,
+      "facts": [
+       "echo_util"
+      ],
+      "used": true,
+      "why": "link_9=present refs\u2229facts=['echo_util']",
+      "link_edit_line": 336,
+      "straddle_spec": true,
+      "straddle_eff": true,
+      "compactions_between": [
+       276
+      ],
+      "dep_reread": [],
+      "tokens_in": 213421,
+      "tokens_out": 1367,
+      "api_calls": 4
+     },
+     {
+      "k": 10,
+      "prompt_line": 347,
+      "cite": "4bc864df-6065-42d9-83e2-b4f256d806b9.jsonl",
+      "nonce_ok": true,
+      "dep_k": 7,
+      "facts": [
+       "MOD0_QUEUE_LIMIT"
+      ],
+      "used": true,
+      "why": "link_10=present refs\u2229facts=['MOD0_QUEUE_LIMIT']",
+      "link_edit_line": 366,
+      "straddle_spec": true,
+      "straddle_eff": true,
+      "compactions_between": [
+       276
+      ],
+      "dep_reread": [],
+      "tokens_in": 251538,
+      "tokens_out": 1356,
+      "api_calls": 4
+     },
+     {
+      "k": 11,
+      "prompt_line": 376,
+      "cite": "4bc864df-6065-42d9-83e2-b4f256d806b9.jsonl",
+      "nonce_ok": true,
+      "dep_k": 8,
+      "facts": [
+       "swift_handler"
+      ],
+      "used": true,
+      "why": "link_11=present refs\u2229facts=['swift_handler']",
+      "link_edit_line": 422,
+      "straddle_spec": true,
+      "straddle_eff": true,
+      "compactions_between": [
+       276,
+       394
+      ],
+      "dep_reread": [],
+      "tokens_in": 194090,
+      "tokens_out": 1339,
+      "api_calls": 4
+     },
+     {
+      "k": 12,
+      "prompt_line": 437,
+      "cite": "4bc864df-6065-42d9-83e2-b4f256d806b9.jsonl",
+      "nonce_ok": true,
+      "dep_k": 9,
+      "facts": [
+       "signal_util"
+      ],
+      "used": true,
+      "why": "link_12=present refs\u2229facts=['signal_util']",
+      "link_edit_line": 453,
+      "straddle_spec": true,
+      "straddle_eff": true,
+      "compactions_between": [
+       394
+      ],
+      "dep_reread": [],
+      "tokens_in": 328814,
+      "tokens_out": 1457,
+      "api_calls": 6
+     },
+     {
+      "k": 13,
+      "prompt_line": 471,
+      "cite": "4bc864df-6065-42d9-83e2-b4f256d806b9.jsonl",
+      "nonce_ok": true,
+      "dep_k": 10,
+      "facts": [
+       "MOD3_CACHE_LIMIT"
+      ],
+      "used": true,
+      "why": "link_13=present refs\u2229facts=['MOD3_CACHE_LIMIT']",
+      "link_edit_line": 490,
+      "straddle_spec": true,
+      "straddle_eff": true,
+      "compactions_between": [
+       394
+      ],
+      "dep_reread": [],
+      "tokens_in": 255313,
+      "tokens_out": 1229,
+      "api_calls": 4
+     }
+    ],
+    "rho": null
+   }
+  },
+  "C": {
+   "1": {
+    "arm": "C",
+    "run": 1,
+    "seed": 1,
+    "status": "OK",
+    "transcript": "71476112-b4d4-431c-ac1b-30c2658355dd.jsonl",
+    "compactions": [
+     {
+      "task": 4,
+      "line": 138
+     },
+     {
+      "task": 7,
+      "line": 255
+     },
+     {
+      "task": 10,
+      "line": 393
+     },
+     {
+      "task": 13,
+      "line": 514
+     }
+    ],
+    "n_compactions": 4,
+    "R_S": [
+     1.0,
+     9
+    ],
+    "R_NS": [
+     1.0,
+     1
+    ],
+    "R_S_eff": [
+     1.0,
+     9
+    ],
+    "R_NS_eff": [
+     1.0,
+     1
+    ],
+    "S_tasks": [
+     5,
+     6,
+     7,
+     8,
+     9,
+     10,
+     11,
+     12,
+     13
+    ],
+    "NS_tasks": [
+     4
+    ],
+    "nonce_rate": 1.0,
+    "rederivations": 6,
+    "rederivation_lines": [
+     [
+      182,
+      "/home/user/plateau/experiments/d037/raw/C/1/work/d037_target/mod0.py"
+     ],
+     [
+      213,
+      "/home/user/plateau/experiments/d037/raw/C/1/work/d037_target/mod1.py"
+     ],
+     [
+      293,
+      "/home/user/plateau/experiments/d037/raw/C/1/work/d037_target/mod2.py"
+     ],
+     [
+      326,
+      "/home/user/plateau/experiments/d037/raw/C/1/work/d037_target/mod3.py"
+     ],
+     [
+      363,
+      "/home/user/plateau/experiments/d037/raw/C/1/work/d037_target/mod4.py"
+     ],
+     [
+      539,
+      "/home/user/plateau/experiments/d037/raw/C/1/work/d037_target/mod2.py"
+     ]
+    ],
+    "dep_rereads": 0,
+    "tokens_per_task_in": 260222.76923076922,
+    "tokens_per_task_out": 1453.4615384615386,
+    "tokens_per_task": 261676.23076923078,
+    "inject_events": 16,
+    "inject_chars": 19563,
+    "inject_over_budget": [],
+    "cost_usd": 2.1088649999999998,
+    "confounded": [],
+    "items": [
+     {
+      "k": 1,
+      "prompt_line": 4,
+      "cite": "71476112-b4d4-431c-ac1b-30c2658355dd.jsonl",
+      "nonce_ok": true,
+      "tokens_in": 327683,
+      "tokens_out": 1312,
+      "api_calls": 8
+     },
+     {
+      "k": 2,
+      "prompt_line": 61,
+      "cite": "71476112-b4d4-431c-ac1b-30c2658355dd.jsonl",
+      "nonce_ok": true,
+      "tokens_in": 208930,
+      "tokens_out": 767,
+      "api_calls": 4
+     },
+     {
+      "k": 3,
+      "prompt_line": 87,
+      "cite": "71476112-b4d4-431c-ac1b-30c2658355dd.jsonl",
+      "nonce_ok": true,
+      "tokens_in": 244505,
+      "tokens_out": 846,
+      "api_calls": 4
+     },
+     {
+      "k": 4,
+      "prompt_line": 111,
+      "cite": "71476112-b4d4-431c-ac1b-30c2658355dd.jsonl",
+      "nonce_ok": true,
+      "dep_k": 1,
+      "facts": [
+       "MOD0_RETRY_LIMIT"
+      ],
+      "used": true,
+      "why": "link_4=present refs\u2229facts=['MOD0_RETRY_LIMIT']",
+      "link_edit_line": 131,
+      "straddle_spec": false,
+      "straddle_eff": false,
+      "compactions_between": [
+       138
+      ],
+      "dep_reread": [],
+      "tokens_in": 215525,
+      "tokens_out": 1472,
+      "api_calls": 4
+     },
+     {
+      "k": 5,
+      "prompt_line": 173,
+      "cite": "71476112-b4d4-431c-ac1b-30c2658355dd.jsonl",
+      "nonce_ok": true,
+      "dep_k": 2,
+      "facts": [
+       "request_handler"
+      ],
+      "used": true,
+      "why": "link_5=present refs\u2229facts=['request_handler']",
+      "link_edit_line": 196,
+      "straddle_spec": true,
+      "straddle_eff": true,
+      "compactions_between": [
+       138
+      ],
+      "dep_reread": [],
+      "tokens_in": 206270,
+      "tokens_out": 1473,
+      "api_calls": 4
+     },
+     {
+      "k": 6,
+      "prompt_line": 207,
+      "cite": "71476112-b4d4-431c-ac1b-30c2658355dd.jsonl",
+      "nonce_ok": true,
+      "dep_k": 3,
+      "facts": [
+       "ping_util"
+      ],
+      "used": true,
+      "why": "link_6=present refs\u2229facts=['ping_util']",
+      "link_edit_line": 227,
+      "straddle_spec": true,
+      "straddle_eff": true,
+      "compactions_between": [
+       138
+      ],
+      "dep_reread": [],
+      "tokens_in": 247042,
+      "tokens_out": 1559,
+      "api_calls": 4
+     },
+     {
+      "k": 7,
+      "prompt_line": 238,
+      "cite": "71476112-b4d4-431c-ac1b-30c2658355dd.jsonl",
+      "nonce_ok": true,
+      "dep_k": 4,
+      "facts": [
+       "MOD3_QUEUE_LIMIT"
+      ],
+      "used": true,
+      "why": "link_7=present refs\u2229facts=['MOD3_QUEUE_LIMIT']",
+      "link_edit_line": 284,
+      "straddle_spec": true,
+      "straddle_eff": true,
+      "compactions_between": [
+       138,
+       255
+      ],
+      "dep_reread": [],
+      "tokens_in": 272483,
+      "tokens_out": 2331,
+      "api_calls": 6
+     },
+     {
+      "k": 8,
+      "prompt_line": 307,
+      "cite": "71476112-b4d4-431c-ac1b-30c2658355dd.jsonl",
+      "nonce_ok": true,
+      "dep_k": 5,
+      "facts": [
+       "status_handler"
+      ],
+      "used": true,
+      "why": "link_8=present refs\u2229facts=['status_handler']",
+      "link_edit_line": 331,
+      "straddle_spec": true,
+      "straddle_eff": true,
+      "compactions_between": [
+       255
+      ],
+      "dep_reread": [],
+      "tokens_in": 326657,
+      "tokens_out": 1697,
+      "api_calls": 6
+     },
+     {
+      "k": 9,
+      "prompt_line": 345,
+      "cite": "71476112-b4d4-431c-ac1b-30c2658355dd.jsonl",
+      "nonce_ok": true,
+      "dep_k": 6,
+      "facts": [
+       "relay_util"
+      ],
+      "used": true,
+      "why": "link_9=present refs\u2229facts=['relay_util']",
+      "link_edit_line": 368,
+      "straddle_spec": true,
+      "straddle_eff": true,
+      "compactions_between": [
+       255
+      ],
+      "dep_reread": [],
+      "tokens_in": 387682,
+      "tokens_out": 1411,
+      "api_calls": 6
+     },
+     {
+      "k": 10,
+      "prompt_line": 378,
+      "cite": "71476112-b4d4-431c-ac1b-30c2658355dd.jsonl",
+      "nonce_ok": true,
+      "dep_k": 7,
+      "facts": [
+       "MOD0_BATCH_LIMIT"
+      ],
+      "used": true,
+      "why": "link_10=present refs\u2229facts=['MOD0_BATCH_LIMIT']",
+      "link_edit_line": 433,
+      "straddle_spec": true,
+      "straddle_eff": true,
+      "compactions_between": [
+       255,
+       393
+      ],
+      "dep_reread": [],
+      "tokens_in": 236021,
+      "tokens_out": 2008,
+      "api_calls": 5
+     },
+     {
+      "k": 11,
+      "prompt_line": 444,
+      "cite": "71476112-b4d4-431c-ac1b-30c2658355dd.jsonl",
+      "nonce_ok": true,
+      "dep_k": 8,
+      "facts": [
+       "queue_handler"
+      ],
+      "used": true,
+      "why": "link_11=present refs\u2229facts=['queue_handler']",
+      "link_edit_line": 463,
+      "straddle_spec": true,
+      "straddle_eff": true,
+      "compactions_between": [
+       393
+      ],
+      "dep_reread": [],
+      "tokens_in": 217801,
+      "tokens_out": 1249,
+      "api_calls": 4
+     },
+     {
+      "k": 12,
+      "prompt_line": 473,
+      "cite": "71476112-b4d4-431c-ac1b-30c2658355dd.jsonl",
+      "nonce_ok": true,
+      "dep_k": 9,
+      "facts": [
+       "echo_util"
+      ],
+      "used": true,
+      "why": "link_12=present refs\u2229facts=['echo_util']",
+      "link_edit_line": 489,
+      "straddle_spec": true,
+      "straddle_eff": true,
+      "compactions_between": [
+       393
+      ],
+      "dep_reread": [],
+      "tokens_in": 255566,
+      "tokens_out": 1179,
+      "api_calls": 4
+     },
+     {
+      "k": 13,
+      "prompt_line": 499,
+      "cite": "71476112-b4d4-431c-ac1b-30c2658355dd.jsonl",
+      "nonce_ok": true,
+      "dep_k": 10,
+      "facts": [
+       "MOD3_DISPATCH_LIMIT"
+      ],
+      "used": true,
+      "why": "link_13=present refs\u2229facts=['MOD3_DISPATCH_LIMIT']",
+      "link_edit_line": 550,
+      "straddle_spec": true,
+      "straddle_eff": true,
+      "compactions_between": [
+       393,
+       514
+      ],
+      "dep_reread": [],
+      "tokens_in": 236731,
+      "tokens_out": 1591,
+      "api_calls": 5
+     }
+    ],
+    "rho": 0.25883831701508336
+   },
+   "2": {
+    "arm": "C",
+    "run": 2,
+    "seed": 2,
+    "status": "OK",
+    "transcript": "08265fef-bddd-49da-a281-def44b8af89b.jsonl",
+    "compactions": [
+     {
+      "task": 5,
+      "line": 152
+     },
+     {
+      "task": 8,
+      "line": 301
+     },
+     {
+      "task": 11,
+      "line": 444
+     }
+    ],
+    "n_compactions": 3,
+    "R_S": [
+     1.0,
+     8
+    ],
+    "R_NS": [
+     1.0,
+     2
+    ],
+    "R_S_eff": [
+     1.0,
+     9
+    ],
+    "R_NS_eff": [
+     1.0,
+     1
+    ],
+    "S_tasks": [
+     6,
+     7,
+     8,
+     9,
+     10,
+     11,
+     12,
+     13
+    ],
+    "NS_tasks": [
+     4,
+     5
+    ],
+    "nonce_rate": 1.0,
+    "rederivations": 5,
+    "rederivation_lines": [
+     [
+      187,
+      "/home/user/plateau/experiments/d037/raw/C/2/work/d037_target/mod0.py"
+     ],
+     [
+      362,
+      "/home/user/plateau/experiments/d037/raw/C/2/work/d037_target/mod4.py"
+     ],
+     [
+      431,
+      "/home/user/plateau/experiments/d037/raw/C/2/work/d037_target/mod0.py"
+     ],
+     [
+      502,
+      "/home/user/plateau/experiments/d037/raw/C/2/work/d037_target/mod1.py"
+     ],
+     [
+      529,
+      "/home/user/plateau/experiments/d037/raw/C/2/work/d037_target/mod2.py"
+     ]
+    ],
+    "dep_rereads": 0,
+    "tokens_per_task_in": 294695.6923076923,
+    "tokens_per_task_out": 1367.6923076923076,
+    "tokens_per_task": 296063.3846153846,
+    "inject_events": 15,
+    "inject_chars": 18068,
+    "inject_over_budget": [],
+    "cost_usd": 1.8891811000000005,
+    "confounded": [],
+    "items": [
+     {
+      "k": 1,
+      "prompt_line": 4,
+      "cite": "08265fef-bddd-49da-a281-def44b8af89b.jsonl",
+      "nonce_ok": true,
+      "tokens_in": 249828,
+      "tokens_out": 867,
+      "api_calls": 6
+     },
+     {
+      "k": 2,
+      "prompt_line": 47,
+      "cite": "08265fef-bddd-49da-a281-def44b8af89b.jsonl",
+      "nonce_ok": true,
+      "tokens_in": 249019,
+      "tokens_out": 728,
+      "api_calls": 5
+     },
+     {
+      "k": 3,
+      "prompt_line": 74,
+      "cite": "08265fef-bddd-49da-a281-def44b8af89b.jsonl",
+      "nonce_ok": true,
+      "tokens_in": 291894,
+      "tokens_out": 739,
+      "api_calls": 5
+     },
+     {
+      "k": 4,
+      "prompt_line": 102,
+      "cite": "08265fef-bddd-49da-a281-def44b8af89b.jsonl",
+      "nonce_ok": true,
+      "dep_k": 1,
+      "facts": [
+       "MOD0_ITEM_LIMIT"
+      ],
+      "used": true,
+      "why": "link_4=present refs\u2229facts=['MOD0_ITEM_LIMIT']",
+      "link_edit_line": 121,
+      "straddle_spec": false,
+      "straddle_eff": false,
+      "compactions_between": [],
+      "dep_reread": [],
+      "tokens_in": 405899,
+      "tokens_out": 1332,
+      "api_calls": 6
+     },
+     {
+      "k": 5,
+      "prompt_line": 137,
+      "cite": "08265fef-bddd-49da-a281-def44b8af89b.jsonl",
+      "nonce_ok": true,
+      "dep_k": 2,
+      "facts": [
+       "seven_handler"
+      ],
+      "used": true,
+      "why": "link_5=present refs\u2229facts=['seven_handler']",
+      "link_edit_line": 193,
+      "straddle_spec": false,
+      "straddle_eff": true,
+      "compactions_between": [
+       152
+      ],
+      "dep_reread": [],
+      "tokens_in": 267868,
+      "tokens_out": 1416,
+      "api_calls": 6
+     },
+     {
+      "k": 6,
+      "prompt_line": 203,
+      "cite": "08265fef-bddd-49da-a281-def44b8af89b.jsonl",
+      "nonce_ok": true,
+      "dep_k": 3,
+      "facts": [
+       "ping3_util"
+      ],
+      "used": true,
+      "why": "link_6=present refs\u2229facts=['ping3_util']",
+      "link_edit_line": 230,
+      "straddle_spec": true,
+      "straddle_eff": true,
+      "compactions_between": [
+       152
+      ],
+      "dep_reread": [],
+      "tokens_in": 258143,
+      "tokens_out": 1367,
+      "api_calls": 5
+     },
+     {
+      "k": 7,
+      "prompt_line": 240,
+      "cite": "08265fef-bddd-49da-a281-def44b8af89b.jsonl",
+      "nonce_ok": true,
+      "dep_k": 4,
+      "facts": [
+       "MOD3_RATE_LIMIT"
+      ],
+      "used": true,
+      "why": "link_7=present refs\u2229facts=['MOD3_RATE_LIMIT']",
+      "link_edit_line": 259,
+      "straddle_spec": true,
+      "straddle_eff": true,
+      "compactions_between": [
+       152
+      ],
+      "dep_reread": [],
+      "tokens_in": 304120,
+      "tokens_out": 1175,
+      "api_calls": 5
+     },
+     {
+      "k": 8,
+      "prompt_line": 269,
+      "cite": "08265fef-bddd-49da-a281-def44b8af89b.jsonl",
+      "nonce_ok": true,
+      "dep_k": 5,
+      "facts": [
+       "result_handler"
+      ],
+      "used": true,
+      "why": "link_8=present refs\u2229facts=['result_handler']",
+      "link_edit_line": 294,
+      "straddle_spec": true,
+      "straddle_eff": true,
+      "compactions_between": [
+       152,
+       301
+      ],
+      "dep_reread": [],
+      "tokens_in": 354730,
+      "tokens_out": 1516,
+      "api_calls": 6
+     },
+     {
+      "k": 9,
+      "prompt_line": 336,
+      "cite": "08265fef-bddd-49da-a281-def44b8af89b.jsonl",
+      "nonce_ok": true,
+      "dep_k": 6,
+      "facts": [
+       "relay6_util"
+      ],
+      "used": true,
+      "why": "link_9=present refs\u2229facts=['relay6_util']",
+      "link_edit_line": 357,
+      "straddle_spec": true,
+      "straddle_eff": true,
+      "compactions_between": [
+       301
+      ],
+      "dep_reread": [],
+      "tokens_in": 305682,
+      "tokens_out": 2071,
+      "api_calls": 6
+     },
+     {
+      "k": 10,
+      "prompt_line": 382,
+      "cite": "08265fef-bddd-49da-a281-def44b8af89b.jsonl",
+      "nonce_ok": true,
+      "dep_k": 7,
+      "facts": [
+       "MOD0_QUEUE_LIMIT"
+      ],
+      "used": true,
+      "why": "link_10=present refs\u2229facts=['MOD0_QUEUE_LIMIT']",
+      "link_edit_line": 405,
+      "straddle_spec": true,
+      "straddle_eff": true,
+      "compactions_between": [
+       301
+      ],
+      "dep_reread": [],
+      "tokens_in": 302922,
+      "tokens_out": 1704,
+      "api_calls": 5
+     },
+     {
+      "k": 11,
+      "prompt_line": 415,
+      "cite": "08265fef-bddd-49da-a281-def44b8af89b.jsonl",
+      "nonce_ok": true,
+      "dep_k": 8,
+      "facts": [
+       "lucky_handler"
+      ],
+      "used": true,
+      "why": "link_11=present refs\u2229facts=['lucky_handler']",
+      "link_edit_line": 437,
+      "straddle_spec": true,
+      "straddle_eff": true,
+      "compactions_between": [
+       301,
+       444
+      ],
+      "dep_reread": [],
+      "tokens_in": 285940,
+      "tokens_out": 1371,
+      "api_calls": 5
+     },
+     {
+      "k": 12,
+      "prompt_line": 479,
+      "cite": "08265fef-bddd-49da-a281-def44b8af89b.jsonl",
+      "nonce_ok": true,
+      "dep_k": 9,
+      "facts": [
+       "signal9_util"
+      ],
+      "used": true,
+      "why": "link_12=present refs\u2229facts=['signal9_util']",
+      "link_edit_line": 508,
+      "straddle_spec": true,
+      "straddle_eff": true,
+      "compactions_between": [
+       444
+      ],
+      "dep_reread": [],
+      "tokens_in": 310316,
+      "tokens_out": 1799,
+      "api_calls": 6
+     },
+     {
+      "k": 13,
+      "prompt_line": 523,
+      "cite": "08265fef-bddd-49da-a281-def44b8af89b.jsonl",
+      "nonce_ok": true,
+      "dep_k": 10,
+      "facts": [
+       "MOD3_RETRY_LIMIT"
+      ],
+      "used": true,
+      "why": "link_13=present refs\u2229facts=['MOD3_RETRY_LIMIT']",
+      "link_edit_line": 543,
+      "straddle_spec": true,
+      "straddle_eff": true,
+      "compactions_between": [
+       444
+      ],
+      "dep_reread": [],
+      "tokens_in": 244683,
+      "tokens_out": 1695,
+      "api_calls": 4
+     }
+    ],
+    "rho": 0.25404949381327335
+   },
+   "3": {
+    "arm": "C",
+    "run": 3,
+    "seed": 3,
+    "status": "OK",
+    "transcript": "46eb0cdc-17fd-4b80-86c8-6b4b9120103a.jsonl",
+    "compactions": [
+     {
+      "task": 4,
+      "line": 131
+     },
+     {
+      "task": 7,
+      "line": 247
+     },
+     {
+      "task": 10,
+      "line": 370
+     },
+     {
+      "task": 13,
+      "line": 496
+     }
+    ],
+    "n_compactions": 4,
+    "R_S": [
+     1.0,
+     9
+    ],
+    "R_NS": [
+     1.0,
+     1
+    ],
+    "R_S_eff": [
+     1.0,
+     9
+    ],
+    "R_NS_eff": [
+     1.0,
+     1
+    ],
+    "S_tasks": [
+     5,
+     6,
+     7,
+     8,
+     9,
+     10,
+     11,
+     12,
+     13
+    ],
+    "NS_tasks": [
+     4
+    ],
+    "nonce_rate": 1.0,
+    "rederivations": 5,
+    "rederivation_lines": [
+     [
+      188,
+      "/home/user/plateau/experiments/d037/raw/C/3/work/d037_target/mod0.py"
+     ],
+     [
+      219,
+      "/home/user/plateau/experiments/d037/raw/C/3/work/d037_target/mod1.py"
+     ],
+     [
+      399,
+      "/home/user/plateau/experiments/d037/raw/C/3/work/d037_target/mod5.py"
+     ],
+     [
+      467,
+      "/home/user/plateau/experiments/d037/raw/C/3/work/d037_target/mod1.py"
+     ],
+     [
+      521,
+      "/home/user/plateau/experiments/d037/raw/C/3/work/d037_target/mod2.py"
+     ]
+    ],
+    "dep_rereads": 0,
+    "tokens_per_task_in": 279441.6153846154,
+    "tokens_per_task_out": 1326,
+    "tokens_per_task": 280767.6153846154,
+    "inject_events": 16,
+    "inject_chars": 19470,
+    "inject_over_budget": [],
+    "cost_usd": 2.1070307,
+    "confounded": [],
+    "items": [
+     {
+      "k": 1,
+      "prompt_line": 4,
+      "cite": "46eb0cdc-17fd-4b80-86c8-6b4b9120103a.jsonl",
+      "nonce_ok": true,
+      "tokens_in": 248103,
+      "tokens_out": 1019,
+      "api_calls": 6
+     },
+     {
+      "k": 2,
+      "prompt_line": 53,
+      "cite": "46eb0cdc-17fd-4b80-86c8-6b4b9120103a.jsonl",
+      "nonce_ok": true,
+      "tokens_in": 204794,
+      "tokens_out": 829,
+      "api_calls": 4
+     },
+     {
+      "k": 3,
+      "prompt_line": 79,
+      "cite": "46eb0cdc-17fd-4b80-86c8-6b4b9120103a.jsonl",
+      "nonce_ok": true,
+      "tokens_in": 240402,
+      "tokens_out": 818,
+      "api_calls": 4
+     },
+     {
+      "k": 4,
+      "prompt_line": 104,
+      "cite": "46eb0cdc-17fd-4b80-86c8-6b4b9120103a.jsonl",
+      "nonce_ok": true,
+      "dep_k": 1,
+      "facts": [
+       "MOD0_H1_LIMIT"
+      ],
+      "used": true,
+      "why": "link_4=present refs\u2229facts=['MOD0_H1_LIMIT']",
+      "link_edit_line": 124,
+      "straddle_spec": false,
+      "straddle_eff": false,
+      "compactions_between": [
+       131
+      ],
+      "dep_reread": [],
+      "tokens_in": 213553,
+      "tokens_out": 1256,
+      "api_calls": 4
+     },
+     {
+      "k": 5,
+      "prompt_line": 166,
+      "cite": "46eb0cdc-17fd-4b80-86c8-6b4b9120103a.jsonl",
+      "nonce_ok": true,
+      "dep_k": 2,
+      "facts": [
+       "mod1_request_handler"
+      ],
+      "used": true,
+      "why": "link_5=present refs\u2229facts=['mod1_request_handler']",
+      "link_edit_line": 191,
+      "straddle_spec": true,
+      "straddle_eff": true,
+      "compactions_between": [
+       131
+      ],
+      "dep_reread": [],
+      "tokens_in": 364008,
+      "tokens_out": 1315,
+      "api_calls": 7
+     },
+     {
+      "k": 6,
+      "prompt_line": 201,
+      "cite": "46eb0cdc-17fd-4b80-86c8-6b4b9120103a.jsonl",
+      "nonce_ok": true,
+      "dep_k": 3,
+      "facts": [
+       "pingpong_util"
+      ],
+      "used": true,
+      "why": "link_6=present refs\u2229facts=['pingpong_util']",
+      "link_edit_line": 222,
+      "straddle_spec": true,
+      "straddle_eff": true,
+      "compactions_between": [
+       131
+      ],
+      "dep_reread": [],
+      "tokens_in": 370999,
+      "tokens_out": 1327,
+      "api_calls": 6
+     },
+     {
+      "k": 7,
+      "prompt_line": 232,
+      "cite": "46eb0cdc-17fd-4b80-86c8-6b4b9120103a.jsonl",
+      "nonce_ok": true,
+      "dep_k": 4,
+      "facts": [
+       "MOD3_H4_LIMIT"
+      ],
+      "used": true,
+      "why": "link_7=present refs\u2229facts=['MOD3_H4_LIMIT']",
+      "link_edit_line": 286,
+      "straddle_spec": true,
+      "straddle_eff": true,
+      "compactions_between": [
+       131,
+       247
+      ],
+      "dep_reread": [],
+      "tokens_in": 270876,
+      "tokens_out": 1482,
+      "api_calls": 6
+     },
+     {
+      "k": 8,
+      "prompt_line": 296,
+      "cite": "46eb0cdc-17fd-4b80-86c8-6b4b9120103a.jsonl",
+      "nonce_ok": true,
+      "dep_k": 5,
+      "facts": [
+       "mod4_request_handler"
+      ],
+      "used": true,
+      "why": "link_8=present refs\u2229facts=['mod4_request_handler']",
+      "link_edit_line": 317,
+      "straddle_spec": true,
+      "straddle_eff": true,
+      "compactions_between": [
+       247
+      ],
+      "dep_reread": [],
+      "tokens_in": 268485,
+      "tokens_out": 1614,
+      "api_calls": 5
+     },
+     {
+      "k": 9,
+      "prompt_line": 327,
+      "cite": "46eb0cdc-17fd-4b80-86c8-6b4b9120103a.jsonl",
+      "nonce_ok": true,
+      "dep_k": 6,
+      "facts": [
+       "echo_util"
+      ],
+      "used": true,
+      "why": "link_9=present refs\u2229facts=['echo_util']",
+      "link_edit_line": 345,
+      "straddle_spec": true,
+      "straddle_eff": true,
+      "compactions_between": [
+       247
+      ],
+      "dep_reread": [],
+      "tokens_in": 317098,
+      "tokens_out": 1324,
+      "api_calls": 5
+     },
+     {
+      "k": 10,
+      "prompt_line": 355,
+      "cite": "46eb0cdc-17fd-4b80-86c8-6b4b9120103a.jsonl",
+      "nonce_ok": true,
+      "dep_k": 7,
+      "facts": [
+       "MOD0_H7_LIMIT"
+      ],
+      "used": true,
+      "why": "link_10=present refs\u2229facts=['MOD0_H7_LIMIT']",
+      "link_edit_line": 408,
+      "straddle_spec": true,
+      "straddle_eff": true,
+      "compactions_between": [
+       247,
+       370
+      ],
+      "dep_reread": [],
+      "tokens_in": 235539,
+      "tokens_out": 1626,
+      "api_calls": 5
+     },
+     {
+      "k": 11,
+      "prompt_line": 418,
+      "cite": "46eb0cdc-17fd-4b80-86c8-6b4b9120103a.jsonl",
+      "nonce_ok": true,
+      "dep_k": 8,
+      "facts": [
+       "mod1_alt_handler"
+      ],
+      "used": true,
+      "why": "link_11=present refs\u2229facts=['mod1_alt_handler']",
+      "link_edit_line": 439,
+      "straddle_spec": true,
+      "straddle_eff": true,
+      "compactions_between": [
+       370
+      ],
+      "dep_reread": [],
+      "tokens_in": 272593,
+      "tokens_out": 1210,
+      "api_calls": 5
+     },
+     {
+      "k": 12,
+      "prompt_line": 449,
+      "cite": "46eb0cdc-17fd-4b80-86c8-6b4b9120103a.jsonl",
+      "nonce_ok": true,
+      "dep_k": 9,
+      "facts": [
+       "beacon_util"
+      ],
+      "used": true,
+      "why": "link_12=present refs\u2229facts=['beacon_util']",
+      "link_edit_line": 471,
+      "straddle_spec": true,
+      "straddle_eff": true,
+      "compactions_between": [
+       370
+      ],
+      "dep_reread": [],
+      "tokens_in": 386224,
+      "tokens_out": 1191,
+      "api_calls": 6
+     },
+     {
+      "k": 13,
+      "prompt_line": 481,
+      "cite": "46eb0cdc-17fd-4b80-86c8-6b4b9120103a.jsonl",
+      "nonce_ok": true,
+      "dep_k": 10,
+      "facts": [
+       "MOD3_H10_LIMIT"
+      ],
+      "used": true,
+      "why": "link_13=present refs\u2229facts=['MOD3_H10_LIMIT']",
+      "link_edit_line": 534,
+      "straddle_spec": true,
+      "straddle_eff": true,
+      "compactions_between": [
+       370,
+       496
+      ],
+      "dep_reread": [],
+      "tokens_in": 240067,
+      "tokens_out": 2227,
+      "api_calls": 5
+     }
+    ],
+    "rho": 0.2823703445875392
+   }
+  }
+ },
+ "table": [
+  {
+   "run": 1,
+   "confounded": [],
+   "alpha": 1.0,
+   "lam": 0.0,
+   "pi_B": null,
+   "pi_C": null,
+   "R_S": {
+    "A": 1.0,
+    "B": 1.0,
+    "C": 1.0
+   },
+   "R_NS": {
+    "A": 1.0,
+    "B": 1.0,
+    "C": 1.0
+   },
+   "rho_C": 0.25883831701508336,
+   "tokens_per_task": {
+    "A": 261990,
+    "B": 246846,
+    "C": 261676
+   },
+   "rederivations": {
+    "A": 8,
+    "B": 17,
+    "C": 6
+   },
+   "compactions": {
+    "A": 3,
+    "B": 3,
+    "C": 4
+   },
+   "nonce": {
+    "A": 1.0,
+    "B": 1.0,
+    "C": 1.0
+   },
+   "scored": true,
+   "bets": {
+    "B1": false,
+    "B2": false,
+    "B3": false,
+    "B4": false,
+    "B5": true
+   },
+   "margins": {
+    "B1": 0.0,
+    "B2": null,
+    "B3": 0.0
+   }
+  },
+  {
+   "run": 2,
+   "confounded": [],
+   "alpha": 1.0,
+   "lam": 0.0,
+   "pi_B": null,
+   "pi_C": null,
+   "R_S": {
+    "A": 1.0,
+    "B": 1.0,
+    "C": 1.0
+   },
+   "R_NS": {
+    "A": 1.0,
+    "B": 1.0,
+    "C": 1.0
+   },
+   "rho_C": 0.25404949381327335,
+   "tokens_per_task": {
+    "A": 277183,
+    "B": 327073,
+    "C": 296063
+   },
+   "rederivations": {
+    "A": 11,
+    "B": 7,
+    "C": 5
+   },
+   "compactions": {
+    "A": 3,
+    "B": 3,
+    "C": 3
+   },
+   "nonce": {
+    "A": 1.0,
+    "B": 1.0,
+    "C": 1.0
+   },
+   "scored": true,
+   "bets": {
+    "B1": false,
+    "B2": false,
+    "B3": false,
+    "B4": false,
+    "B5": false
+   },
+   "margins": {
+    "B1": 0.0,
+    "B2": null,
+    "B3": 0.0
+   }
+  },
+  {
+   "run": 3,
+   "confounded": [],
+   "alpha": 1.0,
+   "lam": 0.0,
+   "pi_B": null,
+   "pi_C": null,
+   "R_S": {
+    "A": 1.0,
+    "B": 1.0,
+    "C": 1.0
+   },
+   "R_NS": {
+    "A": 1.0,
+    "B": 1.0,
+    "C": 1.0
+   },
+   "rho_C": 0.2823703445875392,
+   "tokens_per_task": {
+    "A": 275080,
+    "B": 248935,
+    "C": 280768
+   },
+   "rederivations": {
+    "A": 9,
+    "B": 15,
+    "C": 5
+   },
+   "compactions": {
+    "A": 3,
+    "B": 3,
+    "C": 4
+   },
+   "nonce": {
+    "A": 1.0,
+    "B": 1.0,
+    "C": 1.0
+   },
+   "scored": true,
+   "bets": {
+    "B1": false,
+    "B2": false,
+    "B3": false,
+    "B4": false,
+    "B5": false
+   },
+   "margins": {
+    "B1": 0.0,
+    "B2": null,
+    "B3": 0.0
+   }
+  }
+ ],
+ "verdicts": {
+  "B1": "LOSS",
+  "B2": "LOSS",
+  "B3": "LOSS",
+  "B4": "LOSS",
+  "B5": "LOSS"
+ }
+}
