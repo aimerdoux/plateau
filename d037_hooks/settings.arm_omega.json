@@ -1,0 +1,6 @@
+{"hooks":{
+ "PostToolUse":[{"matcher":"","hooks":[{"type":"command","command":"python3 $CLAUDE_PROJECT_DIR/.claude/hooks/d037/receipt.py","timeout":10}]}],
+ "PreCompact":[{"hooks":[{"type":"command","command":"python3 $CLAUDE_PROJECT_DIR/.claude/hooks/d037/snapshot.py","timeout":30}]}],
+ "SessionStart":[{"matcher":"compact","hooks":[{"type":"command","command":"D037_BUDGET_CHARS=6000 python3 $CLAUDE_PROJECT_DIR/.claude/hooks/d037/inject.py","timeout":30}]}],
+ "UserPromptSubmit":[{"hooks":[{"type":"command","command":"D037_BUDGET_CHARS=1200 python3 $CLAUDE_PROJECT_DIR/.claude/hooks/d037/inject.py","timeout":30}]}]
+}}

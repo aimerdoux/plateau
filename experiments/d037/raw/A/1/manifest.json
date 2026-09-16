@@ -1,0 +1,177 @@
+{
+ "arm": "A",
+ "run": 1,
+ "seed": 1,
+ "n": 13,
+ "fixture_words": 2650,
+ "budget": 1500,
+ "window": 200000,
+ "pct": "40",
+ "uid": 0,
+ "hooks": {},
+ "tasks": [
+  {
+   "k": 1,
+   "rc": 0,
+   "seconds": 19.1,
+   "session_id": "e2bc9ff2-ed85-45ef-9ff5-171fad924a3e",
+   "subtype": "success",
+   "cost": 0.1407504,
+   "models": [
+    "claude-haiku-4-5-20251001",
+    "claude-sonnet-5"
+   ],
+   "num_turns": 10
+  },
+  {
+   "k": 2,
+   "rc": 0,
+   "seconds": 11.2,
+   "session_id": "e2bc9ff2-ed85-45ef-9ff5-171fad924a3e",
+   "subtype": "success",
+   "cost": 0.07908119999999999,
+   "models": [
+    "claude-sonnet-5"
+   ],
+   "num_turns": 6
+  },
+  {
+   "k": 3,
+   "rc": 0,
+   "seconds": 17.3,
+   "session_id": "e2bc9ff2-ed85-45ef-9ff5-171fad924a3e",
+   "subtype": "success",
+   "cost": 0.0952332,
+   "models": [
+    "claude-sonnet-5"
+   ],
+   "num_turns": 7
+  },
+  {
+   "k": 4,
+   "rc": 0,
+   "seconds": 14.4,
+   "session_id": "e2bc9ff2-ed85-45ef-9ff5-171fad924a3e",
+   "subtype": "success",
+   "cost": 0.1011962,
+   "models": [
+    "claude-sonnet-5"
+   ],
+   "num_turns": 8
+  },
+  {
+   "k": 5,
+   "rc": 0,
+   "seconds": 97.5,
+   "session_id": "e2bc9ff2-ed85-45ef-9ff5-171fad924a3e",
+   "subtype": "success",
+   "cost": 0.22961320000000002,
+   "models": [
+    "claude-sonnet-5"
+   ],
+   "num_turns": 9
+  },
+  {
+   "k": 6,
+   "rc": 0,
+   "seconds": 17.0,
+   "session_id": "e2bc9ff2-ed85-45ef-9ff5-171fad924a3e",
+   "subtype": "success",
+   "cost": 0.11532640000000001,
+   "models": [
+    "claude-sonnet-5"
+   ],
+   "num_turns": 7
+  },
+  {
+   "k": 7,
+   "rc": 0,
+   "seconds": 21.0,
+   "session_id": "e2bc9ff2-ed85-45ef-9ff5-171fad924a3e",
+   "subtype": "success",
+   "cost": 0.112663,
+   "models": [
+    "claude-sonnet-5"
+   ],
+   "num_turns": 9
+  },
+  {
+   "k": 8,
+   "rc": 0,
+   "seconds": 17.0,
+   "session_id": "e2bc9ff2-ed85-45ef-9ff5-171fad924a3e",
+   "subtype": "success",
+   "cost": 0.11893079999999999,
+   "models": [
+    "claude-sonnet-5"
+   ],
+   "num_turns": 8
+  },
+  {
+   "k": 9,
+   "rc": 0,
+   "seconds": 121.3,
+   "session_id": "e2bc9ff2-ed85-45ef-9ff5-171fad924a3e",
+   "subtype": "success",
+   "cost": 0.2767512,
+   "models": [
+    "claude-sonnet-5"
+   ],
+   "num_turns": 8
+  },
+  {
+   "k": 10,
+   "rc": 0,
+   "seconds": 15.5,
+   "session_id": "e2bc9ff2-ed85-45ef-9ff5-171fad924a3e",
+   "subtype": "success",
+   "cost": 0.12127980000000001,
+   "models": [
+    "claude-sonnet-5"
+   ],
+   "num_turns": 7
+  },
+  {
+   "k": 11,
+   "rc": 0,
+   "seconds": 14.9,
+   "session_id": "e2bc9ff2-ed85-45ef-9ff5-171fad924a3e",
+   "subtype": "success",
+   "cost": 0.11426339999999999,
+   "models": [
+    "claude-sonnet-5"
+   ],
+   "num_turns": 7
+  },
+  {
+   "k": 12,
+   "rc": 0,
+   "seconds": 98.0,
+   "session_id": "e2bc9ff2-ed85-45ef-9ff5-171fad924a3e",
+   "subtype": "success",
+   "cost": 0.2491699,
+   "models": [
+    "claude-sonnet-5"
+   ],
+   "num_turns": 7
+  },
+  {
+   "k": 13,
+   "rc": 0,
+   "seconds": 13.9,
+   "session_id": "e2bc9ff2-ed85-45ef-9ff5-171fad924a3e",
+   "subtype": "success",
+   "cost": 0.1015034,
+   "models": [
+    "claude-sonnet-5"
+   ],
+   "num_turns": 6
+  }
+ ],
+ "status": "OK",
+ "claude_version": "2.1.273 (Claude Code)",
+ "transcripts": {
+  "e2bc9ff2-ed85-45ef-9ff5-171fad924a3e.jsonl": "e32af3813448ed211fbbd6d2d09846848454a42cb6f05519250a21d776cc97ed"
+ },
+ "tasks_json_sha": "e4e397188df3ae6245dbc0905dbefa9f86f4e1a9cec95a67e03947056e5279c4"
+}

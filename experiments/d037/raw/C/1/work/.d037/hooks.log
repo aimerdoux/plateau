@@ -1,0 +1,92 @@
+1789569676.535 receipt r1 Bash
+1789569678.107 receipt r2 Read
+1789569678.463 receipt r3 Read
+1789569679.877 receipt r4 Bash
+1789569681.971 receipt r5 Read
+1789569684.009 receipt r6 Write
+1789569685.787 receipt r7 Edit
+1789569693.520 inject ev=UserPromptSubmit q=520ch nodes=9/12 chars=1175 budget=1200
+1789569695.884 receipt r8 Read
+1789569695.964 receipt r9 Read
+1789569697.955 receipt r10 Write
+1789569699.598 receipt r11 Edit
+1789569705.248 inject ev=UserPromptSubmit q=539ch nodes=8/21 chars=1137 budget=1200
+1789569709.646 receipt r12 Read
+1789569711.823 receipt r13 Write
+1789569712.874 receipt r14 Write
+1789569719.038 inject ev=UserPromptSubmit q=788ch nodes=8/28 chars=1093 budget=1200
+1789569721.829 receipt r15 Read
+1789569722.449 receipt r16 Read
+1789569722.780 receipt r17 Read
+1789569724.707 receipt r18 Write
+1789569726.414 receipt r19 Edit
+1789569727.963 receipt r20 Edit
+1789569728.000 snapshot trigger=auto
+1789569803.964 inject ev=SessionStart q=0ch nodes=13/41 chars=1498 budget=1500
+1789569812.915 inject ev=UserPromptSubmit q=816ch nodes=8/41 chars=1163 budget=1200
+1789569815.043 receipt r21 Read
+1789569815.642 receipt r22 Read
+1789569815.948 receipt r23 Read
+1789569818.675 receipt r24 Write
+1789569820.203 receipt r25 Edit
+1789569821.275 receipt r26 Edit
+1789569822.325 receipt r27 Edit
+1789569829.366 inject ev=UserPromptSubmit q=810ch nodes=9/50 chars=1194 budget=1200
+1789569833.998 receipt r28 Read
+1789569834.482 receipt r29 Read
+1789569837.944 receipt r30 Write
+1789569839.161 receipt r31 Write
+1789569840.270 receipt r32 Edit
+1789569841.364 receipt r33 Edit
+1789569848.217 inject ev=UserPromptSubmit q=788ch nodes=9/57 chars=1159 budget=1200
+1789569856.215 receipt r34 Read
+1789569856.657 receipt r35 Read
+1789569856.711 snapshot trigger=auto
+1789569940.298 inject ev=SessionStart q=0ch nodes=12/59 chars=1429 budget=1500
+1789569942.317 receipt r36 Write
+1789569943.460 receipt r37 Edit
+1789569944.682 receipt r38 Edit
+1789569947.882 receipt r39 Read
+1789569950.176 receipt r40 Edit
+1789569957.825 inject ev=UserPromptSubmit q=816ch nodes=9/67 chars=1178 budget=1200
+1789569960.137 receipt r41 Read
+1789569962.299 receipt r42 Write
+1789569963.375 receipt r43 Edit
+1789569967.967 receipt r44 Read
+1789569970.188 receipt r45 Edit
+1789569971.242 receipt r46 Edit
+1789569977.984 inject ev=UserPromptSubmit q=810ch nodes=8/74 chars=1132 budget=1200
+1789569980.873 receipt r47 Read
+1789569983.506 receipt r48 Write
+1789569984.571 receipt r49 Write
+1789569986.665 receipt r50 Read
+1789569988.855 receipt r51 Edit
+1789569990.036 receipt r52 Edit
+1789569997.461 inject ev=UserPromptSubmit q=794ch nodes=8/81 chars=1147 budget=1200
+1789569999.995 receipt r53 Read
+1789570000.046 snapshot trigger=auto
+1789570093.166 inject ev=SessionStart q=0ch nodes=11/82 chars=1417 budget=1500
+1789570100.324 receipt r54 Write
+1789570101.406 receipt r55 Edit
+1789570102.861 receipt r56 Edit
+1789570103.809 receipt r57 Edit
+1789570104.786 receipt r58 Edit
+1789570111.443 inject ev=UserPromptSubmit q=822ch nodes=8/88 chars=1157 budget=1200
+1789570113.895 receipt r59 Read
+1789570116.121 receipt r60 Write
+1789570117.450 receipt r61 Edit
+1789570118.447 receipt r62 Edit
+1789570119.412 receipt r63 Edit
+1789570126.346 inject ev=UserPromptSubmit q=816ch nodes=8/95 chars=1120 budget=1200
+1789570129.690 receipt r64 Read
+1789570132.113 receipt r65 Write
+1789570133.345 receipt r66 Write
+1789570134.722 receipt r67 Edit
+1789570142.039 inject ev=UserPromptSubmit q=796ch nodes=8/102 chars=1146 budget=1200
+1789570146.452 receipt r68 Read
+1789570146.496 snapshot trigger=auto
+1789570247.042 inject ev=SessionStart q=0ch nodes=11/103 chars=1418 budget=1500
+1789570252.261 receipt r69 Write
+1789570252.644 receipt r70 Read
+1789570255.520 receipt r71 Edit
+1789570256.840 receipt r72 Edit

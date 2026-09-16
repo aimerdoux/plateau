@@ -1,0 +1,4 @@
+{"hooks":{
+ "PreCompact":[{"hooks":[{"type":"command","command":"python3 $CLAUDE_PROJECT_DIR/.claude/hooks/d037/ledger.py","timeout":60}]}],
+ "SessionStart":[{"matcher":"compact","hooks":[{"type":"command","command":"D037_BUDGET_CHARS=1500 python3 $CLAUDE_PROJECT_DIR/.claude/hooks/d037/inject.py","timeout":30}]}]
+}}

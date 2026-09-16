@@ -1,0 +1,6 @@
+{"hooks":{
+ "PostToolUse":[{"matcher":"","hooks":[{"type":"command","command":"python3 $CLAUDE_PROJECT_DIR/.claude/hooks/dump.py","timeout":10}]}],
+ "PreCompact":[{"hooks":[{"type":"command","command":"python3 $CLAUDE_PROJECT_DIR/.claude/hooks/dump.py","timeout":10}]}],
+ "SessionStart":[{"hooks":[{"type":"command","command":"python3 $CLAUDE_PROJECT_DIR/.claude/hooks/dump.py","timeout":10}]}],
+ "UserPromptSubmit":[{"hooks":[{"type":"command","command":"python3 $CLAUDE_PROJECT_DIR/.claude/hooks/dump.py","timeout":10}]}]
+}}
