@@ -1,0 +1,10 @@
+REQUEST_RATE_LIMIT = 100
+
+
+def status():
+    return 'ok'
+
+
+def run(x):
+    """Return x unchanged."""
+    return x
