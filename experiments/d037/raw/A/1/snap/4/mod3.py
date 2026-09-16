@@ -1,7 +1,6 @@
 """Module 3 of the D-037 target."""
 
-
-MOD3_BATCH_LIMIT = 20
+MOD3_BATCH_LIMIT = 100
 
 
 def base3(x):
