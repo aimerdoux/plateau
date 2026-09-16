@@ -46,6 +46,7 @@ def main():
     manifest = {"arm": a.arm, "run": a.run, "seed": a.seed, "n": a.n, "fixture_words": a.fixture_words, "budget": a.budget,
                 "window": a.window, "pct": a.pct, "uid": os.getuid(), "hooks": hook_hashes, "tasks": [], "status": "OK",
                 "claude_version": subprocess.run(["claude", "--version"], capture_output=True, text=True, env=env).stdout.strip()}
+    shutil.copytree(os.path.join(work, "d037_target"), os.path.join(a.out, "snap", "0"))
     for t in tasks:
         k = t["k"]; cmd = list(base); cmd[2] = t["prompt"]
         if k > 1: cmd.insert(3, "--continue")
