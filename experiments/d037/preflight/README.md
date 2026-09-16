@@ -10,3 +10,8 @@ Not scored. Each pfN/ holds: payloads.jsonl (every hook payload, dumped by dump.
 
 Worker model in all three: claude-sonnet-5 (from modelUsage). Runner uid 0.
 
+
+| pf4 | --autocompact 200000 (via run_arm.py, arm A) | 40 | 3 (seed 999, 6500-word fixtures) | 1 (in task 3) | 0, 0, 0 |
+
+pf4 measured (transcript usage fields): startup 35 301; fixture read (6500 words) +16 744; per-task growth g 17 935; post-compaction residual 36 229 (end of task 3: 36 927). All 3 nonces echoed correctly; all symbols created.
+Threshold formula read from the CLI bundle (2.1.273): effective = W − min(maxOutput, 20000); θ = min(floor(effective·pct/100), effective − 13000) → θ = 72 000 for W = 200 000, pct = 40; θ = 32 000 for W = 100 000 (explains pf2 thrash).

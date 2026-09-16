@@ -4,7 +4,8 @@
 set -euo pipefail
 WD="${1:-$HOME/d037_toy}"; HERE="$(cd "$(dirname "$0")" && pwd)"
 command -v claude >/dev/null || { echo "claude not found"; exit 1; }
-[ "$(id -u)" -ne 0 ] || { echo "refuse to run as root (demo8 run1 lesson)"; exit 1; }
+MODE="${D037_PERMISSION_MODE:-acceptEdits}"
+{ [ "$MODE" = bypassPermissions ] && [ "$(id -u)" -eq 0 ]; } && { echo "refuse to run bypassPermissions as root (demo8 run1 lesson)"; exit 1; }
 rm -rf "$WD"; mkdir -p "$WD/.claude/hooks/d037" "$WD/toy"; cd "$WD"
 cp "$HERE"/{d037_common,query,receipt,snapshot,inject,lookup}.py .claude/hooks/d037/
 cp "$HERE/settings.arm_omega.json" .claude/settings.json
@@ -21,7 +22,7 @@ T1="Read toy/FIXTURE.md fully. Then in toy/core.py add a module-level integer co
 T2="Read toy/FIXTURE.md fully. Then add a function to toy/core.py that returns the string 'ok' and name it however you like. Run pytest -q toy."
 T3="Read toy/FIXTURE.md fully. Then add a docstring to run() in toy/core.py. Run pytest -q toy."
 T4="Without re-reading toy/core.py, write toy/limits.py that imports the rate-limit constant you defined earlier from core and exposes it as LIMIT. Run pytest -q toy."
-OPTS=(--permission-mode acceptEdits --disallowedTools "WebSearch,WebFetch")
+OPTS=(--permission-mode "$MODE" --disallowedTools "WebSearch,WebFetch")
 claude -p "$T1" "${OPTS[@]}" > out1.txt
 for i in 2 3 4; do v="T$i"; claude -p "${!v}" --continue "${OPTS[@]}" > out$i.txt; done
 echo "== hook log"; cat .d037/hooks.log

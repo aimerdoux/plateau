@@ -1,0 +1,164 @@
+{
+ "seed": 999,
+ "n": 13,
+ "fixture_words": 6500,
+ "tasks": [
+  {
+   "k": 1,
+   "prompt": "Read `d037_target/FIXTURE_1.md` fully and write the nonce it contains (a token of the form NONCE-xxxxxxxx) to `d037_target/nonce_1.txt` as that file's only content.\nThen, in `d037_target/mod0.py`, add a module-level integer constant whose name ends with `_LIMIT` (choose the rest of the name yourself; it must be a new name). In the same module also add three helper functions `h1_alpha`, `h1_beta`, `h1_gamma`, each returning its own name as a string.\nFinally run `pytest -q d037_target` and make sure it passes.",
+   "nonce": "NONCE-daba9527",
+   "kind": "constant",
+   "module": "mod0",
+   "use_module": "mod2",
+   "dep": null
+  },
+  {
+   "k": 2,
+   "prompt": "Read `d037_target/FIXTURE_2.md` fully and write the nonce it contains (a token of the form NONCE-xxxxxxxx) to `d037_target/nonce_2.txt` as that file's only content.\nThen, in `d037_target/mod1.py`, add a function whose name ends with `_handler` and returns the integer 7 (choose the rest of the name yourself; it must be a new name). In the same module also add three helper functions `h2_alpha`, `h2_beta`, `h2_gamma`, each returning its own name as a string.\nFinally run `pytest -q d037_target` and make sure it passes.",
+   "nonce": "NONCE-37d0b33f",
+   "kind": "function",
+   "module": "mod1",
+   "use_module": "mod3",
+   "dep": null
+  },
+  {
+   "k": 3,
+   "prompt": "Read `d037_target/FIXTURE_3.md` fully and write the nonce it contains (a token of the form NONCE-xxxxxxxx) to `d037_target/nonce_3.txt` as that file's only content.\nThen, in `d037_target/mod2.py`, create a new module `d037_target/<name>_util.py` (choose `<name>` yourself, lowercase, new) containing a function `ping()` that returns the string 'pong'. In the same module also add three helper functions `h3_alpha`, `h3_beta`, `h3_gamma`, each returning its own name as a string.\nFinally run `pytest -q d037_target` and make sure it passes.",
+   "nonce": "NONCE-a7c73c6c",
+   "kind": "module",
+   "module": "mod2",
+   "use_module": "mod4",
+   "dep": null
+  },
+  {
+   "k": 4,
+   "prompt": "Read `d037_target/FIXTURE_4.md` fully and write the nonce it contains (a token of the form NONCE-xxxxxxxx) to `d037_target/nonce_4.txt` as that file's only content.\nThen, in `d037_target/mod3.py`, add a module-level integer constant whose name ends with `_LIMIT` (choose the rest of the name yourself; it must be a new name). In the same module also add three helper functions `h4_alpha`, `h4_beta`, `h4_gamma`, each returning its own name as a string.\nThen, in `d037_target/mod5.py`, add a function `link_4()` that returns the `_LIMIT` constant you defined in `d037_target/mod0.py` in task 1 (import it by the name you chose). Do this from your memory of the name you chose in task 1, without re-reading `d037_target/mod0.py`.\nFinally run `pytest -q d037_target` and make sure it passes.",
+   "nonce": "NONCE-2c815afe",
+   "kind": "constant",
+   "module": "mod3",
+   "use_module": "mod5",
+   "dep": {
+    "k": 1,
+    "kind": "constant",
+    "module": "mod0"
+   }
+  },
+  {
+   "k": 5,
+   "prompt": "Read `d037_target/FIXTURE_5.md` fully and write the nonce it contains (a token of the form NONCE-xxxxxxxx) to `d037_target/nonce_5.txt` as that file's only content.\nThen, in `d037_target/mod4.py`, add a function whose name ends with `_handler` and returns the integer 7 (choose the rest of the name yourself; it must be a new name). In the same module also add three helper functions `h5_alpha`, `h5_beta`, `h5_gamma`, each returning its own name as a string.\nThen, in `d037_target/mod0.py`, add a function `link_5()` that calls the `_handler` function you added to `d037_target/mod1.py` in task 2 and returns its result (import it by the name you chose). Do this from your memory of the name you chose in task 2, without re-reading `d037_target/mod1.py`.\nFinally run `pytest -q d037_target` and make sure it passes.",
+   "nonce": "NONCE-cd3ff3cf",
+   "kind": "function",
+   "module": "mod4",
+   "use_module": "mod0",
+   "dep": {
+    "k": 2,
+    "kind": "function",
+    "module": "mod1"
+   }
+  },
+  {
+   "k": 6,
+   "prompt": "Read `d037_target/FIXTURE_6.md` fully and write the nonce it contains (a token of the form NONCE-xxxxxxxx) to `d037_target/nonce_6.txt` as that file's only content.\nThen, in `d037_target/mod5.py`, create a new module `d037_target/<name>_util.py` (choose `<name>` yourself, lowercase, new) containing a function `ping()` that returns the string 'pong'. In the same module also add three helper functions `h6_alpha`, `h6_beta`, `h6_gamma`, each returning its own name as a string.\nThen, in `d037_target/mod1.py`, add a function `link_6()` that imports `ping` from the `_util` module you created in task 3 and returns `ping()`. Do this from your memory of the name you chose in task 3, without re-reading `d037_target/mod2.py` or listing the directory.\nFinally run `pytest -q d037_target` and make sure it passes.",
+   "nonce": "NONCE-b8582c6b",
+   "kind": "module",
+   "module": "mod5",
+   "use_module": "mod1",
+   "dep": {
+    "k": 3,
+    "kind": "module",
+    "module": "mod2"
+   }
+  },
+  {
+   "k": 7,
+   "prompt": "Read `d037_target/FIXTURE_7.md` fully and write the nonce it contains (a token of the form NONCE-xxxxxxxx) to `d037_target/nonce_7.txt` as that file's only content.\nThen, in `d037_target/mod0.py`, add a module-level integer constant whose name ends with `_LIMIT` (choose the rest of the name yourself; it must be a new name). In the same module also add three helper functions `h7_alpha`, `h7_beta`, `h7_gamma`, each returning its own name as a string.\nThen, in `d037_target/mod2.py`, add a function `link_7()` that returns the `_LIMIT` constant you defined in `d037_target/mod3.py` in task 4 (import it by the name you chose). Do this from your memory of the name you chose in task 4, without re-reading `d037_target/mod3.py`.\nFinally run `pytest -q d037_target` and make sure it passes.",
+   "nonce": "NONCE-78976ddc",
+   "kind": "constant",
+   "module": "mod0",
+   "use_module": "mod2",
+   "dep": {
+    "k": 4,
+    "kind": "constant",
+    "module": "mod3"
+   }
+  },
+  {
+   "k": 8,
+   "prompt": "Read `d037_target/FIXTURE_8.md` fully and write the nonce it contains (a token of the form NONCE-xxxxxxxx) to `d037_target/nonce_8.txt` as that file's only content.\nThen, in `d037_target/mod1.py`, add a function whose name ends with `_handler` and returns the integer 7 (choose the rest of the name yourself; it must be a new name). In the same module also add three helper functions `h8_alpha`, `h8_beta`, `h8_gamma`, each returning its own name as a string.\nThen, in `d037_target/mod3.py`, add a function `link_8()` that calls the `_handler` function you added to `d037_target/mod4.py` in task 5 and returns its result (import it by the name you chose). Do this from your memory of the name you chose in task 5, without re-reading `d037_target/mod4.py`.\nFinally run `pytest -q d037_target` and make sure it passes.",
+   "nonce": "NONCE-fd90dd5f",
+   "kind": "function",
+   "module": "mod1",
+   "use_module": "mod3",
+   "dep": {
+    "k": 5,
+    "kind": "function",
+    "module": "mod4"
+   }
+  },
+  {
+   "k": 9,
+   "prompt": "Read `d037_target/FIXTURE_9.md` fully and write the nonce it contains (a token of the form NONCE-xxxxxxxx) to `d037_target/nonce_9.txt` as that file's only content.\nThen, in `d037_target/mod2.py`, create a new module `d037_target/<name>_util.py` (choose `<name>` yourself, lowercase, new) containing a function `ping()` that returns the string 'pong'. In the same module also add three helper functions `h9_alpha`, `h9_beta`, `h9_gamma`, each returning its own name as a string.\nThen, in `d037_target/mod4.py`, add a function `link_9()` that imports `ping` from the `_util` module you created in task 6 and returns `ping()`. Do this from your memory of the name you chose in task 6, without re-reading `d037_target/mod5.py` or listing the directory.\nFinally run `pytest -q d037_target` and make sure it passes.",
+   "nonce": "NONCE-002410fc",
+   "kind": "module",
+   "module": "mod2",
+   "use_module": "mod4",
+   "dep": {
+    "k": 6,
+    "kind": "module",
+    "module": "mod5"
+   }
+  },
+  {
+   "k": 10,
+   "prompt": "Read `d037_target/FIXTURE_10.md` fully and write the nonce it contains (a token of the form NONCE-xxxxxxxx) to `d037_target/nonce_10.txt` as that file's only content.\nThen, in `d037_target/mod3.py`, add a module-level integer constant whose name ends with `_LIMIT` (choose the rest of the name yourself; it must be a new name). In the same module also add three helper functions `h10_alpha`, `h10_beta`, `h10_gamma`, each returning its own name as a string.\nThen, in `d037_target/mod5.py`, add a function `link_10()` that returns the `_LIMIT` constant you defined in `d037_target/mod0.py` in task 7 (import it by the name you chose). Do this from your memory of the name you chose in task 7, without re-reading `d037_target/mod0.py`.\nFinally run `pytest -q d037_target` and make sure it passes.",
+   "nonce": "NONCE-21465ecc",
+   "kind": "constant",
+   "module": "mod3",
+   "use_module": "mod5",
+   "dep": {
+    "k": 7,
+    "kind": "constant",
+    "module": "mod0"
+   }
+  },
+  {
+   "k": 11,
+   "prompt": "Read `d037_target/FIXTURE_11.md` fully and write the nonce it contains (a token of the form NONCE-xxxxxxxx) to `d037_target/nonce_11.txt` as that file's only content.\nThen, in `d037_target/mod4.py`, add a function whose name ends with `_handler` and returns the integer 7 (choose the rest of the name yourself; it must be a new name). In the same module also add three helper functions `h11_alpha`, `h11_beta`, `h11_gamma`, each returning its own name as a string.\nThen, in `d037_target/mod0.py`, add a function `link_11()` that calls the `_handler` function you added to `d037_target/mod1.py` in task 8 and returns its result (import it by the name you chose). Do this from your memory of the name you chose in task 8, without re-reading `d037_target/mod1.py`.\nFinally run `pytest -q d037_target` and make sure it passes.",
+   "nonce": "NONCE-a0f65a55",
+   "kind": "function",
+   "module": "mod4",
+   "use_module": "mod0",
+   "dep": {
+    "k": 8,
+    "kind": "function",
+    "module": "mod1"
+   }
+  },
+  {
+   "k": 12,
+   "prompt": "Read `d037_target/FIXTURE_12.md` fully and write the nonce it contains (a token of the form NONCE-xxxxxxxx) to `d037_target/nonce_12.txt` as that file's only content.\nThen, in `d037_target/mod5.py`, create a new module `d037_target/<name>_util.py` (choose `<name>` yourself, lowercase, new) containing a function `ping()` that returns the string 'pong'. In the same module also add three helper functions `h12_alpha`, `h12_beta`, `h12_gamma`, each returning its own name as a string.\nThen, in `d037_target/mod1.py`, add a function `link_12()` that imports `ping` from the `_util` module you created in task 9 and returns `ping()`. Do this from your memory of the name you chose in task 9, without re-reading `d037_target/mod2.py` or listing the directory.\nFinally run `pytest -q d037_target` and make sure it passes.",
+   "nonce": "NONCE-2d5ad1b7",
+   "kind": "module",
+   "module": "mod5",
+   "use_module": "mod1",
+   "dep": {
+    "k": 9,
+    "kind": "module",
+    "module": "mod2"
+   }
+  },
+  {
+   "k": 13,
+   "prompt": "Read `d037_target/FIXTURE_13.md` fully and write the nonce it contains (a token of the form NONCE-xxxxxxxx) to `d037_target/nonce_13.txt` as that file's only content.\nThen, in `d037_target/mod0.py`, add a module-level integer constant whose name ends with `_LIMIT` (choose the rest of the name yourself; it must be a new name). In the same module also add three helper functions `h13_alpha`, `h13_beta`, `h13_gamma`, each returning its own name as a string.\nThen, in `d037_target/mod2.py`, add a function `link_13()` that returns the `_LIMIT` constant you defined in `d037_target/mod3.py` in task 10 (import it by the name you chose). Do this from your memory of the name you chose in task 10, without re-reading `d037_target/mod3.py`.\nFinally run `pytest -q d037_target` and make sure it passes.",
+   "nonce": "NONCE-f4a09b8a",
+   "kind": "constant",
+   "module": "mod0",
+   "use_module": "mod2",
+   "dep": {
+    "k": 10,
+    "kind": "constant",
+    "module": "mod3"
+   }
+  }
+ ]
+}
