@@ -10,3 +10,6 @@ wrote 13 tasks, fixture 2650 words, seed 2 -> experiments/d037/raw/B/2/work
 {"k": 9, "rc": 0, "seconds": 20.3, "session_id": "d307742b-2e4a-488a-8f0f-995c0e19c9d8", "subtype": "success", "cost": 0.1533748, "models": ["claude-sonnet-5"], "num_turns": 8}
 {"k": 10, "rc": 0, "seconds": 21.1, "session_id": "d307742b-2e4a-488a-8f0f-995c0e19c9d8", "subtype": "success", "cost": 0.166114, "models": ["claude-sonnet-5"], "num_turns": 9}
 {"k": 11, "rc": 0, "seconds": 110.2, "session_id": "d307742b-2e4a-488a-8f0f-995c0e19c9d8", "subtype": "success", "cost": 0.29127309999999995, "models": ["claude-sonnet-5"], "num_turns": 9}
+{"k": 12, "rc": 0, "seconds": 19.9, "session_id": "d307742b-2e4a-488a-8f0f-995c0e19c9d8", "subtype": "success", "cost": 0.1310082, "models": ["claude-sonnet-5"], "num_turns": 8}
+{"k": 13, "rc": 0, "seconds": 17.5, "session_id": "d307742b-2e4a-488a-8f0f-995c0e19c9d8", "subtype": "success", "cost": 0.12523220000000002, "models": ["claude-sonnet-5"], "num_turns": 8}
+status OK -> experiments/d037/raw/B/2
