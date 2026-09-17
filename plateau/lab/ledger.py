@@ -28,6 +28,16 @@ not silently swallowed.
 `report_main(argv)` implements `plateau report` (see that function's docstring for the
 exact aggregates and the interpretive choices it documents where the contract text
 underdetermines the grouping).
+
+Cost (docs/harness-0.3/target-run-wavex.md finding #8): a hook's own inputs (the
+session transcript `.jsonl`, the hook payload) carry NO real cost figure -- Claude Code
+computes and emits `total_cost_usd` exactly once, in the final stdout JSON result of a
+`claude -p --output-format json` invocation, and never writes it into the transcript
+file. `build_row`'s `_read_transcript` scan for a `total_cost_usd` field is therefore
+structurally unable to see a real session's cost (it reads 0.0 for every session a real
+`SessionEnd` hook fires for); `record_cost()` below is the actual, working path --
+`plateau resume` (`plateau/cli.py`, the one caller in this package that DOES see a
+`claude -p --output-format json` result directly) calls it after the fact.
 """
 
 from __future__ import annotations
@@ -388,6 +398,51 @@ def upsert(conn: sqlite3.Connection, row: Dict[str, Any]) -> None:
             (session_id, line, path),
         )
     conn.commit()
+
+
+def record_cost(root: str, session_id: str, cost_usd: Optional[float]) -> None:
+    """Set the MAIN agent's `cost_usd` for `session_id` (agent_id == "", S4-A2).
+
+    docs/harness-0.3/target-run-wavex.md finding #8: `_read_transcript`'s `cost_usd`
+    extraction (above) scans the session's `.jsonl` TRANSCRIPT for a `total_cost_usd`
+    field — but Claude Code never writes that field into the transcript file; it is
+    only ever emitted once, in the final stdout JSON result object of a `claude -p
+    --output-format json` invocation (confirmed: `grep -c total_cost_usd` on a full
+    5-turn, 315-line real transcript returns 0). So every `sessions` row's `cost_usd`
+    this module's own `SessionEnd` hook writes reads 0.0 for a real Claude Code session,
+    structurally — no transcript scan can ever see the real number, not just a missed
+    case. `plateau resume` is the one place in this package that DOES see a `claude -p
+    --output-format json` result directly (it launched the process and captured its
+    stdout itself) — this function lets `_cmd_resume` (`plateau/cli.py`) push that real
+    `total_cost_usd` in after the fact.
+
+    Upserts a bare row when `SessionEnd` has not (yet) written one for this
+    `session_id` (e.g. this call races ahead of the child's own SessionEnd hook, or the
+    session ends some other way) so the cost is never silently dropped. Never raises."""
+    if not session_id or cost_usd is None:
+        return
+    try:
+        cost = float(cost_usd)
+    except (TypeError, ValueError):
+        return
+    try:
+        conn = db(root)
+        try:
+            cur = conn.execute(
+                "UPDATE sessions SET cost_usd=? WHERE session_id=? AND agent_id=''",
+                (cost, session_id),
+            )
+            if cur.rowcount == 0:
+                conn.execute(
+                    "INSERT INTO sessions(session_id, agent_id, agent, cost_usd) "
+                    "VALUES(?,?,?,?)",
+                    (session_id, "", "main", cost),
+                )
+            conn.commit()
+        finally:
+            conn.close()
+    except sqlite3.Error:
+        pass
 
 
 def record_probe(

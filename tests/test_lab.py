@@ -9,6 +9,8 @@ from __future__ import annotations
 import json
 import os
 
+import pytest
+
 from plateau.bridge import common as bridge_common
 from plateau.lab import ledger as ledger_mod
 from plateau.lab import probes as probes_mod
@@ -191,6 +193,50 @@ def test_rederivations_transcript_scan_matches_direct_call(tmp_path):
 
 
 # ---------------------------------------------------------------------------
+# item 9: ledger.record_cost -- the only real source of a session's total_cost_usd
+# ---------------------------------------------------------------------------
+
+
+def test_record_cost_updates_existing_main_row(tmp_path):
+    root = str(tmp_path)
+    conn = ledger_mod.db(root)
+    conn.execute(
+        "INSERT INTO sessions(session_id, agent_id, agent, cost_usd) VALUES(?,?,?,?)",
+        ("s1", "", "main", 0.0),
+    )
+    conn.commit()
+    conn.close()
+
+    ledger_mod.record_cost(root, "s1", 1.775487)
+
+    conn = ledger_mod.db(root)
+    cost = conn.execute("SELECT cost_usd FROM sessions WHERE session_id=? AND agent_id=''", ("s1",)).fetchone()[0]
+    conn.close()
+    assert cost == pytest.approx(1.775487)
+
+
+def test_record_cost_inserts_bare_row_when_session_end_has_not_run_yet(tmp_path):
+    root = str(tmp_path)
+    ledger_mod.record_cost(root, "s2", 0.42)
+
+    conn = ledger_mod.db(root)
+    row = conn.execute(
+        "SELECT agent, agent_id, cost_usd FROM sessions WHERE session_id='s2'"
+    ).fetchone()
+    conn.close()
+    assert row == ("main", "", pytest.approx(0.42))
+
+
+def test_record_cost_never_raises_on_missing_session_id_or_cost(tmp_path):
+    root = str(tmp_path)
+    ledger_mod.record_cost(root, "", 1.0)       # no session_id -- no-op
+    ledger_mod.record_cost(root, "s3", None)    # no cost -- no-op
+    conn = ledger_mod.db(root)
+    assert conn.execute("SELECT COUNT(*) FROM sessions").fetchone()[0] == 0
+    conn.close()
+
+
+# ---------------------------------------------------------------------------
 # probe grading: exact / fuzzy / wrong
 # ---------------------------------------------------------------------------
 
@@ -214,3 +260,141 @@ def test_grade_wrong_on_low_overlap_or_wrong_file():
     assert probes_mod.grade("src/plateau/a.py:10", "totally unrelated answer here") == "wrong"
     assert probes_mod.grade("src/plateau/a.py:10", "docs/readme.md:999") == "wrong"
     assert probes_mod.grade("build passes", "it crashed with a traceback") == "wrong"
+
+
+# ---------------------------------------------------------------------------
+# item 7: maybe() spawns detached (never blocks the Stop hook); finalizer grades
+# ---------------------------------------------------------------------------
+
+
+def _tool_use_line(msg_id, tool, tin, usage=None):
+    return {"type": "assistant", "message": {
+        "id": msg_id, "model": "claude-x",
+        "usage": usage or {"input_tokens": 100, "output_tokens": 10},
+        "content": [{"type": "tool_use", "id": "tu1", "name": tool, "input": tin}],
+    }}
+
+
+def _tool_result_line(tool_use_id, result):
+    return {
+        "type": "user",
+        "message": {"role": "user", "content": [{"type": "tool_result", "tool_use_id": tool_use_id}]},
+        "toolUseResult": result,
+    }
+
+
+def test_maybe_spawns_detached_finalizer_instead_of_blocking(tmp_path, monkeypatch):
+    """docs/harness-0.3/PLAN-step4.md item 7: `probes.maybe()` never runs a `claude -p`
+    fork itself -- it writes a spec and calls `spawn_probe` (monkeypatched here to a
+    zero-spend stub), so this test spends nothing and never starts a real subprocess."""
+    root = str(tmp_path)
+    os.makedirs(os.path.join(root, ".plateau"), exist_ok=True)
+    with open(os.path.join(root, ".plateau", "config.toml"), "w") as f:
+        f.write("[lab]\nshadow_probes = true\n")
+
+    session_id = "main-sess"
+    store_conn = bridge_common.db(root)
+    for n in range(1, 5):  # 4 turns -- a multiple of the default shadow_probe_every_turns=4
+        store_conn.execute(
+            "INSERT INTO turns(session_id, n, ts, rid_at) VALUES(?,?,?,?)", (session_id, n, float(n), n),
+        )
+    store_conn.commit()
+    store_conn.close()
+
+    transcript_path = _write_transcript(tmp_path, [
+        _tool_use_line("m1", "Read", {"file_path": os.path.join(root, "a.py")}),
+        _tool_result_line("tu1", {"file": {"filePath": os.path.join(root, "a.py"),
+                                            "content": "def foo(x):\n    return x\n"}}),
+    ])
+
+    calls = []
+
+    def fake_spawn(cmd, env, stdout_path, stderr_path):
+        calls.append({"cmd": cmd, "env": env, "stdout_path": stdout_path, "stderr_path": stderr_path})
+        class _FakeProc:
+            pid = 999999
+        return _FakeProc()
+
+    monkeypatch.setattr(probes_mod, "spawn_probe", fake_spawn)
+
+    from plateau.bridge import config as bridge_config
+    cfg = bridge_config.load(root, session_id)
+    payload = {"cwd": root, "session_id": session_id, "transcript_path": transcript_path}
+
+    result = probes_mod.maybe(payload, cfg)
+
+    assert result is not None and result.get("spawned") is True
+    assert result["pid"] == 999999
+    assert len(calls) == 1
+    finalize_cmd = calls[0]["cmd"]
+    assert "--run-spec" in finalize_cmd
+    spec_path = finalize_cmd[finalize_cmd.index("--run-spec") + 1]
+    assert os.path.isfile(spec_path)
+    with open(spec_path, encoding="utf-8") as f:
+        spec = json.load(f)
+    assert spec["session_id"] == session_id
+    assert "--fork-session" in spec["cmd"] and "--resume" in spec["cmd"]
+
+    # no ledger row yet -- grading only happens in the (never-invoked-here) finalizer
+    lconn = ledger_mod.db(root)
+    try:
+        assert lconn.execute("SELECT COUNT(*) FROM probes").fetchone()[0] == 0
+    finally:
+        lconn.close()
+
+
+def test_maybe_is_noop_for_subagent_or_when_disabled(tmp_path, monkeypatch):
+    calls = []
+    monkeypatch.setattr(probes_mod, "spawn_probe", lambda *a, **k: calls.append(1))
+
+    root = str(tmp_path)
+    payload = {"cwd": root, "session_id": "s1", "transcript_path": "", "agent_type": "general-purpose"}
+    assert probes_mod.maybe(payload, None) is None  # subagent -- never probed
+    assert calls == []
+
+    os.makedirs(os.path.join(root, ".plateau"), exist_ok=True)
+    with open(os.path.join(root, ".plateau", "config.toml"), "w") as f:
+        f.write("[lab]\nshadow_probes = false\n")
+    assert probes_mod.maybe({"cwd": root, "session_id": "s1"}, None) is None  # disabled by config
+    assert calls == []
+
+
+def test_finalize_spec_grades_and_records_ledger_row_with_fork_session_id(tmp_path, monkeypatch):
+    """The finalizer (`_finalize_spec`, run inside the detached process `spawn_probe`
+    starts) grades the probe's answer and writes the `probes` ledger row itself, plus a
+    status file carrying the FORK's own session id (a different session from the main
+    one, since the probe ran with `--fork-session`)."""
+    root = str(tmp_path)
+    probes_dir = os.path.join(root, ".plateau", "probes")
+    os.makedirs(probes_dir, exist_ok=True)
+    status_path = os.path.join(probes_dir, "test.json")
+    spec_path = os.path.join(probes_dir, "test.spec.json")
+    spec = {
+        "root": root, "session_id": "main-sess", "turn": 4, "cls": "read", "kind": "signature",
+        "expected": "x", "lag_tokens": 12345, "compactions_crossed": 1, "q_hash": "abc123",
+        "cmd": ["claude", "-p", "q", "--resume", "main-sess", "--fork-session"],
+        "status_path": status_path,
+    }
+    with open(spec_path, "w", encoding="utf-8") as f:
+        json.dump(spec, f)
+
+    fake_envelope = json.dumps({"result": "x", "session_id": "forked-session-999", "total_cost_usd": 0.01})
+    monkeypatch.setattr(probes_mod, "run_probe", lambda cmd, env: fake_envelope)
+
+    probes_mod._finalize_spec(spec_path)
+
+    lconn = ledger_mod.db(root)
+    try:
+        rows = lconn.execute(
+            "SELECT session_id, turn, verdict, q_hash FROM probes"
+        ).fetchall()
+    finally:
+        lconn.close()
+    assert rows == [("main-sess", 4, "exact", "abc123")]
+
+    assert os.path.isfile(status_path)
+    with open(status_path, encoding="utf-8") as f:
+        status = json.load(f)
+    assert status["verdict"] == "exact"
+    assert status["fork_session_id"] == "forked-session-999"
+    assert status["fork_session_id"] != status["session_id"]

@@ -60,6 +60,18 @@ def test_fresh_install_writes_full_hook_table(root):
             assert "plateau hook" in cmd or "plateau.cli hook" in cmd
 
 
+def test_fresh_install_wires_post_tool_use_failure_to_receipt(root):
+    """docs/harness-0.3/target-run-wavex.md finding #9 (item 8): the CLI fires a
+    SEPARATE `PostToolUseFailure` event for an errored tool call (never `PostToolUse`
+    for those), so `plateau init` must install a `receipt` hook for it too, same as the
+    ordinary `PostToolUse` entry."""
+    path, _ = install.install_settings(root)
+    data = _read(path)
+    assert "PostToolUseFailure" in data["hooks"]
+    cmds = _all_commands(data, "PostToolUseFailure")
+    assert any("receipt" in c for c in cmds), cmds
+
+
 def test_merge_is_idempotent(root):
     _, changed1 = install.install_settings(root)
     before = _read(_settings_path(root))

@@ -599,6 +599,132 @@ def test_read_and_decided_nodes(scratch_root):
 
 
 # ============================================================================
+# 5b) target-run-wavex.md findings #1/#2/#3: real Read shape, JS symbols, node --test
+# ============================================================================
+
+def test_read_facts_from_real_claude_code_read_response_shape(scratch_root):
+    """docs/harness-0.3/target-run-wavex.md finding #1: the real Claude Code 2.1.x
+    `tool_response` for a Read nests text under `resp["file"]["content"]`, not
+    "output"/"stdout"/"content" -- `_resp_text` (hence `read_facts`) must read it."""
+    root = scratch_root
+    conn = common.db(root)
+    real_resp = {
+        "type": "text",
+        "file": {
+            "filePath": os.path.join(root, "guard.mjs"),
+            "content": "export function validateIntent(payload) {\n  return true;\n}\n",
+            "numLines": 3,
+        },
+    }
+    rid = common.record(conn, "Read", {"file_path": "guard.mjs"}, real_resp,
+                        session_id="s1", agent="main", bridge_version="2.0",
+                        bridge_sha="sha", root=root)
+    assert rid >= 1
+    keys = {row[0] for row in conn.execute("SELECT key FROM nodes WHERE kind='read'")}
+    assert "read:guard.mjs:validateIntent" in keys
+    conn.close()
+
+
+def test_symbol_nodes_from_js_write_and_edit(scratch_root):
+    """docs/harness-0.3/target-run-wavex.md finding #2: SYM_RE must recognize the JS
+    shapes a real Write/Edit of `.mjs`/`.js`/`.ts` code actually produces."""
+    root = scratch_root
+    conn = common.db(root)
+    js_src = "\n".join([
+        "export function validateIntent(payload) {",
+        "  return true;",
+        "}",
+        "function rateLimit(key) {",
+        "  return true;",
+        "}",
+        "export async function scoreIntent(intent) {",
+        "  return 0;",
+        "}",
+        "class Watcher {}",
+        "export class Guard {}",
+        "export const DEFAULT_LIMITS = { capacity: 10 };",
+        "const describeLimits = (limits) => JSON.stringify(limits);",
+    ])
+    rid = common.record(conn, "Write", {"file_path": "defense/limits.mjs", "content": js_src},
+                        {"filePath": "defense/limits.mjs", "type": "create", "success": True},
+                        session_id="s1", agent="main", bridge_version="2.0",
+                        bridge_sha="sha", root=root)
+    assert rid >= 1
+    symbols = {row[0] for row in conn.execute("SELECT key FROM nodes WHERE kind='symbol'")}
+    assert symbols == {
+        "validateIntent", "rateLimit", "scoreIntent", "Watcher", "Guard",
+        "DEFAULT_LIMITS", "describeLimits",
+    }, symbols
+    conn.close()
+
+
+def test_node_test_and_friends_classify_as_test_node_check_stays_command(scratch_root):
+    """docs/harness-0.3/target-run-wavex.md finding #3: `node --test`, `vitest`,
+    `jest`, `mocha`, `npm run test` are test runs; `node --check` (a syntax check) must
+    keep classifying as `command`."""
+    root = scratch_root
+    conn = common.db(root)
+    test_cmds = ["node --test", "node --test scripts/concierge-agent",
+                 "npx vitest run", "npx jest", "npx mocha", "npm run test"]
+    for i, cmd in enumerate(test_cmds):
+        common.record(conn, "Bash", {"command": cmd}, {"exitCode": 0, "output": "ok"},
+                     session_id="s1", agent="main", bridge_version="2.0", bridge_sha="sha", root=root)
+    kinds = dict(conn.execute(
+        "SELECT target, kind FROM receipts WHERE session_id='s1' ORDER BY id"
+    ).fetchall())
+    for cmd in test_cmds:
+        assert kinds[cmd] == "test", (cmd, kinds[cmd])
+
+    common.record(conn, "Bash", {"command": "node --check defense/limits.mjs"},
+                 {"exitCode": 0, "output": ""},
+                 session_id="s1", agent="main", bridge_version="2.0", bridge_sha="sha", root=root)
+    check_kind = conn.execute(
+        "SELECT kind FROM receipts WHERE session_id='s1' AND target='node --check defense/limits.mjs'"
+    ).fetchone()[0]
+    assert check_kind == "command"
+    conn.close()
+
+
+def test_post_tool_use_failure_records_outcome_fail(scratch_root):
+    """docs/harness-0.3/target-run-wavex.md finding #9 (item 8): a synthetic failure
+    `tool_response` (what `receipt.py` builds from a `PostToolUseFailure` payload's
+    `error` field) must record outcome 'fail', for any tool kind, not just Bash."""
+    root = scratch_root
+    conn = common.db(root)
+    fail_resp = {"success": False, "stderr": "EISDIR: illegal operation on a directory"}
+    common.record(conn, "Read", {"file_path": "scripts/concierge-agent/defense"}, fail_resp,
+                 session_id="s1", agent="main", bridge_version="2.0", bridge_sha="sha", root=root)
+    outcome = conn.execute(
+        "SELECT outcome FROM receipts WHERE session_id='s1' AND tool='Read'"
+    ).fetchone()[0]
+    assert outcome == "fail"
+    conn.close()
+
+
+def test_receipt_hook_records_a_row_for_post_tool_use_failure_event(scratch_root):
+    """docs/harness-0.3/target-run-wavex.md finding #9 (item 8), end-to-end: a real
+    `PostToolUseFailure` payload (no `tool_response` key at all -- an `error` string
+    instead) run through the actual `plateau.bridge.receipt` hook must still produce a
+    receipt row, with outcome 'fail'."""
+    root = git_init(scratch_root)
+    session_id = "failure-event-sess"
+    payload = {
+        "cwd": root, "session_id": session_id, "hook_event_name": "PostToolUseFailure",
+        "tool_name": "Bash", "tool_input": {"command": "for f in a b; do node --check \"$f\"; done"},
+        "tool_use_id": "toolu_x", "error": "command not found: node",
+    }
+    _out, err, rc = run_hook("plateau.bridge.receipt", payload, root)
+    assert rc == 0, err
+
+    conn = sqlite3.connect(_db_path(root))
+    row = conn.execute(
+        "SELECT tool, outcome FROM receipts WHERE session_id=?", (session_id,)
+    ).fetchone()
+    conn.close()
+    assert row == ("Bash", "fail")
+
+
+# ============================================================================
 # 6) Lexical ranking: a matching query ranks the matched node first
 # ============================================================================
 
@@ -853,6 +979,36 @@ def test_subagentstop_writes_distinct_file_and_sessionend_never_touches_it(scrat
         assert f.read() == sub_bytes_before
 
 
+def test_compaction_summarizer_subagentstop_writes_nothing(scratch_root):
+    """docs/harness-0.3/target-run-wavex.md finding #7: Claude Code fires SubagentStop
+    for its internal auto-compaction summarizer with an `agent_id` but NO `agent_type`.
+    That must produce NO handoff file at all (not a `subagent:<hash>` one, and NOT a
+    clobber of the main file either) -- `handoff --write --agent subagent` on that exact
+    payload shape is a no-op, logged."""
+    root = scratch_root
+    session_id = "sess-compaction-summarizer"
+
+    summarizer_payload = {
+        "cwd": root, "session_id": session_id, "hook_event_name": "SubagentStop",
+        "agent_id": "a393962501cde927b",  # no agent_type -- the compaction quirk
+    }
+    out, err, rc = run_hook("plateau.bridge.handoff", summarizer_payload, root,
+                            argv=["--write", "--agent", "subagent"])
+    assert rc == 0, err
+
+    handoff_dir = os.path.join(root, ".plateau", "handoff")
+    assert not os.path.isdir(handoff_dir) or os.listdir(handoff_dir) == [], (
+        "no handoff file should be written for an agent_id-only payload: {}".format(
+            sorted(os.listdir(handoff_dir)) if os.path.isdir(handoff_dir) else []
+        )
+    )
+
+    log_path = os.path.join(root, ".plateau", "hooks.log")
+    assert os.path.isfile(log_path)
+    with open(log_path, encoding="utf-8") as f:
+        assert "handoff skip: no agent_type" in f.read()
+
+
 def test_handoff_last_prefers_main_file_over_newer_subagent_file(scratch_root):
     """S3-A1: `--last` (`handoff.last()`) prefers the main `<sid>.json` file even when
     a subagent file for the same session is strictly newer; it falls back to the
@@ -903,21 +1059,29 @@ def test_child_env_drops_session_identity_vars_keeps_others():
 
 
 def test_agent_of_s3a3_fallback_order():
-    """S3-A3: `agent_type` > `agent_id` > `agent_name` > env `PLATEAU_AGENT` > `main`."""
+    """S3-A3, amended by docs/harness-0.3/target-run-wavex.md finding #7: `agent_type` >
+    `agent_name` > env `PLATEAU_AGENT` > `main`. `agent_id` ALONE no longer identifies a
+    subagent -- Claude Code's own internal auto-compaction summarizer fires SubagentStop
+    with an `agent_id` but no `agent_type`, and treating `agent_id` alone as sufficient
+    mislabeled that as `subagent:<hash>` (3 spurious handoff files in the target run,
+    one per compaction, with no real subagent behind any of them)."""
     assert common.agent_of({}) == "main"
     assert common.agent_of({"agent_type": "general-purpose"}) == "subagent:general-purpose"
-    assert common.agent_of({"agent_id": "abc123"}) == "subagent:abc123"
+    # agent_id alone (no agent_type): the compaction-summarizer shape -- main, not subagent
+    assert common.agent_of({"agent_id": "abc123"}) == "main"
     assert common.agent_of({"agent_name": "helper"}) == "subagent:helper"
     # agent_type wins whenever more than one key is present
     assert common.agent_of({"agent_type": "t", "agent_id": "i", "agent_name": "n"}) == "subagent:t"
-    # agent_id wins over agent_name when agent_type is absent
-    assert common.agent_of({"agent_id": "i", "agent_name": "n"}) == "subagent:i"
+    # agent_name still applies when agent_type is absent (agent_id no longer competes)
+    assert common.agent_of({"agent_id": "i", "agent_name": "n"}) == "subagent:n"
     old = os.environ.get("PLATEAU_AGENT")
     try:
         os.environ["PLATEAU_AGENT"] = "p"
         # env only applies when no payload key identifies a subagent
         assert common.agent_of({}) == "p"
         assert common.agent_of({"agent_type": "t"}) == "subagent:t"
+        # agent_id-only still resolves to env/main, never a fabricated subagent id
+        assert common.agent_of({"agent_id": "i"}) == "p"
     finally:
         if old is None:
             os.environ.pop("PLATEAU_AGENT", None)
@@ -1048,6 +1212,51 @@ def test_config_resolution_incumbent_canary_off(scratch_root):
     # "off" layers on top of whichever file already won -- it doesn't change which
     # file supplied version/sha.
     assert cfg_off.version == "2.0-incumbent-test"
+
+
+# ============================================================================
+# 11b) target-run-wavex.md finding #4: mark_turn wired into the Stop path (lift.py)
+# ============================================================================
+
+def test_lift_marks_one_turn_per_stop_and_receipts_per_turn_leaves_default(scratch_root):
+    """`common.mark_turn()` was defined but never called from any installed hook
+    (docs/harness-0.3/target-run-wavex.md finding #4), so `turns` stayed empty forever
+    and `receipts_per_turn()` always returned its 30.0 fallback. `plateau.bridge.lift`
+    now calls it once per Stop, unconditionally -- verified here across two Stops with
+    receipts recorded in between, against the real subprocess hook path."""
+    root = git_init(scratch_root)
+    session_id = "turns-sess"
+    transcript_path = os.path.join(root, "t.jsonl")
+    fake_transcript(transcript_path, [])  # no DECISION/FACT markers -- still must mark_turn
+    base_payload = {"cwd": root, "session_id": session_id, "transcript_path": transcript_path}
+
+    conn = common.db(root)
+    for rid in range(1, 5):  # 4 receipts before the first Stop
+        common.record(conn, "Bash", {"command": "echo hi"}, {"exitCode": 0, "output": "hi"},
+                     session_id=session_id, agent="main", bridge_version="2.0",
+                     bridge_sha="sha", root=root)
+    conn.close()
+
+    out, err, rc = run_hook("plateau.bridge.lift", dict(base_payload, hook_event_name="Stop"), root)
+    assert rc == 0, err
+
+    conn = common.db(root)
+    for rid in range(5, 7):  # 2 more receipts before the second Stop
+        common.record(conn, "Bash", {"command": "echo hi"}, {"exitCode": 0, "output": "hi"},
+                     session_id=session_id, agent="main", bridge_version="2.0",
+                     bridge_sha="sha", root=root)
+    conn.close()
+
+    out, err, rc = run_hook("plateau.bridge.lift", dict(base_payload, hook_event_name="Stop"), root)
+    assert rc == 0, err
+
+    conn = common.db(root)
+    n_turns = conn.execute("SELECT COUNT(*) FROM turns WHERE session_id=?", (session_id,)).fetchone()[0]
+    assert n_turns == 2, "two Stops must mark exactly two turns"
+    rpt = common.receipts_per_turn(conn, session_id)
+    assert rpt != 30.0, "receipts_per_turn must no longer be stuck at its no-turns-recorded default"
+    assert rpt == pytest.approx(6 / 2)
+    conn.close()
 
 
 # ============================================================================

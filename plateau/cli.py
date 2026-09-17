@@ -281,12 +281,21 @@ def _cmd_resume(rest: List[str]) -> int:
         # asked for (a script doing json.loads(stdout) must not see anything appended).
         try:
             result = json.loads(proc.stdout)
+            new_session_id = result.get("session_id")
+            cost = result.get("total_cost_usd")
             print(
-                "plateau resume: session_id={} cost_usd={}".format(
-                    result.get("session_id"), result.get("total_cost_usd")
-                ),
+                "plateau resume: session_id={} cost_usd={}".format(new_session_id, cost),
                 file=sys.stderr,
             )
+            # docs/harness-0.3/target-run-wavex.md finding #8 / PLAN item 9: this JSON
+            # result is the ONLY place a real `total_cost_usd` is ever available (the
+            # transcript file never carries it) -- push it into the ledger row for the
+            # fresh session this `claude -p` just ran.
+            try:
+                from .lab import ledger as lab_ledger
+                lab_ledger.record_cost(root, new_session_id, cost)
+            except Exception:
+                pass
         except Exception:
             pass
 

@@ -69,6 +69,13 @@ def hook_table() -> Dict[str, List[Dict[str, Any]]]:
         _group("SessionStart", "compact", "inject", None, 30),
         _group("UserPromptSubmit", None, "pre", None, 15),
         _group("PostToolUse", "", "receipt", None, 10),
+        # target-run-wavex.md finding #9 (item 8): Claude Code fires a SEPARATE
+        # `PostToolUseFailure` event (confirmed via the installed CLI's own hook-event
+        # enum) for a tool call that errored -- it never fires plain `PostToolUse` for
+        # those, so a receipt for a failing call was never even attempted. Same
+        # `receipt` mode, same matcher/timeout as PostToolUse: `receipt.py` tells the
+        # two apart from the payload's own `hook_event_name`.
+        _group("PostToolUseFailure", "", "receipt", None, 10),
         _group("PreCompact", None, "snapshot", None, 30),
         _group("Stop", None, "post", None, 15),
         _group("Stop", None, "lift", None, 10),

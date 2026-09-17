@@ -88,6 +88,32 @@ def test_no_markers_yields_empty_list(tmp_path):
     assert lift.lift_decisions(str(transcript)) == []
 
 
+def test_markdown_bold_and_bullet_markers_lifted(tmp_path):
+    """docs/harness-0.3/target-run-wavex.md finding #6: 2 of 5 turns in the target run
+    wrote their DECISION:/FACT: lines wrapped in markdown (`**FACT:** ...`) or as list
+    bullets (`- DECISION: ...`, `* FACT: ...`) instead of the literal plain-text marker,
+    and were silently dropped by the old regex."""
+    transcript = tmp_path / "t.jsonl"
+    entries = [
+        ("assistant", _assistant_text_blocks(
+            "**DECISION:** use sqlite WAL mode",
+            "- DECISION: keep the bridge stdlib-only",
+            "* FACT: node --test found 0 tests before this change",
+            "FACT: plain marker still works",
+            "**decision:** lowercase inside bold must not match",
+        )),
+    ]
+    _write_transcript(str(transcript), entries)
+
+    found = lift.lift_decisions(str(transcript))
+    assert [(m, t) for m, t, _ln in found] == [
+        ("DECISION", "use sqlite WAL mode"),
+        ("DECISION", "keep the bridge stdlib-only"),
+        ("FACT", "node --test found 0 tests before this change"),
+        ("FACT", "plain marker still works"),
+    ]
+
+
 def test_missing_transcript_yields_empty_list_not_an_error(tmp_path):
     assert lift.lift_decisions(str(tmp_path / "does-not-exist.jsonl")) == []
 
@@ -193,6 +219,54 @@ def test_main_records_nothing_when_no_markers_present(tmp_path, monkeypatch):
     db_path = os.path.join(root, common.DB_REL)
     if os.path.isfile(db_path):
         assert _decisions_rows(root) == []
+
+
+def _turns_rows(root: str):
+    conn = sqlite3.connect(os.path.join(root, common.DB_REL))
+    try:
+        return conn.execute("SELECT session_id, n FROM turns ORDER BY n").fetchall()
+    finally:
+        conn.close()
+
+
+def test_main_marks_one_turn_per_stop_even_without_markers(tmp_path, monkeypatch):
+    """docs/harness-0.3/target-run-wavex.md finding #4: `common.mark_turn()` must run
+    on every Stop -- even one with no DECISION/FACT markers at all, which is the
+    common case and exactly the one the old (dead) wiring never covered either way."""
+    root = str(tmp_path)
+    transcript = tmp_path / "t.jsonl"
+    _write_transcript(str(transcript), [("assistant", _assistant_text_blocks("no markers here"))])
+    payload = {"cwd": root, "session_id": "s1", "transcript_path": str(transcript)}
+
+    _run_lift_main(monkeypatch, payload)
+    assert _turns_rows(root) == [("s1", 1)]
+
+    _run_lift_main(monkeypatch, payload)  # a second Stop
+    assert _turns_rows(root) == [("s1", 1), ("s1", 2)]
+
+
+def test_main_invokes_probes_maybe_after_lifting(tmp_path, monkeypatch):
+    """docs/harness-0.3/PLAN-step4.md "Shadow probes": wired into the Stop dispatch
+    right after lift. Verified here by monkeypatching `plateau.lab.probes.maybe` to a
+    spy -- this test spends nothing and never spawns a real subprocess."""
+    root = str(tmp_path)
+    transcript = tmp_path / "t.jsonl"
+    _write_transcript(str(transcript), [("assistant", _assistant_text_blocks("DECISION: pick sqlite"))])
+    payload = {"cwd": root, "session_id": "s1", "transcript_path": str(transcript)}
+
+    calls = []
+
+    def fake_maybe(pl, cfg):
+        calls.append((pl, cfg))
+        return None
+
+    from plateau.lab import probes as probes_mod
+    monkeypatch.setattr(probes_mod, "maybe", fake_maybe)
+
+    _run_lift_main(monkeypatch, payload)
+
+    assert len(calls) == 1
+    assert calls[0][0]["session_id"] == "s1"
 
 
 def test_main_prints_nothing(tmp_path, monkeypatch, capsys):

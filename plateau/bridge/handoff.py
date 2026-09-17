@@ -507,6 +507,23 @@ def main(argv: Optional[List[str]] = None) -> None:
         return
 
     payload = _read_optional_payload()
+
+    # docs/harness-0.3/target-run-wavex.md finding #7: at each auto-compaction, Claude
+    # Code fires SubagentStop for its own internal summarizer with an `agent_id` but no
+    # `agent_type` -- `common.agent_of` (S3-A3, amended) now treats that as the MAIN
+    # agent, not a subagent, so the ordinary write below would land at the plain
+    # `<session_id>.json` path and could clobber the real main handoff. Per the plan's
+    # explicit rule ("only treat a payload as a subagent when agent_type is present;
+    # with only agent_id, log ... and write nothing"), skip the write/print entirely
+    # rather than guess at a fallback identity for it.
+    if payload.get("agent_id") and not payload.get("agent_type"):
+        try:
+            from . import common as _common
+            _common.log(root, "handoff skip: no agent_type (compaction summarizer?)")
+        except Exception:
+            pass
+        return
+
     session_id = payload.get("session_id") or ""
     agent = _resolve_agent(args.agent, payload)
     parent = _resolve_parent(args.parent, payload, session_id)

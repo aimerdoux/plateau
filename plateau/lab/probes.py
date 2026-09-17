@@ -16,10 +16,14 @@ inside it, hence main-agent-only), and only when `.plateau/config.toml` sets
 `[lab] shadow_probes = true` (default off: "it spends tokens"). Grading is fully
 deterministic (`grade()`) — no `claude -p` judge, unlike D-038's blind LLM judge.
 
-Every `claude -p` this module spawns goes through `run_probe(cmd, env)`, a seam tests
-monkeypatch; nothing else in this module (or its test suite) invokes a subprocess
-directly. `env` is always `plateau.bridge.common.child_env()` (S4-A2) so the forked
-probe session never inherits this process's own Claude-Code session identity.
+Every `claude -p` this module spawns for GRADING goes through `run_probe(cmd, env)`, a
+blocking helper; the actual fork this hook fires off, though, goes through `spawn_probe`
+(see "new in this module" below) — a SEPARATE, fully-detached process, because the Stop
+hook that calls `maybe()` has a 10s timeout and a real `claude -p --resume ... --fork-
+session` probe routinely takes much longer than that. Nothing in this module (or its
+test suite) invokes a subprocess any other way. `env` is always
+`plateau.bridge.common.child_env()` (S4-A2) so the forked probe session never inherits
+this process's own Claude-Code session identity.
 """
 
 from __future__ import annotations
@@ -30,6 +34,7 @@ import os
 import re
 import subprocess
 import sys
+import time
 from typing import Any, Dict, List, Optional
 
 from ..bridge import common
@@ -266,6 +271,8 @@ def choose(facts, probed, cur_pos, cur_comp, n, counts=None, final=False):
 
 # --- new in this module (PLAN-step4.md "Shadow probes") -------------------------------
 
+PROBES_DIR_REL = os.path.join(".plateau", "probes")
+
 PROBE_PREFIX = "Answer with just the fact, no explanation, no tool calls: "
 
 # Every tool disallowed: a shadow probe must never touch the filesystem or spend a turn
@@ -278,12 +285,102 @@ PROBE_DISALLOWED_TOOLS = (
 
 
 def run_probe(cmd: List[str], env: Dict[str, str]) -> str:
-    """Actually spawn the `claude -p ...` probe fork and return its stdout. This is the
-    ONLY place this module ever starts a subprocess; tests monkeypatch this function
-    (never `subprocess` itself) so no test run ever spends real tokens. `env` is always
-    `plateau.bridge.common.child_env()`'s result — see the module docstring."""
+    """BLOCKING: run the `claude -p ...` probe fork to completion and return its
+    stdout. Only ever called from inside the ALREADY-DETACHED finalizer process
+    (`_finalize_spec`, spawned by `spawn_probe`) -- never from `maybe()` itself, which
+    runs inside the Stop hook's own 10s-timeout process and must return immediately.
+    `env` is always `plateau.bridge.common.child_env()`'s result — see the module
+    docstring."""
     proc = subprocess.run(cmd, env=env, capture_output=True, text=True, timeout=120)
     return proc.stdout or ""
+
+
+def spawn_probe(cmd: List[str], env: Dict[str, str], stdout_path: str, stderr_path: str) -> Any:
+    """The seam `maybe()` uses to fire off the finalizer (`_finalize_spec`, run as
+    `python3 -m plateau.lab.probes --run-spec <path>`) as a FULLY DETACHED child
+    (`start_new_session=True`, its own process group, stdin closed) so the Stop hook's
+    10s timeout is never at risk even though a real `claude -p --fork-session` probe
+    can take much longer than that — the finalizer keeps running under init/its own
+    session leader after this process (and the Stop hook that called it) has already
+    exited. stdout/stderr land in files under `.plateau/probes/` for observability
+    (docs/harness-0.3/PLAN-step4.md's task: "poll for ... the probe output files").
+    Tests monkeypatch THIS function (never `subprocess` itself) to a stub that records
+    the call and spawns nothing, so a test run never spends a real token. Returns the
+    `subprocess.Popen` handle; `maybe()` never waits on it."""
+    stdout_f = open(stdout_path, "wb")
+    stderr_f = open(stderr_path, "wb")
+    try:
+        return subprocess.Popen(
+            cmd, env=env, stdin=subprocess.DEVNULL, stdout=stdout_f, stderr=stderr_f,
+            start_new_session=True, close_fds=True,
+        )
+    finally:
+        # The child already holds its own dup'd copies of these fds by the time Popen()
+        # returns; closing the parent's copies here is the ordinary daemonizing pattern
+        # (and avoids leaking fds in the Stop-hook process for however long it lives on).
+        stdout_f.close()
+        stderr_f.close()
+
+
+def _finalize_spec(spec_path: str) -> None:
+    """The finalizer (docs/harness-0.3/PLAN-step4.md item 7: "a small finalizer ...
+    must record the graded result in the ledger"): runs entirely inside the DETACHED
+    process `spawn_probe` started. Reads the small JSON spec `maybe()` wrote, blocks on
+    the real probe fork via `run_probe` (safe here — this process has no Stop-hook
+    timeout of its own), grades the answer, writes the `probes` ledger row, and leaves
+    a status JSON file (`.plateau/probes/<...>.json`) recording the verdict and the
+    fork's own `session_id` (a DIFFERENT session id from the main one, since the probe
+    ran with `--fork-session`) for anything polling the filesystem rather than the
+    ledger. Never raises past this function -- errors are logged, not propagated (there
+    is no hook waiting on this process's exit code)."""
+    try:
+        with open(spec_path, encoding="utf-8") as f:
+            spec = json.load(f)
+    except Exception:
+        return
+    root = spec.get("root", "")
+    try:
+        raw = run_probe(spec["cmd"], dict(os.environ))
+        answer = _extract_answer(raw)
+        verdict = grade(spec["expected"], answer)
+
+        fork_session_id: Optional[str] = None
+        try:
+            envelope = json.loads(raw.strip())
+            if isinstance(envelope, dict):
+                fork_session_id = envelope.get("session_id")
+        except Exception:
+            pass
+
+        lconn = ledger_mod.db(root)
+        try:
+            ledger_mod.record_probe(
+                lconn, spec["session_id"], spec["turn"], spec["cls"], spec["kind"],
+                spec["lag_tokens"], spec["compactions_crossed"], verdict, spec["q_hash"],
+            )
+        finally:
+            lconn.close()
+
+        status = {
+            "session_id": spec["session_id"], "fork_session_id": fork_session_id,
+            "turn": spec["turn"], "cls": spec["cls"], "kind": spec["kind"],
+            "verdict": verdict, "answer": answer, "expected": spec["expected"],
+            "q_hash": spec["q_hash"], "done": True,
+        }
+        status_path = spec.get("status_path")
+        if status_path:
+            with open(status_path, "w", encoding="utf-8") as f:
+                json.dump(status, f, indent=2)
+        try:
+            common.log(root, "probe q={} verdict={} fork={}".format(
+                spec["q_hash"], verdict, fork_session_id))
+        except Exception:
+            pass
+    except Exception as e:
+        try:
+            common.log(root, "probe ERROR {!r}".format(e))
+        except Exception:
+            pass
 
 
 def _normalize(s: Optional[str]) -> str:
@@ -427,31 +524,52 @@ def maybe(payload: Dict[str, Any], cfg: Any) -> Optional[Dict[str, Any]]:
             if not picked:
                 return None
             fact = picked[0]
-
-            cmd = [
-                "claude", "-p", PROBE_PREFIX + fact["q"],
-                "--resume", session_id, "--fork-session",
-                "--disallowedTools", PROBE_DISALLOWED_TOOLS,
-                "--output-format", "json",
-            ]
-            raw = run_probe(cmd, common.child_env())
-            answer = _extract_answer(raw)
-            verdict = grade(fact["expected"], answer)
-
-            lag_tokens = scanned["pos"] - fact["last_pos"]
-            compactions_crossed = scanned["compactions"] - fact["last_comp"]
-            q_hash = _q_hash(fact["q"])
-            ledger_mod.record_probe(
-                lconn, session_id, turn_n, fact["cls"], fact["kind"],
-                lag_tokens, compactions_crossed, verdict, q_hash,
-            )
-            return {
-                "session_id": session_id, "turn": turn_n, "cls": fact["cls"], "kind": fact["kind"],
-                "lag_tokens": lag_tokens, "compactions_crossed": compactions_crossed,
-                "verdict": verdict, "q_hash": q_hash,
-            }
         finally:
             lconn.close()
+
+        lag_tokens = scanned["pos"] - fact["last_pos"]
+        compactions_crossed = scanned["compactions"] - fact["last_comp"]
+        q_hash = _q_hash(fact["q"])
+        cmd = [
+            "claude", "-p", PROBE_PREFIX + fact["q"],
+            "--resume", session_id, "--fork-session",
+            "--disallowedTools", PROBE_DISALLOWED_TOOLS,
+            "--output-format", "json",
+        ]
+
+        # Never block here (this runs inside the Stop hook's own 10s-timeout process):
+        # write a small JSON spec for the finalizer and spawn it fully detached (see
+        # `spawn_probe`/`_finalize_spec` above) -- it runs `cmd`, grades the answer, and
+        # writes the `probes` ledger row itself, on its own time.
+        probes_dir = os.path.join(root, PROBES_DIR_REL)
+        os.makedirs(probes_dir, exist_ok=True)
+        base = "{:.6f}_{}".format(time.time(), q_hash).replace(".", "_")
+        stdout_path = os.path.join(probes_dir, base + ".out")
+        stderr_path = os.path.join(probes_dir, base + ".err")
+        status_path = os.path.join(probes_dir, base + ".json")
+        spec_path = os.path.join(probes_dir, base + ".spec.json")
+
+        spec = {
+            "root": root, "session_id": session_id, "turn": turn_n,
+            "cls": fact["cls"], "kind": fact["kind"], "expected": fact["expected"],
+            "lag_tokens": lag_tokens, "compactions_crossed": compactions_crossed,
+            "q_hash": q_hash, "cmd": cmd, "status_path": status_path,
+        }
+        with open(spec_path, "w", encoding="utf-8") as f:
+            json.dump(spec, f)
+
+        finalize_cmd = [sys.executable, "-m", "plateau.lab.probes", "--run-spec", spec_path]
+        proc = spawn_probe(finalize_cmd, common.child_env(), stdout_path, stderr_path)
+        try:
+            common.log(root, "probe spawn q={} kind={}".format(q_hash, fact["kind"]))
+        except Exception:
+            pass
+        return {
+            "session_id": session_id, "turn": turn_n, "cls": fact["cls"], "kind": fact["kind"],
+            "lag_tokens": lag_tokens, "compactions_crossed": compactions_crossed,
+            "q_hash": q_hash, "spawned": True, "pid": getattr(proc, "pid", None),
+            "spec_path": spec_path, "status_path": status_path,
+        }
     except Exception as e:
         try:
             common.log(common.root(payload or {}), f"probe ERROR {e!r}")
@@ -461,13 +579,24 @@ def maybe(payload: Dict[str, Any], cfg: Any) -> Optional[Dict[str, Any]]:
 
 
 def main(argv: Optional[List[str]] = None) -> None:
-    """Optional direct entry point (the Stop hook is expected to call `maybe()`
-    itself, per PLAN-step4.md — see the module docstring); reads the hook payload from
+    """Two shapes:
+
+    `python3 -m plateau.lab.probes --run-spec <path>` — the finalizer's own entry
+    point, invoked by `spawn_probe` as a fully detached subprocess (see `_finalize_spec`
+    above); never reads stdin, never touches the hook payload.
+
+    Anything else (including no args): the optional direct hook-shaped entry point
+    (the Stop hook is expected to call `plateau.bridge.lift`, which calls `maybe()`
+    itself, per PLAN-step4.md — see the module docstring) — reads the hook payload from
     stdin and the resolved `plateau.bridge.config.BridgeConfig` for its root, for
     parity with every other `plateau.bridge.*`/`plateau.lab.*` hook-shaped module.
     Prints nothing; never raises."""
+    argv = sys.argv[1:] if argv is None else argv
+    if argv and argv[0] == "--run-spec" and len(argv) > 1:
+        _finalize_spec(argv[1])
+        return
+
     from ..bridge import config as bridge_config
-    _ = sys.argv[1:] if argv is None else argv  # accepted for parity; unused (see docstring)
     payload = common.read_payload()
     root = common.root(payload)
     try:

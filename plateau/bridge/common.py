@@ -55,9 +55,24 @@ CREATE TABLE IF NOT EXISTS turns(session_id TEXT, n INTEGER, ts REAL, rid_at INT
 CREATE TABLE IF NOT EXISTS meta(k TEXT PRIMARY KEY, v TEXT);
 """
 
-# --- D-037 rules, kept verbatim (see d037_hooks/d037_common.py @ d037-hooks-sealed) ---
-SYM_RE = re.compile(r"^(?:def|class)\s+([A-Za-z_]\w*)|^([A-Z][A-Z0-9_]{2,})\s*=", re.M)
+# --- D-037 rules (see d037_hooks/d037_common.py @ d037-hooks-sealed) --------------
+# The original two Python-only alternatives (groups 1/2) are kept byte-identical;
+# groups 3-6 are new (target-run-wavex.md finding #2: an entirely-JS task produced 9
+# Write receipts and 0 `symbol` nodes because this regex had no JS case at all):
+#   3: `function NAME(` / `export function NAME(` / `export async function NAME(`
+#   4: `class Name` / `export class Name` (also reachable via group 1's `class` arm)
+#   5: `export const NAME = ...` (any value, not just an arrow)
+#   6: `const name = (` -- arrow function assigned to a plain identifier
 ERR_RE = re.compile(r"^(Traceback|.*Error\b.*|.*FAILED.*|.*Exception\b.*)$", re.M)
+SYM_RE = re.compile(
+    r"^(?:def|class)\s+([A-Za-z_]\w*)"
+    r"|^([A-Z][A-Z0-9_]{2,})\s*="
+    r"|^(?:export\s+)?(?:default\s+)?(?:async\s+)?function\s*\*?\s+([A-Za-z_$][\w$]*)\s*\("
+    r"|^(?:export\s+)?(?:default\s+)?class\s+([A-Za-z_$][\w$]*)"
+    r"|^export\s+const\s+([A-Za-z_$][\w$]*)\s*="
+    r"|^const\s+([A-Za-z_$][\w$]*)\s*=\s*(?:async\s*)?\(",
+    re.M,
+)
 
 # --- new in the bridge: "read facts" from Read/Grep results (see module docstring) ---
 CODE_EXT = (".py", ".mjs", ".js", ".ts", ".tsx", ".cjs")
@@ -140,18 +155,25 @@ def agent_of(payload: Dict[str, Any]) -> str:
     Task/Agent tool's `subagent_type`) and `agent_id` (an opaque per-instance hex id);
     neither key is present on the main agent's own calls (see
     docs/harness-0.3/preflight-step3.md for the payload keys as inspected against a
-    real subagent run). Order, finalized by docs/harness-0.3/PLAN-step3.md "Amendments
-    after preflight run 1" (S3-A3): `agent_type` first, then `agent_id` (a payload can
-    carry an id with no type), then `agent_name` (in case a future Claude Code version
-    uses that key instead), then env PLATEAU_AGENT (set by plateau.agency for its own
-    "p" worker role, outside Claude Code hooks entirely), else "main"."""
+    real subagent run).
+
+    docs/harness-0.3/target-run-wavex.md finding #7: at each auto-compaction, Claude
+    Code fires a `SubagentStop` event for its own internal summarizer carrying an
+    `agent_id` but NO `agent_type` -- treating `agent_id` alone as "this is a subagent"
+    (the original S3-A3 order) mislabels that internal event as `subagent:<hash>`,
+    producing one spurious handoff file per compaction with no real subagent behind it.
+    Only `agent_type` now identifies a subagent; a payload carrying `agent_id` with no
+    `agent_type` is the main agent (the compaction-summarizer case), not a fallback
+    subagent id. Order: `agent_type`, then `agent_name` (in case a future Claude Code
+    version uses that key instead of `agent_type`), then env PLATEAU_AGENT (set by
+    plateau.agency for its own "p" worker role, outside Claude Code hooks entirely),
+    else "main". This same rule governs receipts' agent attribution (every caller of
+    `agent_of` — `receipt.py`, `lift.py`, `ledger.py`, `probes.py`, `handoff.py`) gets
+    it for free from this one function."""
     payload = payload or {}
     agent_type = payload.get("agent_type")
     if agent_type:
         return f"subagent:{agent_type}"
-    agent_id = payload.get("agent_id")
-    if agent_id:
-        return f"subagent:{agent_id}"
     agent_name = payload.get("agent_name")
     if agent_name:
         return f"subagent:{agent_name}"
@@ -189,12 +211,28 @@ def _short(s: Optional[str], n: int) -> str:
 
 
 def _resp_text(resp: Any) -> Tuple[str, Optional[int], Optional[bool]]:
+    """(text, exit_code, success) out of a PostToolUse `tool_response`.
+
+    docs/harness-0.3/target-run-wavex.md finding #1: the real Claude Code 2.1.x
+    `tool_response` for a `Read` call nests its text under `resp["file"]["content"]`
+    (the payload shape confirmed directly from a run transcript: `{"type": "text",
+    "file": {"filePath": ..., "content": ..., "numLines": ..., ...}}`) -- NOT under
+    "output"/"stdout"/"content" at the top level, so this always returned "" for every
+    Read and `_read_facts_from_text()` never saw any text to lift facts from. Checked
+    first, before the old fallbacks (kept verbatim so Bash/Grep/Glob and any other
+    shape keep working exactly as before). `plateau.lab.probes._facts_read()` already
+    read the correct shape (`res.get("file", {}).get("content")`) -- this brings
+    `common` in line with that module rather than inventing a third convention."""
     if resp is None:
         return "", None, None
     if isinstance(resp, str):
         return resp, None, None
     if isinstance(resp, dict):
-        txt = resp.get("output") or resp.get("stdout") or resp.get("content") or ""
+        file_field = resp.get("file")
+        if isinstance(file_field, dict) and file_field.get("content") is not None:
+            txt = file_field.get("content")
+        else:
+            txt = resp.get("output") or resp.get("stdout") or resp.get("content") or ""
         if isinstance(txt, list):
             txt = " ".join(str(x.get("text", x)) if isinstance(x, dict) else str(x) for x in txt)
         err = resp.get("stderr") or ""
@@ -245,9 +283,18 @@ def classify(tool: str, tool_input: Any, tool_response: Any) -> tuple:
     symbols: List[str] = []
     error: Optional[str] = None
     read_facts: List[Tuple[str, str, str]] = []
+    # PostToolUseFailure synthesizes `tool_response = {"success": False, "stderr": ...}`
+    # (see receipt.py) -- `ok is False` there means the call itself errored, regardless
+    # of tool kind (target-run-wavex.md finding #9 / item 8: 2 real tool_use calls had
+    # no receipt at all; Claude Code's failure path is a SEPARATE hook event that never
+    # populates the ordinary `tool_response` shape classify() otherwise reads).
+    resp_failed = ok is False
 
     if tool in ("Read", "NotebookRead"):
         target = tin.get("file_path") or tin.get("notebook_path") or "?"
+        if resp_failed:
+            detail = _short(text, 160) or "read failed"
+            return "file", target, "fail", detail, symbols, detail, read_facts
         read_facts = _read_facts_from_text(target, text)
         return "file", target, "read", "", symbols, None, read_facts
 
@@ -255,18 +302,33 @@ def classify(tool: str, tool_input: Any, tool_response: Any) -> tuple:
         src = tin.get("new_string") or tin.get("content") or " ".join(
             e.get("new_string", "") for e in tin.get("edits", [])
         )
-        symbols = [a or b for a, b in SYM_RE.findall(src or "")]
         target = tin.get("file_path") or tin.get("notebook_path") or "?"
+        if resp_failed:
+            detail = _short(text, 160) or "edit failed"
+            return "file", target, "fail", detail, symbols, detail, read_facts
+        for m in SYM_RE.finditer(src or ""):
+            name = next((g for g in m.groups() if g), None)
+            if name:
+                symbols.append(name)
         return "file", target, "edit", ", ".join(symbols[:6]), symbols, None, read_facts
 
     if tool == "Bash":
         cmd = _short(tin.get("command", ""), 120)
-        failed = (code not in (None, 0)) or (ok is False) or bool(re.search(r"\bFAILED\b|Traceback|\d+ failed", text))
+        failed = (code not in (None, 0)) or resp_failed or bool(re.search(r"\bFAILED\b|Traceback|\d+ failed", text))
         m = ERR_RE.search(text)
         if failed and m:
             error = _short(m.group(0), 160)
-        kind = "test" if re.search(r"pytest|unittest|npm test|cargo test|go test", cmd) else "command"
-        return kind, cmd, ("fail" if failed else "pass"), (error or ""), symbols, error, read_facts
+        detail = error or (_short(text.strip(), 160) if failed else "")
+        # `node --test`/`vitest`/`jest`/`mocha`/`npm run test` are test runners too
+        # (target-run-wavex.md finding #3: 9+ `node --test` invocations were all
+        # recorded as generic `command` nodes because only the Python/npm-ecosystem
+        # names were matched); `node --check` (a syntax check, not a test run) must
+        # keep classifying as `command` -- it matches none of these names.
+        kind = "test" if re.search(
+            r"pytest|unittest|npm test|npm run test|cargo test|go test|"
+            r"node\s+--test|vitest|jest|mocha", cmd,
+        ) else "command"
+        return kind, cmd, ("fail" if failed else "pass"), detail, symbols, error, read_facts
 
     if tool in ("Grep", "Glob"):
         pattern = _short(tin.get("pattern", "?"), 80)
