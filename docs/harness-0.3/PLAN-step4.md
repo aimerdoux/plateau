@@ -113,3 +113,51 @@ probe grading exact/fuzzy/wrong. `test_promote.py`: synthetic winner promoted; n
 re-derivations +6 %) rejected; `body_leaks` catches a path and a symbol planted in a body. `test_ring.py`: sync off
 without key; path remote round-trip; curate promotes a 3× shape and demotes an unused entry. `test_doctor.py`: doctor
 exits 0 in a temp root with the package hooks.
+
+## Additions (operator, before step 4 started)
+
+### S4-A1 One install story
+- Move `parent`, `pre`, `post` out of `adapters/claude_code/hook.py` into the package: `plateau/hooks/__init__.py`,
+  `plateau/hooks/signal.py` (same functions and outputs, byte-for-byte hook JSON; the manual's section-4 block is
+  read from the package copy `plateau/agency/PARENT_AGENT_MANUAL.md`, which already ships as package data).
+  `adapters/claude_code/hook.py` becomes a thin shim: every mode (nine: parent, pre, post, receipt, snapshot, inject,
+  handoff, lift, ledger) dispatches to the package. `plateau hook <mode>` and `plateau init [--global]` cover all
+  nine modes with the same events, matchers and timeouts as the plugin's `hooks.json`.
+- Test: normalize both hook tables (plugin `hooks.json` → strip `python3 ${CLAUDE_PLUGIN_ROOT}/hook.py ` and
+  ` --cc`; init output → strip `plateau hook ` / `python3 -m plateau.cli hook `) and assert they are identical:
+  same events, same matchers, same mode sequence per matcher, same timeouts.
+- `pyproject.toml` packages add `plateau.hooks`.
+
+### S4-A2 Session identity everywhere a process is spawned
+- Every spawn uses `plateau.bridge.common.child_env()`: `plateau resume` (done), `plateau/lab/probes.py` fork
+  spawning, `plateau/agency/driver.py` `spawn_agent`, `plateau/lab/propose.py`.
+- Ledger rows, handoff files and holdout hashes key on `(session_id, agent_id)`; the main agent's `agent_id` is the
+  empty string. Shadow probes run for the main agent only. Holdout is keyed on the main session id.
+- Evidence: preflight step 3 run 2 (`docs/harness-0.3/preflight-step3.md`, sessions `60ae9ca1…` → `607c71e2…`).
+  Update PLAN.md §Handoff block v1 and the docs to say so.
+
+### S4-A3 Guardrails are part of this step
+- `.github/CODEOWNERS`: `plateau/lab/model.py`, `plateau/lab/fit.py`, `plateau/lab/promote.py`, `experiments/`,
+  `docs/harness-0.3/PLAN*.md` → `@aimerdoux`.
+- `.github/workflows/guardrails.yml`: fails a PR when the author login ends with `[bot]` or the head branch starts
+  with `plateau/learn-` and the changed files touch those paths.
+- PR-body leak test (`promote.body_leaks`) and `plateau propose` tested against a stub runner only; no live
+  `claude -p` anywhere in this step. Spend in step 4: zero.
+
+### S4-A4 Single owner for `plateau/cli.py` (concurrency rule)
+`plateau/cli.py` is owned by C0 only. Every new subcommand is a thin delegation to a module entry point the module
+owner implements: `plateau.hooks.signal.main(mode, argv)` (parent/pre/post), `plateau.lab.ledger.report_main(argv)`
+(`report`), `plateau.lab.fit.main(argv)` (`fit`), `plateau.lab.propose.main(argv)` (`propose`),
+`plateau.lab.promote.learn_main(argv)` (`learn`), `plateau.ring.sync_main(argv)` (`sync`), `plateau.doctor.main(argv)`
+(`doctor`, full version; C3 owns `plateau/doctor.py`; the step-2 bridge checks move there). C0 wires them with
+`importlib` and a `not available` message on ImportError, so cli.py never depends on landing order.
+
+### Ownership for step 4 (supersedes the table above where they differ)
+| owner | files |
+|---|---|
+| C0 install-story | `plateau/hooks/*`, `adapters/claude_code/hook.py` (shim), `plateau/cli.py`, `plateau/bridge/install.py` (nine modes), `pyproject.toml`, `tests/test_install.py` (identity test) |
+| C1 ledger-probes | `plateau/lab/ledger.py`, `plateau/lab/probes.py`, `plateau/lab/holdout.py`, `plateau/agency/driver.py` (spawn env only), `plateau/bridge/handoff.py` and `plateau/bridge/inject.py` (agent_id keying only) |
+| C2 model-fit-promote-guardrails | `plateau/lab/fit.py`, `plateau/lab/promote.py`, `plateau/lab/propose.py`, `.github/CODEOWNERS`, `.github/workflows/guardrails.yml` |
+| C3 ring-doctor | `plateau/ring.py`, `plateau/doctor.py`, `plateau/bridge/config.default.toml` |
+| C4 docs | `README.md`, `docs/d038/report.md`, `adapters/claude_code/README.md`, `.claude-plugin/marketplace.json`, `adapters/claude_code/.claude-plugin/plugin.json` (description), `CHANGELOG.md`, `docs/harness-0.3/PLAN.md` §Handoff (S4-A2 note only) |
+| C5 tests | `tests/test_lab.py`, `tests/test_promote.py`, `tests/test_ring.py`, `tests/test_doctor.py`, `tests/test_hooks_signal.py` |
