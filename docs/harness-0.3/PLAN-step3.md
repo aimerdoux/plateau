@@ -99,3 +99,16 @@ once. `tests/test_lift.py`: DECISION/FACT lines lifted with provenance, dedup, n
 `tests/test_cc_adapter.py`: every hooks.json command resolves to an existing hook.py mode; `hook.py inject --cc` on a
 compact payload returns additionalContext under budget in a temp root; `hook.py handoff --cc --print` returns a
 systemMessage containing `<plateau_handoff v=1>`.
+
+## Amendments after preflight run 1 (orchestrator)
+
+- S3-A1 Handoff file naming: main agent → `.plateau/handoff/<session_id>.json`; a subagent (payload carries
+  `agent_type`/`agent_id`, same `session_id` as the parent) → `.plateau/handoff/<session_id>.subagent-<agent_id>.json`,
+  with `agent: subagent:<agent_type>` in the block and `parent: <session_id>`. `handoff --last` prefers the main file.
+  SessionEnd must never overwrite a subagent file.
+- S3-A2 Child environment: every `claude -p` the package spawns (`plateau resume`, later shadow probes and
+  `plateau propose`) strips `CLAUDECODE`, `CLAUDE_CODE_SESSION_ID`, `CLAUDE_CODE_REMOTE_SESSION_ID` and
+  `CLAUDE_AUTOCOMPACT_PCT_OVERRIDE` from the inherited environment (as `experiments/d038/run_task.py` does), so a
+  fresh session id is guaranteed. Helper: `plateau.bridge.common.child_env() -> dict`.
+- S3-A3 `agent_of(payload)`: `subagent:<agent_type>` when `agent_type` is present (fallback `agent_id`), else
+  `payload["agent_name"]`, else env `PLATEAU_AGENT`, else `main`. Finalized from the preflight payload dump.
