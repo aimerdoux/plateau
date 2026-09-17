@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 """plateau.bridge.install — Claude Code `settings.json` hook-table merge.
 
-`plateau init` (see `plateau.cli`) writes the bridge's own hook table (the modes
-`plateau hook` itself dispatches: `receipt`, `snapshot`, `inject`, `lift`, `handoff`,
-`ledger` — never the adapter's own `parent`/`pre`/`post` signal-demo hooks, which live in
-`adapters/claude_code/hook.py` and are that adapter's concern, not this package's) into a
-Claude Code `settings.json`: the project's `<root>/.claude/settings.json`, or
-`~/.claude/settings.json` for `--global`.
+`plateau init` (see `plateau.cli`) writes the full hook table -- all nine modes
+`plateau hook` dispatches (docs/harness-0.3/PLAN-step4.md "S4-A1 One install story"):
+`parent`, `pre`, `post`, `receipt`, `snapshot`, `inject`, `lift`, `handoff`, `ledger` --
+with the same events, matchers, order and timeouts as the plugin's own
+`adapters/claude_code/hooks/hooks.json` (the reference; `tests/test_install.py`'s
+identity test asserts the two agree) into a Claude Code `settings.json`: the project's
+`<root>/.claude/settings.json`, or `~/.claude/settings.json` for `--global`.
 
 Merge rule (docs/harness-0.3/PLAN-step3.md "`plateau init` and `plateau hook`"): parse the
 existing JSON (starting from `{}` if the file is missing or unreadable); for each event,
@@ -55,17 +56,21 @@ def _group(event: str, matcher: Optional[str], mode: str, args: Optional[List[st
 
 
 def hook_table() -> Dict[str, List[Dict[str, Any]]]:
-    """`event -> [{matcher?, hooks:[{type,command,timeout}]}, ...]` — the bridge's own
-    slice of PLAN-step3.md's hooks.json, restricted to the modes `plateau hook` itself
-    dispatches (see module docstring). One group per hooks.json line; SessionStart keeps
-    its two matchers (`startup|clear` and `compact`) as separate groups so re-running
-    `plateau init` after a matcher's group was hand-edited still recognizes each command
-    independently."""
+    """`event -> [{matcher?, hooks:[{type,command,timeout}]}, ...]` — all nine modes,
+    matching `adapters/claude_code/hooks/hooks.json` event-for-event, matcher-for-matcher,
+    order-for-order and timeout-for-timeout (S4-A1; `tests/test_install.py`'s identity
+    test checks this). One group per hooks.json line, in hooks.json's own order;
+    SessionStart keeps its two matchers (`startup|clear` and `compact`) as separate
+    groups so re-running `plateau init` after a matcher's group was hand-edited still
+    recognizes each command independently."""
     specs = [
+        _group("SessionStart", "startup|clear", "parent", None, 15),
         _group("SessionStart", "startup|clear", "inject", None, 15),
         _group("SessionStart", "compact", "inject", None, 30),
+        _group("UserPromptSubmit", None, "pre", None, 15),
         _group("PostToolUse", "", "receipt", None, 10),
         _group("PreCompact", None, "snapshot", None, 30),
+        _group("Stop", None, "post", None, 15),
         _group("Stop", None, "lift", None, 10),
         _group("Stop", None, "handoff", ["--print"], 10),
         _group("SessionEnd", None, "ledger", None, 20),

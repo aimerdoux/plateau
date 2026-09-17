@@ -66,6 +66,70 @@ sealed D-037/D-038 instruments are never edited and never change behavior.
   `PLATEAU_LEGACY_TAG`) — so the sealed D-037/D-038 instruments keep running unchanged
   and `python3 d037_hooks/test_hooks.py` still prints
   `ALL CHECKS PASSED; B≡C store parity OK`.
+- **Claude Code adapter wiring, `init`/`resume`, decided-fact lifter** — the plugin's
+  `hooks.json` now wires all nine hook modes (`SessionStart` `parent`+`inject`,
+  `UserPromptSubmit` `pre`, `PostToolUse` `receipt`, `PreCompact` `snapshot`, `Stop`
+  `post`+`lift`+`handoff --print`, `SessionEnd` `ledger`+`handoff --write`,
+  `SubagentStop` `handoff --write --agent subagent`). `plateau init [--global]` writes
+  the same table into `.claude/settings.json` (idempotent merge, foreign entries kept,
+  one `.plateau.bak` backup, `--uninstall` removes only our entries) and `plateau
+  init --global` also seeds `~/.plateau/bridge.toml`. `plateau resume <session_id>
+  [prompt]` starts a fresh `claude -p` whose `SessionStart(startup)` injection is
+  prefixed with the stored handoff block, so the shared store's receipt ids continue
+  rather than restart. `plateau/bridge/lift.py` lifts `DECISION:`/`FACT:` lines from the
+  last assistant message at Stop into `decisions`/`decided` rows, deduped per session.
+  Subagent handoffs write to `.plateau/handoff/<session_id>.subagent-<agent_id>.json` so
+  `SessionEnd` never clobbers one.
+- **One install story** — `parent`/`pre`/`post` moved out of the adapter into
+  `plateau.hooks.signal`, so `adapters/claude_code/hook.py` and `plateau hook <mode>`
+  are two entry points over one implementation for all nine modes, byte-for-byte
+  identical hook JSON either way.
+- **Session identity on every spawn** — every process Plateau spawns (`plateau resume`,
+  the shadow-probe fork, `plateau.agency.driver.spawn_agent`, `plateau propose`) goes
+  through `plateau.bridge.common.child_env()`, which strips the inherited
+  `CLAUDECODE`/`CLAUDE_CODE_SESSION_ID`/`CLAUDE_CODE_REMOTE_SESSION_ID`/
+  `CLAUDE_AUTOCOMPACT_PCT_OVERRIDE` so the child always gets a fresh session id. Ledger
+  rows, handoff files, and holdout hashes key on `(session_id, agent_id)`, with the main
+  agent's `agent_id` the empty string; shadow probes run for the main agent only.
+- **`plateau.lab`** — a shadow-probe/ledger/fit/promote/propose lab layered on top of
+  the bridge, off by default (`[lab] shadow_probes = false`; spends tokens once on):
+  `ledger.py` upserts one `sessions` row per session plus `probes`/`rederivations` rows
+  at `SessionEnd`, reading the store, the transcript, and `.plateau/hooks.log`;
+  `probes.py` runs a shadow probe from the Stop hook every `shadow_probe_every_turns`
+  turns on a `--fork-session` child (never in the main session) and grades it
+  exact/fuzzy/wrong; `fit.py` implements `plateau report`/`plateau fit` (refits α, λ,
+  π into `model.toml` cells only where sessions ≥ 5, never deleting existing cells);
+  `promote.py` implements `plateau learn` and the promotion rule (`MIN_SESSIONS = 20`,
+  `PI_GAIN = 0.15`, `REDERIV_TOL`/`TOKENS_TOL = 0.05`, `RETIRE_AFTER = 60`,
+  `decide(...) -> "promote"|"keep"|"retire"`), writes PR bodies containing only
+  aggregates, and refuses to write one that `body_leaks` flags; `propose.py` implements
+  `plateau propose` (builds a prompt from `report --json`, runs a `claude -p` proposal
+  turn, writes `proposals/<date>.md`) but is **never executed in this step** — it is
+  exercised only against a stubbed runner, so step 4 spends zero dollars on live
+  `claude -p` calls.
+- **Private ring** (`plateau/ring.py`) — `plateau sync` clones/pulls a git-or-path
+  remote named in `.plateau/config.toml` (off, printing `private ring: off`, when the
+  remote or its token env var is unset), pushes the session ledger and a curated
+  layer (`files`, `fixes`, `decisions`, `procedures` tables) under a per-repo key, and
+  `ring.curate()` promotes a receipt shape that repeats 3× into a named procedure and
+  demotes entries unused over the last 10 sessions. `plateau/bridge/config.default.toml`
+  is the packaged `.plateau/config.toml` template (`[bridge] enabled`, `[lab]
+  shadow_probes`, `[private_ring] remote`/`key`).
+- **`plateau doctor` (full)** (`plateau/doctor.py`) — drives one fake `PostToolUse`,
+  `PreCompact`, `SessionStart(compact)`, and `Stop` through the hooks the project's or
+  global `settings.json` actually installs (falling back to the package modules
+  directly), and additionally checks the ledger is writable, config resolves, and
+  reports private-ring status; PASS/FAIL/SKIP per check, exit 1 on any FAIL.
+- **Guardrails** — `.github/CODEOWNERS` requires a human (`@aimerdoux`) on
+  `plateau/lab/model.py`, `plateau/lab/fit.py`, `plateau/lab/promote.py`,
+  `experiments/`, and `docs/harness-0.3/PLAN*.md`; `.github/workflows/guardrails.yml`
+  fails a PR that touches those paths when its author login ends `[bot]` or its head
+  branch starts `plateau/learn-`, as an independent required-status-check backstop to
+  branch-protection settings.
+- **Single owner for `plateau/cli.py`** — every lab/ring/doctor subcommand
+  (`report`, `fit`, `propose`, `learn`, `sync`, `doctor`) is a thin `importlib`
+  delegation from `cli.py` to its module's entry point, with a `not available` message
+  on `ImportError`, so the CLI never depends on landing order across owners.
 
 ### Notes
 

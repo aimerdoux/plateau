@@ -13,7 +13,9 @@ Usage:
                    [--run-id ID] [--resume runs/ID/RESUME.json] [--stub]
 """
 import argparse
+import contextlib
 import json
+import os
 import re
 import subprocess
 import time
@@ -125,6 +127,36 @@ def extract_json(text):
 
 # ------------------------------------------------------------ spawn step --
 
+@contextlib.contextmanager
+def _child_spawn_env():
+    """Scope `os.environ` around one spawned `claude -p` call to
+    `plateau.bridge.common.child_env()` (S4-A2, docs/harness-0.3/PLAN-step4.md
+    "Session identity everywhere a process is spawned"): a fresh session id is
+    guaranteed only when the child cannot see the parent's own Claude Code
+    session-identity variables. `gate.run()` (not owned by the ledger-probes
+    step-4 slice) always forks with the ambient `os.environ` and takes no `env`
+    kwarg, so rather than editing it, this pops exactly the handful of vars
+    `child_env()` strips -- and only those -- from `os.environ` for the
+    duration of the `with` block, then restores them verbatim. A no-op (the
+    environment is left untouched) if `plateau.bridge.common` cannot be
+    imported for any reason -- this must never be the thing that breaks a
+    spawn."""
+    try:
+        from plateau.bridge.common import child_env
+        target = child_env()
+    except Exception:
+        yield
+        return
+    removed = {}
+    for k in list(os.environ.keys()):
+        if k not in target:
+            removed[k] = os.environ.pop(k)
+    try:
+        yield
+    finally:
+        os.environ.update(removed)
+
+
 def spawn_agent(prompt_text, mode, repo, max_turns=20, worker_model=None):
     """One fresh `claude -p` process. Returns parsed agent dict or an error."""
     tools = prompts.AUDIT_TOOLS if mode == "audit" else prompts.WRITE_TOOLS
@@ -141,7 +173,8 @@ def spawn_agent(prompt_text, mode, repo, max_turns=20, worker_model=None):
         "--disallowedTools", *prompts.DISALLOWED_TOOLS,
         "--append-system-prompt", prompts.SAFETY_FLOOR,
     ]
-    rc, out, err = gate.run(cmd, repo, timeout=600)
+    with _child_spawn_env():
+        rc, out, err = gate.run(cmd, repo, timeout=600)
     if rc != 0 and not out:
         return {"class": "blocked", "carry": "agent exit %d: %s" % (rc, err[:80]),
                 "clean": False, "evidence": [], "edited_files": []}

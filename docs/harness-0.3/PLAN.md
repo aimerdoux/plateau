@@ -223,6 +223,19 @@ cursor, receipts, compactions, last_injection{rid, chars, holdout}, snapshot{pat
 decisions{count, last[]}, lookup, continue`. `render(json.loads(json.dumps(build(...))))` must equal `render(build(...))`.
 Unknown values render as `none`. Words for `lookup:` = the three highest-degree node keys' first tokens.
 
+> **S4-A2 note (docs/harness-0.3/PLAN-step4.md):** session identity now runs through every process
+> Plateau spawns, not just `plateau resume`. `plateau.bridge.common.child_env()` strips
+> `CLAUDECODE`/`CLAUDE_CODE_SESSION_ID`/`CLAUDE_CODE_REMOTE_SESSION_ID`/
+> `CLAUDE_AUTOCOMPACT_PCT_OVERRIDE` from the inherited environment before every `claude -p` the
+> package spawns (`plateau resume`, the lab's shadow-probe fork, `plateau.agency.driver.spawn_agent`,
+> `plateau propose`), so each child always gets a fresh session id. Ledger rows, handoff files, and
+> holdout hashes key on `(session_id, agent_id)`, with the main agent's `agent_id` the empty string;
+> shadow probes run for the main agent only, and holdout stays keyed on the main session id.
+> Evidence: preflight step 3 run 2 (`docs/harness-0.3/preflight-step3.md`), sessions
+> `60ae9ca1…` → `607c71e2…` — the fresh `claude -p` `plateau resume` starts got a session id distinct
+> from the one it was resuming, confirming a clean identity boundary at the spawn point this note
+> generalizes to every other spawn site.
+
 ## CLI (`plateau/cli.py`, owner A3)
 
 `plateau <cmd>` via `[project.scripts] plateau = "plateau.cli:main"`. Step 2 implements `lookup` (→ bridge.lookup),

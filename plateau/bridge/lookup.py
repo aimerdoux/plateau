@@ -36,6 +36,8 @@ def main(argv=None) -> None:
         head="", sticky_keys=[], edited_since=set(), resolved_errors=set(),
     )
     text = "\n".join(query_mod.render_line(n) for n in chosen)
+    hits = sum(1 for n in chosen if n.get("lexical_hit"))
+    common.log(root, f"lookup q={len(q)}ch nodes={len(chosen)}/{len(scored)} hits={hits}")   # counted by the ledger
     print(text if text else "(no receipts match)")
 
 

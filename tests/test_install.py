@@ -246,6 +246,63 @@ def test_global_settings_path_is_under_home(root):
     assert path == os.path.join(os.path.expanduser("~"), ".claude", "settings.json")
 
 
+# ---------------------------------------------------------------------------
+# plugin-vs-init identity (docs/harness-0.3/PLAN-step4.md "S4-A1 One install story")
+# ---------------------------------------------------------------------------
+
+_PLUGIN_HOOKS_JSON = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+    "adapters", "claude_code", "hooks", "hooks.json",
+)
+
+
+def _normalize_hook_events(events, strip_prefixes, strip_cc):
+    """`event -> [(matcher, mode_and_args, timeout), ...]`, flattened across all groups
+    in array order (a matcher may legitimately repeat across separate groups -- e.g.
+    SessionStart's `startup|clear` carries both `parent` and `inject` -- and Claude
+    Code fires them in that same array order regardless of how they are grouped, so
+    flattening is the fair comparison, not the raw group shape)."""
+    out = {}
+    for event, groups in events.items():
+        flat = []
+        for group in groups:
+            matcher = group.get("matcher")
+            for hook in group.get("hooks") or []:
+                cmd = hook["command"]
+                for prefix in strip_prefixes:
+                    if cmd.startswith(prefix):
+                        cmd = cmd[len(prefix):]
+                        break
+                if strip_cc:
+                    cmd = cmd.replace(" --cc", "")
+                flat.append((matcher, cmd.strip(), hook.get("timeout")))
+        out[event] = flat
+    return out
+
+
+def test_init_hook_table_matches_plugin_hooks_json_identically():
+    """The plugin's own `adapters/claude_code/hooks/hooks.json` is the reference for
+    all nine modes; `plateau init`'s hook table must install the exact same events,
+    matchers, mode sequence per matcher, and timeouts -- one install story, not two
+    that can silently drift apart. Normalization strips only the two flavors of
+    command prefix (and, for the plugin side, the `--cc` flag that `plateau hook`
+    implies rather than spells out -- see `plateau.cli._cmd_hook`)."""
+    with open(_PLUGIN_HOOKS_JSON, encoding="utf-8") as f:
+        plugin_hooks = json.load(f)["hooks"]
+
+    init_hooks = install.hook_table()
+
+    plugin_norm = _normalize_hook_events(
+        plugin_hooks, ["python3 ${CLAUDE_PLUGIN_ROOT}/hook.py "], strip_cc=True)
+    init_norm = _normalize_hook_events(
+        init_hooks, ["plateau hook ", "python3 -m plateau.cli hook "], strip_cc=True)
+
+    assert set(plugin_norm) == set(init_norm), (set(plugin_norm), set(init_norm))
+    for event in plugin_norm:
+        assert plugin_norm[event] == init_norm[event], "{}: {!r} != {!r}".format(
+            event, plugin_norm[event], init_norm[event])
+
+
 def test_copy_global_bridge_toml_does_not_overwrite_without_force(tmp_path, monkeypatch):
     monkeypatch.setenv("HOME", str(tmp_path))
     dest_dir = tmp_path / ".plateau"

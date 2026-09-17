@@ -2,20 +2,26 @@
 """plateau.cli — the `plateau` command line (`[project.scripts] plateau = "plateau.cli:main"`).
 
 Step 2 (see `docs/harness-0.3/PLAN.md` "CLI") implements `lookup` (delegates to
-`plateau.bridge.lookup`), `handoff` (delegates to `plateau.bridge.handoff`), `version`,
-and `doctor` (a self-check of the bridge's three hook entry points plus the handoff
-block, run against a scratch git repo — never this repo, never `.plateau/` here).
+`plateau.bridge.lookup`), `handoff` (delegates to `plateau.bridge.handoff`), `version`.
 
 Step 3 (see `docs/harness-0.3/PLAN-step3.md`) adds `hook <mode>` (the console-script twin
 of `adapters/claude_code/hook.py <mode> --cc`: reads the payload from stdin, dispatches to
-`plateau.bridge.<module>.main` / `plateau.lab.ledger.main`, no-ops with a log line when the
-target module is absent), `init [--global] [--force] [--uninstall]` (merges the bridge's
-hook table into a Claude Code `settings.json`; delegates to `plateau.bridge.install`), and
-`resume <session_id> [prompt]` (a fresh `claude -p`, never `--resume`, with
-`PLATEAU_RESUME_FROM=<session_id>` so `inject` prepends that session's stored handoff
-block). `report | fit | propose | learn | sync` remain registered so the full command
-surface exists, and each prints `not implemented in 0.3.0-step2` and exits 2 until a later
-step fills it in.
+a target module, no-ops with a log line when the target module is absent), `init
+[--global] [--force] [--uninstall]` (merges the bridge's hook table into a Claude Code
+`settings.json`; delegates to `plateau.bridge.install`), and `resume <session_id>
+[prompt]` (a fresh `claude -p`, never `--resume`, with `PLATEAU_RESUME_FROM=<session_id>`
+so `inject` prepends that session's stored handoff block).
+
+Step 4 (docs/harness-0.3/PLAN-step4.md "S4-A4 Single owner for `plateau/cli.py`") makes
+this file the SOLE owner of the command surface: every subcommand beyond
+lookup/handoff/version/init/resume/hook is a thin `importlib` delegation to another
+module's entry point (`_LAB_ENTRY_POINTS` below), so this file never depends on landing
+order between concurrently-developed owners -- a not-yet-landed module degrades to a
+"not available" message and exit 2, exactly like a hook mode degrades to a no-op.
+`hook <mode>` also grew three more modes in step 4 (S4-A1 "One install story"): `parent`,
+`pre`, `post` now dispatch to `plateau.hooks.signal.main(mode, argv)` alongside the six
+step-3 modes, so `plateau hook` and `adapters/claude_code/hook.py` cover the exact same
+nine modes from the exact same implementations.
 """
 
 from __future__ import annotations
@@ -24,25 +30,23 @@ import argparse
 import importlib
 import json
 import os
-import shutil
-import sqlite3
 import subprocess
 import sys
-import tempfile
-from typing import List, Optional, Tuple
+from typing import List, Optional
 
 COMMANDS = (
     "init", "doctor", "lookup", "handoff", "resume", "hook",
     "report", "fit", "propose", "learn", "sync", "version",
 )
-NOT_IMPLEMENTED_COMMANDS = ("report", "fit", "propose", "learn", "sync")
 
 # `plateau hook <mode>` -- the console-script twin of `hook.py <mode> --cc`
-# (docs/harness-0.3/PLAN-step3.md "`plateau init` and `plateau hook`"): dispatches to the
-# named module's `main(argv)`, passing through whatever args followed the mode
-# (`--print`, `--write`, `--agent ...`, ...). A module that is not (yet) importable --
-# `plateau.lab.ledger` arrives in step 4 -- degrades to a no-op with a log line rather
-# than failing the hook (hooks must never raise; see PLAN.md conventions).
+# (docs/harness-0.3/PLAN-step3.md "`plateau init` and `plateau hook`"; S4-A1 adds the
+# first three): dispatches to the named module's `main(argv)` (or, for the signal
+# modes, `plateau.hooks.signal.main(mode, argv)`), passing through whatever args
+# followed the mode (`--cc`, `--print`, `--write`, `--agent ...`, ...). A module that is
+# not (yet) importable degrades to a no-op with a log line rather than failing the hook
+# (hooks must never raise; see PLAN.md conventions).
+_SIGNAL_MODES = ("parent", "pre", "post")
 _HOOK_MODULES = {
     "receipt": "plateau.bridge.receipt",
     "snapshot": "plateau.bridge.snapshot",
@@ -50,6 +54,19 @@ _HOOK_MODULES = {
     "handoff": "plateau.bridge.handoff",
     "lift": "plateau.bridge.lift",
     "ledger": "plateau.lab.ledger",
+}
+
+# S4-A4: every new subcommand beyond lookup/handoff/version/init/resume/hook is a thin
+# delegation to the named module's entry point, wired through `importlib` so this file
+# never depends on landing order. `(module, function)` -- the function takes `argv`
+# (a `List[str]`) and returns an int exit code (or `None`, taken as 0).
+_LAB_ENTRY_POINTS = {
+    "report": ("plateau.lab.ledger", "report_main"),
+    "fit": ("plateau.lab.fit", "main"),
+    "propose": ("plateau.lab.propose", "main"),
+    "learn": ("plateau.lab.promote", "learn_main"),
+    "sync": ("plateau.ring", "sync_main"),
+    "doctor": ("plateau.doctor", "main"),
 }
 
 DEFAULT_RESUME_PROMPT = (
@@ -104,11 +121,6 @@ def _cmd_handoff(rest: List[str]) -> int:
     return 0
 
 
-def _cmd_not_implemented() -> int:
-    print("not implemented in 0.3.0-step2")
-    return 2
-
-
 def _git_toplevel_or_cwd() -> str:
     """`git rev-parse --show-toplevel` of the current directory, else the current
     directory itself (mirrors `plateau.bridge.handoff._resolve_root`)."""
@@ -140,6 +152,28 @@ def _cmd_hook(rest: List[str]) -> int:
         print("usage: plateau hook <mode> [args...]", file=sys.stderr)
         return 2
     mode, mode_args = rest[0], rest[1:]
+
+    if mode in _SIGNAL_MODES:
+        # parent/pre/post -> plateau.hooks.signal.main(mode, argv) (S4-A1). `plateau
+        # hook <mode>` is the console-script TWIN of `hook.py <mode> --cc` -- it always
+        # runs as an installed hook, so `--cc` is implied here even if the caller did
+        # not type it (mirroring the six module modes below, which have no dry-run
+        # shape at all and likewise need no `--cc`). `plateau init` therefore never
+        # writes a literal `--cc` for these three modes either.
+        try:
+            from .hooks import signal as hooks_signal
+        except Exception as exc:
+            _hook_log("mode '{}' (plateau.hooks.signal) unavailable: {!r} -- no-op".format(mode, exc))
+            print(json.dumps({}))
+            return 0
+        try:
+            hooks_signal.main(mode, list(mode_args) + ["--cc"])
+        except SystemExit:
+            pass
+        except Exception as exc:
+            _hook_log("mode '{}' raised: {!r}".format(mode, exc))
+            print(json.dumps({}))
+        return 0
 
     module_name = _HOOK_MODULES.get(mode)
     if module_name is None:
@@ -259,146 +293,26 @@ def _cmd_resume(rest: List[str]) -> int:
     return proc.returncode
 
 
-# --- doctor (bridge self-check) ------------------------------------------------------
+# --- report/fit/propose/learn/sync/doctor (S4-A4: thin importlib delegation) ----------
 
-def _run_module(module: str, payload: dict, cwd: str, env: dict) -> subprocess.CompletedProcess:
-    """`python -m <module>` with `payload` piped in as JSON on stdin. Never raises: a
-    launch failure (bad PYTHONPATH, missing interpreter, timeout, ...) comes back as a
-    synthetic nonzero-exit CompletedProcess instead, so callers can treat every doctor
-    check uniformly as pass/fail rather than needing a second error path."""
+def _cmd_lab_entry(command: str, rest: List[str]) -> int:
+    """`plateau report|fit|propose|learn|sync|doctor` (docs/harness-0.3/PLAN-step4.md
+    "S4-A4 Single owner for `plateau/cli.py`"): a thin delegation to the owning module's
+    entry point via `importlib`, so this file never depends on landing order between
+    concurrently-developed owners. A module/function that is not (yet) importable
+    prints a "not available" message and exits 2 -- never a traceback."""
+    module_name, func_name = _LAB_ENTRY_POINTS[command]
     try:
-        return subprocess.run(
-            [sys.executable, "-m", module],
-            input=json.dumps(payload),
-            cwd=cwd,
-            env=env,
-            capture_output=True,
-            text=True,
-            timeout=30,
-        )
-    except (OSError, subprocess.SubprocessError) as exc:
-        return subprocess.CompletedProcess(args=[module], returncode=1, stdout="", stderr=str(exc))
-
-
-def _doctor_env() -> dict:
-    env = dict(os.environ)
-    env["PYTHONPATH"] = _repo_root() + os.pathsep + env.get("PYTHONPATH", "")
-    # This is a check of the CURRENT (public `.plateau/`) hook behaviour, never the
-    # `d037_hooks/` legacy shims — strip any legacy overrides that might be ambient.
-    for legacy_var in ("PLATEAU_LEGACY_TAG", "PLATEAU_DB_REL", "PLATEAU_LOG_REL"):
-        env.pop(legacy_var, None)
-    return env
-
-
-def _run_doctor_checks(bridge_handoff, bridge_config) -> List[Tuple[str, bool]]:
-    """Run one fake PostToolUse(Read), PreCompact, and SessionStart(compact) through the
-    bridge hooks (as subprocesses, `python -m plateau.bridge.<name>`) in a scratch git
-    repo, then check: a receipts row exists; a snapshot file exists; the injection's
-    `additionalContext` is within budget; `handoff.build` renders a block. Returns
-    `[(label, passed), ...]` in that order — never raises."""
-    checks: List[Tuple[str, bool]] = []
-    tmp = tempfile.mkdtemp(prefix="plateau-doctor-")
-    try:
-        subprocess.run(["git", "init", "-q", tmp], capture_output=True, text=True, timeout=10)
-        env = _doctor_env()
-        session_id = "doctor-session"
-
-        # --- PostToolUse: a Read of a file we create -------------------------------
-        probe_path = os.path.join(tmp, "doctor_probe.py")
-        probe_src = "def doctor_probe():\n    return True\n"
-        with open(probe_path, "w", encoding="utf-8") as f:
-            f.write(probe_src)
-        read_payload = {
-            "session_id": session_id,
-            "cwd": tmp,
-            "hook_event_name": "PostToolUse",
-            "tool_name": "Read",
-            "tool_input": {"file_path": probe_path},
-            "tool_response": {"content": probe_src},
-        }
-        _run_module("plateau.bridge.receipt", read_payload, tmp, env)
-
-        receipts_ok = False
-        db_path = os.path.join(tmp, ".plateau", "index.sqlite")
-        if os.path.isfile(db_path):
-            try:
-                conn = sqlite3.connect(db_path)
-                try:
-                    receipts_ok = conn.execute("SELECT COUNT(*) FROM receipts").fetchone()[0] >= 1
-                finally:
-                    conn.close()
-            except sqlite3.Error:
-                receipts_ok = False
-        checks.append(("a receipts row exists", receipts_ok))
-
-        # --- PreCompact: trigger=auto -----------------------------------------------
-        precompact_payload = {
-            "session_id": session_id, "cwd": tmp,
-            "hook_event_name": "PreCompact", "trigger": "auto",
-        }
-        _run_module("plateau.bridge.snapshot", precompact_payload, tmp, env)
-
-        snap_dir = os.path.join(tmp, ".plateau", "snapshots")
-        snap_ok = os.path.isdir(snap_dir) and len(os.listdir(snap_dir)) >= 1
-        checks.append(("a file exists under .plateau/snapshots/", snap_ok))
-
-        # --- SessionStart: source=compact, with a tiny transcript --------------------
-        transcript_path = os.path.join(tmp, "transcript.jsonl")
-        transcript_line = {"type": "user", "message": {"role": "user", "content": "fix doctor_probe"}}
-        with open(transcript_path, "w", encoding="utf-8") as f:
-            f.write(json.dumps(transcript_line) + "\n")
-        start_payload = {
-            "session_id": session_id, "cwd": tmp,
-            "hook_event_name": "SessionStart", "source": "compact",
-            "transcript_path": transcript_path,
-        }
-        inject_proc = _run_module("plateau.bridge.inject", start_payload, tmp, env)
-
-        budget_ok = False
-        try:
-            stdout_lines = [line for line in inject_proc.stdout.splitlines() if line.strip()]
-            out = json.loads(stdout_lines[-1]) if stdout_lines else {}
-            ctx = out.get("hookSpecificOutput", {}).get("additionalContext", "")
-            cfg = bridge_config.load(tmp, session_id)
-            budget = cfg.budget.get("compaction_chars", 12000)
-            budget_ok = len(ctx) <= budget
-        except Exception:
-            budget_ok = False
-        checks.append(("the injection's additionalContext is within budget", budget_ok))
-
-        # --- handoff.build renders a block -------------------------------------------
-        handoff_ok = False
-        try:
-            block = bridge_handoff.build(tmp, session_id)
-            text = bridge_handoff.render(block)
-            handoff_ok = bool(text) and text.startswith("<plateau_handoff")
-        except Exception:
-            handoff_ok = False
-        checks.append(("handoff.build renders a block", handoff_ok))
-    finally:
-        shutil.rmtree(tmp, ignore_errors=True)
-    return checks
-
-
-def _cmd_doctor() -> int:
-    try:
-        from .bridge import common as _bridge_common  # noqa: F401 -- importability probe
-        from .bridge import config as bridge_config
-        from .bridge import receipt as _bridge_receipt  # noqa: F401
-        from .bridge import snapshot as _bridge_snapshot  # noqa: F401
-        from .bridge import inject as _bridge_inject  # noqa: F401
-        from .bridge import handoff as bridge_handoff
-    except Exception as exc:  # bridge package mid-edit by another owner: not a failure
-        print("SKIP: bridge modules not importable yet ({!r})".format(exc))
-        return 3
-
-    checks = _run_doctor_checks(bridge_handoff, bridge_config)
-    exit_code = 0
-    for label, passed in checks:
-        print("{}: {}".format("PASS" if passed else "FAIL", label))
-        if not passed:
-            exit_code = 1
-    return exit_code
+        module = importlib.import_module(module_name)
+        func = getattr(module, func_name)
+        if not callable(func):
+            raise AttributeError("{} has no {}()".format(module_name, func_name))
+    except Exception as exc:
+        print("plateau {}: not available ({}.{} could not be imported: {!r})".format(
+            command, module_name, func_name, exc))
+        return 2
+    result = func(rest)
+    return result if isinstance(result, int) else 0
 
 
 # --- argument parsing / dispatch -----------------------------------------------------
@@ -436,10 +350,8 @@ def main(argv: Optional[List[str]] = None) -> int:
         return _cmd_init(rest)
     if args.command == "resume":
         return _cmd_resume(rest)
-    if args.command == "doctor":
-        return _cmd_doctor()
-    if args.command in NOT_IMPLEMENTED_COMMANDS:
-        return _cmd_not_implemented()
+    if args.command in _LAB_ENTRY_POINTS:
+        return _cmd_lab_entry(args.command, rest)
     return 2  # unreachable: argparse already restricted `command` to COMMANDS
 
 

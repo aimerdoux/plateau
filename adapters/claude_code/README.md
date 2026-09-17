@@ -7,11 +7,15 @@ runtime. Keep that in mind when wiring paths.
 
 ## What the plugin does (hooks)
 
-Every hook calls the thin adapter `hook.py`; the real logic lives in the `plateau` package
-(`plateau.bridge.*` / `plateau.lab.*` for the step-3 modes below, whether pip-installed
-alongside this plugin or run straight out of a dev checkout). `hook.py` never raises: an
-unavailable target module (e.g. `ledger`, which lands in a later step) degrades to a no-op
-with one line in `.plateau/hooks.log` instead of failing the hook.
+`hook.py` holds no hook logic of its own — it is a thin shim over the `plateau` package for
+all nine modes (`plateau/harness-0.3/PLAN-step4.md` "S4-A1 One install story"), whether
+`plateau` is pip-installed alongside this plugin or run straight out of a dev checkout:
+`parent`/`pre`/`post` dispatch to `plateau.hooks.signal`, `receipt`/`snapshot`/`inject`/
+`handoff`/`lift` to their `plateau.bridge.*` twins, and `ledger` to `plateau.lab.ledger`.
+`plateau hook <mode>` is the console-script twin of the same dispatch table, so a plugin
+install and a `pip install`-only checkout see byte-for-byte identical hook JSON. `hook.py`
+never raises: an unavailable target module degrades to a no-op with one line in
+`.plateau/hooks.log` instead of failing the hook.
 
 | Hook event | Mode | Effect |
 |---|---|---|
