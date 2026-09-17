@@ -57,6 +57,34 @@ def _current_compaction_k(conn, session_id: str) -> int:
     return row[0] if row and row[0] is not None else 0
 
 
+def _resume_handoff_prefix(root: str, budget: int) -> str:
+    """The stored handoff block named by `PLATEAU_RESUME_FROM` (set by `plateau resume`
+    on the fresh session it launches; see docs/harness-0.3/PLAN-step3.md "`plateau
+    resume`"), rendered and capped to `budget` chars so the caller can subtract its
+    length from the selector's own budget and never exceed `budget.startup_chars`
+    overall. "" when the env var is unset, names no stored handoff file, or anything
+    about the stored block is unreadable -- this never raises."""
+    session_id = os.environ.get("PLATEAU_RESUME_FROM", "")
+    if not session_id:
+        return ""
+    path = os.path.join(root, ".plateau", "handoff", f"{session_id}.json")
+    if not os.path.isfile(path):
+        return ""
+    try:
+        with open(path, encoding="utf-8") as f:
+            block = json.load(f)
+    except (OSError, ValueError):
+        return ""
+    if not isinstance(block, dict):
+        return ""
+    try:
+        from . import handoff as handoff_mod
+        text = handoff_mod.render(block) + "\n"
+    except Exception:
+        return ""
+    return text[:budget] if len(text) > budget else text
+
+
 def _injection_rid_at(conn, session_id: str) -> int:
     """The receipt cursor at injection time: MAX(receipts.id) for the session (0 when
     none) -- stored on the injections row so plateau.bridge.handoff can render
@@ -128,14 +156,17 @@ def main(argv=None) -> None:
             print(json.dumps({}))
             sys.exit(0)
 
+        resume_prefix = _resume_handoff_prefix(root, budget) if source == "startup" else ""
+        selector_budget = max(0, budget - len(resume_prefix))
+
         sticky = query_mod.sticky_keys(conn, session_id) if cfg.selector.get("sticky", True) else []
         edited = query_mod.edited_since(conn, session_id, prev_rid)
         resolved = query_mod.resolved_errors(conn, session_id, prev_rid)
         chosen = query_mod.select(
-            scored, budget, cfg,
+            scored, selector_budget, cfg,
             head=head, sticky_keys=sticky, edited_since=edited, resolved_errors=resolved,
         )
-        body = query_mod.render(chosen, head, tag)
+        body = resume_prefix + query_mod.render(chosen, head, tag)
         keys = [n["key"] for n in chosen]
 
         conn.execute(

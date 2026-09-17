@@ -1,7 +1,7 @@
 """Thin Claude Code adapter for Plateau. All logic lives in `plateau`; this file is
 only I/O + JSON plumbing at the step boundary.
 
-Three modes, wired to Claude Code's hook events:
+Legacy modes (unchanged since 0.1, kept byte-for-byte — docs/harness-0.3/PLAN-step3.md):
 
   parent — read the Parent Agent Manual's section-4 SYSTEM-PROMPT BLOCK and inject it as
            standing context at SessionStart, so the parent-agent delegation discipline is
@@ -17,18 +17,44 @@ post) are read from .plateau/pending_facts.json — a list of
 re-verifies are admitted; the rest are dropped (and reported). Nothing host-specific
 leaks into the core — this adapter imports `plateau` and the standard library only.
 
+Step-3 modes (thin calls into the `plateau.bridge`/`plateau.lab` harness — see
+"step 3: thin bridge/lab dispatch modes" below and PLAN-step3.md "hooks.json"):
+
+  receipt  — PostToolUse:  plateau.bridge.receipt.main
+  snapshot — PreCompact:   plateau.bridge.snapshot.main
+  inject   — SessionStart: plateau.bridge.inject.main
+  handoff  — Stop / SessionEnd / SubagentStop: plateau.bridge.handoff.main
+  lift     — Stop:         plateau.bridge.lift.main
+  ledger   — SessionEnd:   plateau.lab.ledger.main (no-op + log line until step 4)
+
 Run directly for a dry run:
   python adapters/claude_code/hook.py parent
   python adapters/claude_code/hook.py pre
   python adapters/claude_code/hook.py post
+  python adapters/claude_code/hook.py receipt --cc   # (and snapshot/inject/handoff/lift/ledger)
 """
 
 from __future__ import annotations
 
+import importlib
 import json
 import os
 import re
 import sys
+
+# --- make `plateau` importable whether pip-installed or run from a checkout ---------
+# This file ships both as a plugin file (CLAUDE_PLUGIN_ROOT points here, `plateau` is
+# pip-installed alongside it) and straight out of a dev checkout (`adapters/claude_code/
+# hook.py` two directories under the repo root that contains the `plateau/` package,
+# with nothing installed). Try the normal import first; only fall back to a sys.path
+# insertion of the checkout's repo root when that fails, so an installed `plateau` is
+# never shadowed by this source tree.
+try:
+    import plateau  # noqa: F401
+except ImportError:
+    _repo_root = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".."))
+    if _repo_root not in sys.path:
+        sys.path.insert(0, _repo_root)
 
 from plateau import (
     Measurement, Thought, RelationalState, SelfState,
@@ -119,6 +145,52 @@ def post() -> dict:
             "note": "only facts whose Measurement re-verified were admitted; lessons are bounded"}
 
 
+# --- step 3: thin bridge/lab dispatch modes -----------------------------------------
+# `receipt | snapshot | inject | handoff | lift` each call `plateau.bridge.<mode>.main
+# (argv)` after the checkout/pip-install import shim above; `ledger` calls
+# `plateau.lab.ledger.main(argv)`. All of these hook modules already read the payload
+# from stdin and emit their own Claude-Code hook JSON (or nothing) themselves -- this
+# file stays a thin caller, never duplicating their logic. One exception, to keep a hook
+# that never raises (docs/harness-0.3/PLAN.md "Conventions"): a target module that is not
+# yet importable (a concurrently-developed owner's file, or `plateau.lab.ledger`, which
+# only lands in step 4) degrades to a no-op, logging one line via `plateau.bridge.common.log`
+# instead of crashing the hook. `handoff --print`, `--write` (SessionEnd/SubagentStop) and a
+# bare `handoff --last`/no-flag call are all passed through unwrapped:
+# `plateau.bridge.handoff.main` already emits the correct hook JSON shape itself for
+# `--print` (`{"systemMessage": "<block>"}`, see PLAN-step3.md "hooks.json"), so this file
+# must not re-wrap its stdout -- doing so would double-wrap the systemMessage.
+# Extra args after the mode (`--print`, `--write`, `--agent subagent`, ...) are passed
+# straight through to the target module's own `main(argv)` / argparse.
+NEW_MODES = ("receipt", "snapshot", "inject", "handoff", "lift", "ledger")
+
+
+def _log_new_mode_fallback(mode: str, msg: str) -> None:
+    """Best-effort log line when a step-3 target module can't be imported or raises --
+    never raises itself, never writes to a hook's stdout (which may be parsed as JSON)."""
+    try:
+        from plateau.bridge import common as bridge_common
+        payload = bridge_common.read_payload()
+        bridge_common.log(bridge_common.root(payload), f"{mode} {msg}")
+    except Exception:
+        pass
+
+
+def _dispatch_new_mode(mode: str, rest: list) -> None:
+    module_path = "plateau.lab.ledger" if mode == "ledger" else f"plateau.bridge.{mode}"
+    try:
+        mod = importlib.import_module(module_path)
+    except Exception as exc:
+        _log_new_mode_fallback(mode, f"SKIP {module_path} not available ({exc!r})")
+        return
+
+    try:
+        mod.main(rest)
+    except SystemExit:
+        pass
+    except Exception as exc:
+        _log_new_mode_fallback(mode, f"ERROR {exc!r}")
+
+
 def _read_manual() -> tuple[str, str]:
     """Return (text, path) for the first Parent Agent Manual candidate that exists."""
     for path in MANUAL_CANDIDATES:
@@ -196,6 +268,12 @@ def main() -> None:
     args = [a for a in sys.argv[1:] if a != "--cc"]
     cc = "--cc" in sys.argv[1:]
     mode = args[0] if args else "pre"
+    if mode in NEW_MODES:
+        # These modes read the hook payload from stdin themselves (via
+        # plateau.bridge.common.read_payload()) and print their own hook JSON (or
+        # nothing) -- unlike parent/pre/post below, stdin must reach them undrained.
+        _dispatch_new_mode(mode, args[1:])
+        return
     if cc:
         try:
             sys.stdin.read()  # drain the hook's stdin JSON; we ground via cwd, not stdin

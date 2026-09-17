@@ -115,22 +115,72 @@ def db(root_dir: str) -> sqlite3.Connection:
 
 def read_payload() -> Dict[str, Any]:
     try:
-        return json.load(sys.stdin)
+        data = sys.stdin.read()
     except Exception:
         return {}
+    try:
+        payload = json.loads(data) if data else {}
+    except Exception:
+        payload = {}
+    dump_path = os.environ.get("PLATEAU_DUMP_PAYLOADS")
+    if dump_path:
+        try:
+            os.makedirs(os.path.dirname(dump_path) or ".", exist_ok=True)
+            with open(dump_path, "a", encoding="utf-8") as f:
+                f.write(data if data else json.dumps(payload))
+                f.write("\n")
+        except Exception:
+            pass
+    return payload if isinstance(payload, dict) else {}
 
 
 def agent_of(payload: Dict[str, Any]) -> str:
-    """"main" | "subagent:<name>" | "p" — from payload["agent_name"], else env
-    PLATEAU_AGENT, else "main". (Finalized against real payloads in step 3.)"""
+    """"main" | "subagent:<name>" | "p" — from the real Claude Code 2.1.x hook payload,
+    a subagent's PostToolUse/Stop calls carry `agent_type` (e.g. "general-purpose", the
+    Task/Agent tool's `subagent_type`) and `agent_id` (an opaque per-instance hex id);
+    neither key is present on the main agent's own calls (see
+    docs/harness-0.3/preflight-step3.md for the payload keys as inspected against a
+    real subagent run). Order, finalized by docs/harness-0.3/PLAN-step3.md "Amendments
+    after preflight run 1" (S3-A3): `agent_type` first, then `agent_id` (a payload can
+    carry an id with no type), then `agent_name` (in case a future Claude Code version
+    uses that key instead), then env PLATEAU_AGENT (set by plateau.agency for its own
+    "p" worker role, outside Claude Code hooks entirely), else "main"."""
     payload = payload or {}
-    name = payload.get("agent_name")
-    if name:
-        return f"subagent:{name}"
+    agent_type = payload.get("agent_type")
+    if agent_type:
+        return f"subagent:{agent_type}"
+    agent_id = payload.get("agent_id")
+    if agent_id:
+        return f"subagent:{agent_id}"
+    agent_name = payload.get("agent_name")
+    if agent_name:
+        return f"subagent:{agent_name}"
     env = os.environ.get("PLATEAU_AGENT")
     if env:
         return env
     return "main"
+
+
+_CHILD_ENV_STRIP = (
+    "CLAUDECODE", "CLAUDE_CODE_SESSION_ID", "CLAUDE_CODE_REMOTE_SESSION_ID",
+    "CLAUDE_AUTOCOMPACT_PCT_OVERRIDE",
+)
+
+
+def child_env() -> Dict[str, str]:
+    """`os.environ` minus the Claude-Code-session identity variables (S3-A2,
+    docs/harness-0.3/PLAN-step3.md "Amendments after preflight run 1"): every `claude
+    -p` this package spawns (`plateau resume`, later shadow probes and `plateau
+    propose`) must run in an environment that cannot make the child think it is still
+    inside the parent Claude Code session -- otherwise it can inherit the parent's
+    session id instead of minting a fresh one, which is exactly what `plateau resume`
+    (never `--resume`) depends on. Mirrors the scrubbing `experiments/d038/run_task.py`
+    does (sealed reference; never imported). Every other environment variable is kept
+    as-is."""
+    env = dict(os.environ)
+    for k in _CHILD_ENV_STRIP:
+        env.pop(k, None)
+    return env
 
 
 def _short(s: Optional[str], n: int) -> str:

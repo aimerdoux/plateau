@@ -7,20 +7,36 @@ runtime. Keep that in mind when wiring paths.
 
 ## What the plugin does (hooks)
 
-All three hooks call the thin adapter `hook.py`; the real logic lives in the `plateau` package.
+Every hook calls the thin adapter `hook.py`; the real logic lives in the `plateau` package
+(`plateau.bridge.*` / `plateau.lab.*` for the step-3 modes below, whether pip-installed
+alongside this plugin or run straight out of a dev checkout). `hook.py` never raises: an
+unavailable target module (e.g. `ledger`, which lands in a later step) degrades to a no-op
+with one line in `.plateau/hooks.log` instead of failing the hook.
 
 | Hook event | Mode | Effect |
 |---|---|---|
-| `SessionStart` (`startup\|clear\|compact`) | `hook.py parent --cc` | Injects the **parent-agent discipline** as standing context, so the delegation laws are active for as long as the plugin is enabled. |
+| `SessionStart` (`startup\|clear`) | `hook.py parent --cc` | Injects the **parent-agent discipline** as standing context, so the delegation laws are active for as long as the plugin is enabled. |
+| `SessionStart` (`startup\|clear`) | `hook.py inject --cc` | Injects a budget-bounded (`startup_chars`) slice of the session's receipt graph as `additionalContext`. |
+| `SessionStart` (`compact`) | `hook.py inject --cc` | Same, query-aware from the last user prompt, budgeted by `compaction_chars`. |
 | `UserPromptSubmit` | `hook.py pre --cc` | Inflates + re-grounds the carried signal and injects it as `additionalContext` for the next step. |
+| `PostToolUse` | `hook.py receipt --cc` | Records one receipt (+ its nodes/edges) for the tool call into `.plateau/index.sqlite`. |
+| `PreCompact` | `hook.py snapshot --cc` | Snapshots the store to `.plateau/snapshots/`, marks a compaction, and tells the summarizer to preserve `<plateau_index>` facts verbatim. |
 | `Stop` | `hook.py post --cc` | Gates newly proposed facts against the repo and persists the bounded signal to `.plateau/signal.json`. |
+| `Stop` | `hook.py lift --cc` | Lifts `DECISION:`/`FACT:` lines from the last assistant message into the receipt graph. |
+| `Stop` | `hook.py handoff --cc --print` | Emits the session's `<plateau_handoff v=1>` block as the turn's `systemMessage`. |
+| `SessionEnd` | `hook.py ledger --cc` | Rebuilds the receipt graph from the full transcript (batch reconciliation). |
+| `SessionEnd` | `hook.py handoff --cc --write` | Writes the handoff block to `.plateau/handoff/<session_id>.json`. |
+| `SubagentStop` | `hook.py handoff --cc --write --agent subagent` | Same, tagged `agent: subagent:<name>` for parent pickup. |
 
-Dry-run any mode without `--cc` to see the raw decision dict:
+Dry-run the legacy modes without `--cc` to see the raw decision dict; the step-3 modes
+above are Claude-Code-hook-shaped by design (payload on stdin) and are best exercised
+with `--cc` and a JSON payload on stdin, or via `plateau doctor`:
 
 ```bash
 python3 adapters/claude_code/hook.py parent   # the parent system-prompt block + which manual it read
 python3 adapters/claude_code/hook.py pre
 python3 adapters/claude_code/hook.py post
+echo '{}' | python3 adapters/claude_code/hook.py receipt --cc
 ```
 
 ## Parent-discipline autoload (SessionStart)

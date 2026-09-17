@@ -44,6 +44,68 @@ def append_jsonl(path, record):
         f.write(json.dumps(record) + "\n")
 
 
+# docs/harness-0.3/PLAN-step3.md "Agency worker return path": a worker now ends its reply
+# with `plateau handoff --print`'s block (see prompts.HANDOFF_FOOTER); look for that block
+# first and expose its `cursor`/`open` fields to the parent, falling back to the store's
+# own `.plateau/handoff/<session_id>.json` file when the worker's own text carries none.
+# The pre-existing one-line JSON return (extract_json, below) is untouched either way --
+# this is additive plumbing, not a replacement of it.
+_HANDOFF_BLOCK_RE = re.compile(r"<plateau_handoff v=1>(.*?)</plateau_handoff>", re.S)
+_HANDOFF_CURSOR_RE = re.compile(r"^cursor:\s*(\S+)", re.M)
+_HANDOFF_OPEN_RE = re.compile(r"^open:\s*(.+)$", re.M)
+
+
+def _parse_handoff_text(text):
+    """`(cursor, open)` parsed out of a `<plateau_handoff v=1>` block's own text, or
+    `(None, None)` if no such block (or no matching line inside it) is present."""
+    if not text:
+        return None, None
+    m = _HANDOFF_BLOCK_RE.search(text)
+    if not m:
+        return None, None
+    body = m.group(1)
+    cursor_m = _HANDOFF_CURSOR_RE.search(body)
+    open_m = _HANDOFF_OPEN_RE.search(body)
+    cursor = cursor_m.group(1) if cursor_m else None
+    open_val = open_m.group(1).strip() if open_m else None
+    return cursor, open_val
+
+
+def _read_handoff_file(repo, session_id):
+    """`cursor`/`open` straight from `.plateau/handoff/<session_id>.json`, for when the
+    worker's own final text carried no `<plateau_handoff v=1>` block at all (e.g. it ran
+    `plateau handoff --write` instead of `--print`, or forgot the footer instruction)."""
+    if not session_id:
+        return None, None
+    path = Path(repo) / ".plateau" / "handoff" / ("%s.json" % session_id)
+    try:
+        block = json.loads(path.read_text())
+    except Exception:
+        return None, None
+    if not isinstance(block, dict):
+        return None, None
+    cursor = block.get("cursor")
+    cursor = ("r%s" % cursor) if isinstance(cursor, int) else cursor
+    open_block = block.get("open") or {}
+    errors = open_block.get("errors") or []
+    tests = open_block.get("tests") or []
+    open_val = ", ".join(list(errors) + list(tests)) if (errors or tests) else None
+    return cursor, open_val
+
+
+def _handoff_return_path(out, envelope, result_text, repo):
+    """First the worker's raw stdout, then its parsed `result` text, then the handoff
+    file for its session -- see module-level comment above `_HANDOFF_BLOCK_RE`. Returns
+    `(cursor, open)`, `(None, None)` when none of those sources has one."""
+    cursor, open_val = _parse_handoff_text(out)
+    if cursor is None and open_val is None:
+        cursor, open_val = _parse_handoff_text(result_text)
+    if cursor is None and open_val is None:
+        session_id = envelope.get("session_id") if isinstance(envelope, dict) else None
+        cursor, open_val = _read_handoff_file(repo, session_id)
+    return cursor, open_val
+
+
 def extract_json(text):
     """Pull the single JSON object the agent printed as its final message."""
     if not text:
@@ -95,6 +157,11 @@ def spawn_agent(prompt_text, mode, repo, max_turns=20, worker_model=None):
     inner.setdefault("edited_files", [])
     inner.setdefault("carry", "")
     inner["_usage"] = envelope.get("usage") if isinstance(envelope, dict) else None
+    cursor, open_val = _handoff_return_path(out, envelope, result_text, repo)
+    if cursor is not None:
+        inner["cursor"] = cursor
+    if open_val is not None:
+        inner["open"] = open_val
     return inner
 
 

@@ -795,6 +795,137 @@ def test_handoff_round_trips_through_json(scratch_root):
 
 
 # ============================================================================
+# 9b) S3-A1 handoff file naming (SubagentStop vs SessionEnd), S3-A2 child_env(),
+#     S3-A3 agent_of() fallback order -- docs/harness-0.3/PLAN-step3.md "Amendments
+#     after preflight run 1"
+# ============================================================================
+
+def test_subagentstop_writes_distinct_file_and_sessionend_never_touches_it(scratch_root):
+    """S3-A1: a `SubagentStop` payload (carries `agent_type`/`agent_id`, the SAME
+    `session_id` as its parent -- the payload shape docs/harness-0.3/preflight-step3.md
+    found for real) writes `.plateau/handoff/<sid>.subagent-<agent_id>.json` with
+    `agent: subagent:<agent_type>` and `parent: <sid>`. A later `SessionEnd` payload for
+    that SAME `session_id` then writes the separate `.plateau/handoff/<sid>.json` main
+    file -- a different path, so it is asserted here that the subagent file survives
+    byte-for-byte (this is what the fix makes automatic; run 1 found the opposite: a
+    single shared path that SessionEnd silently clobbered)."""
+    root = scratch_root
+    session_id = "sess-s3a1"
+
+    sub_payload = {
+        "cwd": root, "session_id": session_id, "hook_event_name": "SubagentStop",
+        "agent_type": "general-purpose", "agent_id": "abc123",
+    }
+    out, err, rc = run_hook("plateau.bridge.handoff", sub_payload, root,
+                            argv=["--write", "--agent", "subagent"])
+    assert rc == 0, err
+
+    handoff_dir = os.path.join(root, ".plateau", "handoff")
+    sub_path = os.path.join(handoff_dir, "{}.subagent-abc123.json".format(session_id))
+    assert os.path.isfile(sub_path), "expected {!r}, found {}".format(
+        sub_path, sorted(os.listdir(handoff_dir)) if os.path.isdir(handoff_dir) else "(no dir)")
+    with open(sub_path, encoding="utf-8") as f:
+        sub_block = json.load(f)
+    assert sub_block["agent"] == "subagent:general-purpose"
+    assert sub_block["parent"] == session_id
+    assert sub_block["session"] == session_id
+
+    with open(sub_path, encoding="utf-8") as f:
+        sub_bytes_before = f.read()
+    sub_mtime_before = os.path.getmtime(sub_path)
+
+    end_payload = {"cwd": root, "session_id": session_id, "hook_event_name": "SessionEnd"}
+    out, err, rc = run_hook("plateau.bridge.handoff", end_payload, root, argv=["--write"])
+    assert rc == 0, err
+
+    main_path = os.path.join(handoff_dir, "{}.json".format(session_id))
+    assert os.path.isfile(main_path)
+    with open(main_path, encoding="utf-8") as f:
+        main_block = json.load(f)
+    assert main_block["agent"] == "main"
+    assert main_path != sub_path
+
+    # The explicit assertion the plan calls for: SessionEnd's write never overwrites
+    # the subagent file (automatic given the distinct paths -- asserted directly).
+    assert os.path.isfile(sub_path)
+    assert os.path.getmtime(sub_path) == sub_mtime_before
+    with open(sub_path, encoding="utf-8") as f:
+        assert f.read() == sub_bytes_before
+
+
+def test_handoff_last_prefers_main_file_over_newer_subagent_file(scratch_root):
+    """S3-A1: `--last` (`handoff.last()`) prefers the main `<sid>.json` file even when
+    a subagent file for the same session is strictly newer; it falls back to the
+    subagent file only when no main file exists at all."""
+    root = scratch_root
+    session_id = "sess-last-pref"
+
+    main_path = handoff_mod.write(root, handoff_mod.build(root, session_id, agent="main"))
+    time.sleep(0.01)  # ensure a strictly later mtime on the subagent file below
+    sub_block = handoff_mod.build(
+        root, session_id, agent="subagent:general-purpose", parent=session_id, agent_id="zz9",
+    )
+    sub_path = handoff_mod.write(root, sub_block)
+    assert sub_path != main_path
+    assert os.path.getmtime(sub_path) >= os.path.getmtime(main_path)
+
+    preferred = handoff_mod.last(root)
+    assert preferred is not None and preferred["agent"] == "main"
+
+    os.remove(main_path)  # only the subagent file remains
+    fallback = handoff_mod.last(root)
+    assert fallback is not None and fallback["agent"] == "subagent:general-purpose"
+
+
+def test_child_env_drops_session_identity_vars_keeps_others():
+    """S3-A2 (`plateau.bridge.common.child_env`): drops CLAUDECODE,
+    CLAUDE_CODE_SESSION_ID, CLAUDE_CODE_REMOTE_SESSION_ID and
+    CLAUDE_AUTOCOMPACT_PCT_OVERRIDE; keeps every other variable untouched."""
+    strip_vars = ("CLAUDECODE", "CLAUDE_CODE_SESSION_ID",
+                  "CLAUDE_CODE_REMOTE_SESSION_ID", "CLAUDE_AUTOCOMPACT_PCT_OVERRIDE")
+    saved = {k: os.environ.get(k) for k in strip_vars}
+    try:
+        for k in strip_vars:
+            os.environ[k] = "x"
+        os.environ["PLATEAU_TEST_KEEP_ME"] = "kept"
+        env = common.child_env()
+        for k in strip_vars:
+            assert k not in env, "{} should have been stripped".format(k)
+        assert env.get("PLATEAU_TEST_KEEP_ME") == "kept"
+        assert "PATH" in env or len(env) > 0  # ordinary vars pass through untouched
+    finally:
+        for k in strip_vars:
+            if saved[k] is None:
+                os.environ.pop(k, None)
+            else:
+                os.environ[k] = saved[k]
+        os.environ.pop("PLATEAU_TEST_KEEP_ME", None)
+
+
+def test_agent_of_s3a3_fallback_order():
+    """S3-A3: `agent_type` > `agent_id` > `agent_name` > env `PLATEAU_AGENT` > `main`."""
+    assert common.agent_of({}) == "main"
+    assert common.agent_of({"agent_type": "general-purpose"}) == "subagent:general-purpose"
+    assert common.agent_of({"agent_id": "abc123"}) == "subagent:abc123"
+    assert common.agent_of({"agent_name": "helper"}) == "subagent:helper"
+    # agent_type wins whenever more than one key is present
+    assert common.agent_of({"agent_type": "t", "agent_id": "i", "agent_name": "n"}) == "subagent:t"
+    # agent_id wins over agent_name when agent_type is absent
+    assert common.agent_of({"agent_id": "i", "agent_name": "n"}) == "subagent:i"
+    old = os.environ.get("PLATEAU_AGENT")
+    try:
+        os.environ["PLATEAU_AGENT"] = "p"
+        # env only applies when no payload key identifies a subagent
+        assert common.agent_of({}) == "p"
+        assert common.agent_of({"agent_type": "t"}) == "subagent:t"
+    finally:
+        if old is None:
+            os.environ.pop("PLATEAU_AGENT", None)
+        else:
+            os.environ["PLATEAU_AGENT"] = old
+
+
+# ============================================================================
 # 10) <d037_index> accepted on read via inject's legacy path (+ sticky, + holdout off)
 # ============================================================================
 

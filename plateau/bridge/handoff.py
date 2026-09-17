@@ -26,7 +26,7 @@ import re
 import sqlite3
 import subprocess
 import sys
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 from ..integrity import file_hash
 
@@ -128,10 +128,19 @@ def _open_errors(conn: sqlite3.Connection, session_id: str) -> List[str]:
     return open_keys
 
 
-def build(root: str, session_id: str, agent: str = "main", parent: str = "") -> Dict[str, Any]:
+def build(
+    root: str, session_id: str, agent: str = "main", parent: str = "", agent_id: str = "",
+) -> Dict[str, Any]:
     """Assemble a handoff block for `session_id` from `<root>/.plateau/index.sqlite`
     (schema v1) and git. If the store does not exist yet, every count is 0 and every
-    store-derived value is `None` (renders as `none`) — this never raises."""
+    store-derived value is `None` (renders as `none`) — this never raises.
+
+    `agent_id`, when given, is carried in the returned dict as an extra `agent_id` key
+    that `render()` never prints (it is not part of the `<plateau_handoff v=1>` text
+    format) — `write()` uses it alone to key a SUBAGENT write to a path that cannot
+    collide with the main file's (S3-A1, docs/harness-0.3/PLAN-step3.md "Amendments
+    after preflight run 1"). Round-trips through `json.dumps`/`json.loads` like every
+    other field here."""
     facts = _git_facts(root)
     conn = _connect(root)
 
@@ -240,6 +249,7 @@ def build(root: str, session_id: str, agent: str = "main", parent: str = "") -> 
         "session": session_id or None,
         "parent": parent or None,
         "agent": agent,
+        "agent_id": agent_id or None,
         "cursor": cursor,
         "receipts": receipts_n,
         "compactions": compactions_n,
@@ -340,12 +350,31 @@ def render(block: Dict[str, Any]) -> str:
     return "\n".join(lines)
 
 
-def write(root: str, block: Dict[str, Any]) -> str:
-    """Write `block` as JSON to `.plateau/handoff/<session_id>.json`; returns that path."""
+_SUBAGENT_ID_SAFE_RE = re.compile(r"[^A-Za-z0-9_.-]+")
+
+
+def _handoff_filename(block: Dict[str, Any]) -> str:
+    """S3-A1 (docs/harness-0.3/PLAN-step3.md "Amendments after preflight run 1"): the
+    main agent's handoff lands at `<session_id>.json`; a SUBAGENT's (block carries a
+    non-empty `agent_id`) lands at `<session_id>.subagent-<agent_id>.json` instead --
+    a DIFFERENT path from the main file's, so a later `SessionEnd` write for the same
+    `session_id` (which Claude Code, per the preflight run, may hand the *same*
+    `session_id` a subagent's own events carried) can never clobber a `SubagentStop`
+    write, and vice versa, no matter which one lands second."""
     session_id = block.get("session") or "unknown"
+    agent_id = block.get("agent_id")
+    if agent_id:
+        safe_id = _SUBAGENT_ID_SAFE_RE.sub("_", str(agent_id))
+        return "{}.subagent-{}.json".format(session_id, safe_id)
+    return "{}.json".format(session_id)
+
+
+def write(root: str, block: Dict[str, Any]) -> str:
+    """Write `block` as JSON under `.plateau/handoff/`; returns that path. See
+    `_handoff_filename` for the main-vs-subagent path split (S3-A1)."""
     dir_path = os.path.join(root, ".plateau", "handoff")
     os.makedirs(dir_path, exist_ok=True)
-    path = os.path.join(dir_path, "{}.json".format(session_id))
+    path = os.path.join(dir_path, _handoff_filename(block))
     with open(path, "w", encoding="utf-8") as f:
         json.dump(block, f, indent=2, sort_keys=True)
         f.write("\n")
@@ -353,20 +382,28 @@ def write(root: str, block: Dict[str, Any]) -> str:
 
 
 def last(root: str) -> Optional[Dict[str, Any]]:
-    """The most recently WRITTEN handoff block under `.plateau/handoff/` (by file
-    mtime), or None if that directory is missing/empty/unreadable."""
+    """The most recently WRITTEN MAIN handoff block under `.plateau/handoff/` (S3-A1:
+    `--last` PREFERS the main `<session_id>.json` file over any
+    `<session_id>.subagent-<id>.json` file, even one written more recently -- a caller
+    resuming a session almost always wants the parent's own view, not one particular
+    subagent's); falls back to the newest subagent file only when no main file exists
+    at all. None if the directory is missing/empty/unreadable."""
     dir_path = os.path.join(root, ".plateau", "handoff")
     if not os.path.isdir(dir_path):
         return None
-    candidates = []
+    main_candidates: List[Tuple[float, str]] = []
+    subagent_candidates: List[Tuple[float, str]] = []
     for name in os.listdir(dir_path):
         if not name.endswith(".json"):
             continue
         full = os.path.join(dir_path, name)
         try:
-            candidates.append((os.path.getmtime(full), full))
+            mtime = os.path.getmtime(full)
         except OSError:
             continue
+        bucket = subagent_candidates if ".subagent-" in name else main_candidates
+        bucket.append((mtime, full))
+    candidates = main_candidates or subagent_candidates
     if not candidates:
         return None
     candidates.sort(key=lambda pair: pair[0])
@@ -404,14 +441,62 @@ def _resolve_root() -> str:
     return _run_git(["rev-parse", "--show-toplevel"], cwd) or cwd
 
 
+def _resolve_agent(explicit: Optional[str], payload: Dict[str, Any]) -> str:
+    """The `--agent` CLI flag wins whenever it is more specific than the generic
+    `subagent` marker that `hooks.json`'s static SubagentStop entry hard-codes (it
+    cannot embed a runtime name); otherwise prefer whatever the hook payload itself
+    identifies (`common.agent_of`), and fall back to the literal flag (or `main`)."""
+    payload_agent = "main"
+    try:
+        from . import common as _common
+        payload_agent = _common.agent_of(payload)
+    except Exception:
+        pass
+    if explicit and explicit != "subagent":
+        return explicit
+    if payload_agent != "main":
+        return payload_agent
+    return explicit or payload_agent
+
+
+def _resolve_parent(explicit: Optional[str], payload: Dict[str, Any], session_id: str) -> str:
+    """The `--parent` CLI flag wins. Otherwise, for a SubagentStop-style payload
+    (carries `agent_type` and/or `agent_id`), S3-A1 sets `parent` to this call's own
+    `session_id` — Claude Code, per the preflight run, does not mint a distinct
+    `session_id` for a subagent's own hook events, so the block's `session` and
+    `parent` fields read the same value on purpose (that IS the payload's actual
+    identity; a future Claude Code version handing subagents a truly distinct id would
+    make this the subagent's *own* id and `session_id` its parent's, unchanged code).
+    Otherwise `PLATEAU_RESUME_FROM` (set by `plateau resume` on the fresh session it
+    launches) names the session this one continues."""
+    if explicit:
+        return explicit
+    if payload.get("agent_type") or payload.get("agent_id"):
+        return session_id or ""
+    return os.environ.get("PLATEAU_RESUME_FROM", "") or str(payload.get("parent_session_id") or "")
+
+
+def _resolve_agent_id(agent: str, payload: Dict[str, Any]) -> str:
+    """The filename-safe id `write()` uses to key a subagent's handoff to a path that
+    cannot collide with its parent's (S3-A1): empty for a main-agent write; otherwise
+    `payload["agent_id"]` (the opaque per-instance id), falling back to `agent_type` /
+    `agent_name` when a payload somehow lacks `agent_id` but is still identifiably a
+    subagent (`agent` already resolved to `subagent:<name>` by `_resolve_agent`)."""
+    if not agent.startswith("subagent:"):
+        return ""
+    return str(
+        payload.get("agent_id") or payload.get("agent_type") or payload.get("agent_name") or ""
+    ).strip()
+
+
 def main(argv: Optional[List[str]] = None) -> None:
     argv = sys.argv[1:] if argv is None else argv
     ap = argparse.ArgumentParser(prog="plateau handoff")
     ap.add_argument("--print", action="store_true", dest="do_print")
     ap.add_argument("--write", action="store_true", dest="do_write")
     ap.add_argument("--last", action="store_true", dest="do_last")
-    ap.add_argument("--agent", default="main")
-    ap.add_argument("--parent", default="")
+    ap.add_argument("--agent", default=None)
+    ap.add_argument("--parent", default=None)
     args = ap.parse_args(argv)
 
     root = _resolve_root()
@@ -423,12 +508,20 @@ def main(argv: Optional[List[str]] = None) -> None:
 
     payload = _read_optional_payload()
     session_id = payload.get("session_id") or ""
-    block = build(root, session_id, agent=args.agent, parent=args.parent)
+    agent = _resolve_agent(args.agent, payload)
+    parent = _resolve_parent(args.parent, payload, session_id)
+    agent_id = _resolve_agent_id(agent, payload)
+    block = build(root, session_id, agent=agent, parent=parent, agent_id=agent_id)
 
-    if args.do_write:
-        print(write(root, block))
+    wrote_path = write(root, block) if args.do_write else None
 
-    if args.do_print or not args.do_write:
+    if args.do_print:
+        # Stop's hook contract (PLAN-step3.md "hooks.json (plugin)"): the handoff block
+        # is the systemMessage, so it is the LAST thing shown in the turn.
+        print(json.dumps({"systemMessage": render(block)}))
+    elif wrote_path:
+        print(wrote_path)
+    else:
         print(render(block))
 
 
