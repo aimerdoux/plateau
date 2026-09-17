@@ -48,6 +48,14 @@ a code fence. `plateau absorb --check` re-runs this using `hashes.json` and the 
 The `tests/test_absorb.py` leak test plants a path, a symbol and a decision text into a synthetic raw and asserts
 absorb refuses.
 
+`--run-id` is caller-supplied rather than derived from the raw/store, so the leak scan above never looks at it --
+it gets its own fail-closed rule instead: `absorb` rejects (exit 2, before writing anything) a `--run-id` that
+matches the raw/store's own forbidden set (the same containment check the leak scan applies to primitive values),
+or that contains a token from the target repo's git remote name/URL (`plateau.absorb._git_remote_tokens`, kept
+separate from the primitive-scan forbidden set itself to avoid a false positive there against this repo's own
+short vocabulary). This is the rule that would have caught `wavex-adapter-2026-09-17`: the adapter run id and its
+primitives dir name both carried the target's own name. `tests/test_absorb.py` covers both branches.
+
 ## Recompute link
 
 For an experiment source, `absorb` also emits `derived.json` with the scorer-level numbers it can recompute from the

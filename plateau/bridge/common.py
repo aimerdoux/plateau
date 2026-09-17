@@ -120,8 +120,18 @@ def db(root_dir: str) -> sqlite3.Connection:
     p = os.path.join(root_dir, DB_REL)
     os.makedirs(os.path.dirname(p), exist_ok=True)
     conn = sqlite3.connect(p, timeout=5)
-    conn.execute("PRAGMA journal_mode=WAL")
+    # busy_timeout FIRST: it governs every statement below. `PRAGMA journal_mode=WAL`
+    # needs a momentary exclusive lock and does NOT reliably invoke the busy handler, so
+    # a concurrent opener can get SQLITE_BUSY from it. WAL is a persistent property of the
+    # file, so it only has to be set once: read it, set it only when it is not already WAL,
+    # and treat a busy failure as benign (another process is setting it right now).
     conn.execute("PRAGMA busy_timeout=5000")
+    try:
+        mode = conn.execute("PRAGMA journal_mode").fetchone()
+        if not mode or str(mode[0]).lower() != "wal":
+            conn.execute("PRAGMA journal_mode=WAL")
+    except sqlite3.OperationalError:
+        pass
     conn.executescript(_SCHEMA_SQL)
     conn.execute("INSERT OR IGNORE INTO meta(k, v) VALUES ('schema', ?)", (str(SCHEMA),))
     conn.commit()
