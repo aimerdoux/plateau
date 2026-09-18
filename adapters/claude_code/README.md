@@ -8,7 +8,7 @@ runtime. Keep that in mind when wiring paths.
 ## What the plugin does (hooks)
 
 `hook.py` holds no hook logic of its own — it is a thin shim over the `plateau` package for
-all nine modes (`plateau/harness-0.3/PLAN-step4.md` "S4-A1 One install story"), whether
+all nine modes (`docs/harness-0.3/PLAN-step4.md` "S4-A1 One install story"), whether
 `plateau` is pip-installed alongside this plugin or run straight out of a dev checkout:
 `parent`/`pre`/`post` dispatch to `plateau.hooks.signal`, `receipt`/`snapshot`/`inject`/
 `handoff`/`lift` to their `plateau.bridge.*` twins, and `ledger` to `plateau.lab.ledger`.
@@ -21,14 +21,14 @@ never raises: an unavailable target module degrades to a no-op with one line in
 |---|---|---|
 | `SessionStart` (`startup\|clear`) | `hook.py parent --cc` | Injects the **parent-agent discipline** as standing context, so the delegation laws are active for as long as the plugin is enabled. |
 | `SessionStart` (`startup\|clear`) | `hook.py inject --cc` | Injects a budget-bounded (`startup_chars`) slice of the session's receipt graph as `additionalContext`. |
-| `SessionStart` (`compact`) | `hook.py inject --cc` | Same, query-aware from the last user prompt, budgeted by `compaction_chars`. |
+| `SessionStart` (`compact`) | `hook.py inject --cc` | Same, query-aware from the last user prompt, budgeted by `compaction_chars`; then lifts the open turn's `because` arrows and forces in the knowledge this request descends from (`◉`, 0.4). |
 | `UserPromptSubmit` | `hook.py pre --cc` | Inflates + re-grounds the carried signal and injects it as `additionalContext` for the next step. |
 | `PostToolUse` | `hook.py receipt --cc` | Records one receipt (+ its nodes/edges) for the tool call into `.plateau/index.sqlite`. |
 | `PreCompact` | `hook.py snapshot --cc` | Snapshots the store to `.plateau/snapshots/`, marks a compaction, and tells the summarizer to preserve `<plateau_index>` facts verbatim. |
 | `Stop` | `hook.py post --cc` | Gates newly proposed facts against the repo and persists the bounded signal to `.plateau/signal.json`. |
-| `Stop` | `hook.py lift --cc` | Lifts `DECISION:`/`FACT:` lines from the last assistant message into the receipt graph. |
+| `Stop` | `hook.py lift --cc` | Lifts `DECISION:`/`FACT:` lines from the last assistant message into the receipt graph and the reason stated before each tool call, as `because` arrows (0.4). |
 | `Stop` | `hook.py handoff --cc --print` | Emits the session's `<plateau_handoff v=1>` block as the turn's `systemMessage`. |
-| `SessionEnd` | `hook.py ledger --cc` | Rebuilds the receipt graph from the full transcript (batch reconciliation). |
+| `SessionEnd` | `hook.py ledger --cc` | Writes one ledger row per (session, agent) -- receipts, compactions, injections, probes, re-derivations, cost -- to `.plateau/ledger.sqlite`. |
 | `SessionEnd` | `hook.py handoff --cc --write` | Writes the handoff block to `.plateau/handoff/<session_id>.json`. |
 | `SubagentStop` | `hook.py handoff --cc --write --agent subagent` | Same, tagged `agent: subagent:<name>` for parent pickup. |
 
@@ -49,7 +49,7 @@ echo '{}' | python3 adapters/claude_code/hook.py receipt --cc
 active — the Claude Code instance receives the parent-agent laws and starts delegating without the
 user prompting it — and the discipline disappears when the plugin is disabled.
 
-**Mechanism:** a `SessionStart` hook (matcher `startup|clear|compact`) runs
+**Mechanism:** a `SessionStart` hook (matcher `startup|clear`) runs
 `hook.py parent --cc`. That mode reads the **Parent Agent Manual**, extracts its
 **section-4 `PARENT SYSTEM-PROMPT BLOCK`** (the fenced block of parent laws, verbatim), and emits it
 as the session's `additionalContext`:
@@ -64,9 +64,10 @@ as the session's `additionalContext`:
 ```
 
 Because Claude Code adds `additionalContext` before the first user prompt, the discipline is loaded
-*passively* on every new/cleared/compacted session while the plugin is enabled — and is simply not
-emitted once the plugin is disabled. The `resume` matcher is intentionally excluded: a resumed
-session already carries the block from its prior context, so re-injecting it would be redundant.
+*passively* on every new/cleared session while the plugin is enabled — and is simply not
+emitted once the plugin is disabled. The `resume` and `compact` matchers are intentionally excluded: a resumed
+session already carries the block from its prior context, so re-injecting it would be redundant,
+and the `compact` restart runs only `hook.py inject --cc` (the table above; `hooks.json`).
 
 If the manual cannot be found, the hook emits `{"suppressOutput": true}` (no half-formed prompt)
 rather than injecting a partial block.

@@ -12,6 +12,16 @@ and adds a 7th element: read facts (signatures / config keys from Read results o
 files, and the first `path:line` hit from a Grep result) — mirroring the "class read"
 facts in `experiments/d038/probes.py` (read-only reference; sealed, never imported).
 
+0.4 (the continuum, `docs/toy/continuum-toy.html`): the graph gains the toy's second
+arrow. Every edge `record()` wrote so far is *provenance* -- what a tool call produced
+(`reveals` a read fact, `fails_with` an error, `defines` a symbol). A *reason* edge runs
+the other way: `(knowledge node, "because", r<rid>)` -- this call was taken because of
+that fact/error/decision. `record_reason()` writes them from the assistant text that
+preceded the call (lifted at Stop by `plateau.bridge.lift`), linking it to earlier
+knowledge nodes by the selector's own token overlap. `KNOWLEDGE_KINDS` names the node
+kinds the toy calls knowledge (its fact / dec / err): what the continuum may carry across a
+compaction. Footprints (file / command / search / tool) are never carried.
+
 Env overrides `PLATEAU_DB_REL` / `PLATEAU_LOG_REL` let the legacy `d037_hooks/` shims
 point this same module at the old `.d037/` paths without duplicating any logic.
 """
@@ -37,10 +47,12 @@ TAG = "plateau_index"
 LEGACY_TAG = "d037_index"
 TAGS_ON_READ = (TAG, LEGACY_TAG)
 
+# Schema v1 plus two additive 0.4 extensions a v1 reader can ignore: `receipts.tool_use_id`
+# (added to a pre-0.4 store by `db()`'s guarded ALTER) and the `reasons` table.
 _SCHEMA_SQL = """
 CREATE TABLE IF NOT EXISTS receipts(id INTEGER PRIMARY KEY, ts REAL, session_id TEXT, agent TEXT,
   bridge_version TEXT, bridge_sha TEXT, tool TEXT, target TEXT, kind TEXT, outcome TEXT, detail TEXT,
-  measure_kind TEXT, measure_value TEXT);
+  measure_kind TEXT, measure_value TEXT, tool_use_id TEXT);
 CREATE TABLE IF NOT EXISTS nodes(key TEXT PRIMARY KEY, kind TEXT, first_rid INTEGER, last_rid INTEGER,
   degree INTEGER DEFAULT 0, last_outcome TEXT, last_detail TEXT, session_id TEXT, agent TEXT);
 CREATE TABLE IF NOT EXISTS edges(src TEXT, rel TEXT, dst TEXT, rid INTEGER);
@@ -53,7 +65,18 @@ CREATE TABLE IF NOT EXISTS decisions(id INTEGER PRIMARY KEY, ts REAL, session_id
   provenance TEXT);
 CREATE TABLE IF NOT EXISTS turns(session_id TEXT, n INTEGER, ts REAL, rid_at INTEGER, PRIMARY KEY(session_id, n));
 CREATE TABLE IF NOT EXISTS meta(k TEXT PRIMARY KEY, v TEXT);
+CREATE TABLE IF NOT EXISTS reasons(rid INTEGER PRIMARY KEY, session_id TEXT, tool_use_id TEXT, text TEXT);
 """
+
+# The toy's knowledge kinds (fact / dec / err) in store terms: what a `because` edge may
+# start from, and what the continuum carries. Everything else is a footprint.
+KNOWLEDGE_KINDS = ("read", "decided", "error", "symbol")
+REASON_CHARS = 400          # a reason is the tail of the text before the call, at most this long
+REASON_MIN_OVERLAP = 2      # distinct non-stopword tokens shared with a node's key|detail
+_STOPWORDS = frozenset(
+    "the a an and or of to in on at for is it its this that with as by from be are was were "
+    "not no so do we if then let me now will can use".split()
+)
 
 # --- D-037 rules (see d037_hooks/d037_common.py @ d037-hooks-sealed) --------------
 # The original two Python-only alternatives (groups 1/2) are kept byte-identical;
@@ -133,6 +156,12 @@ def db(root_dir: str) -> sqlite3.Connection:
     except sqlite3.OperationalError:
         pass
     conn.executescript(_SCHEMA_SQL)
+    # A store created before 0.4 has a `receipts` table without `tool_use_id`; CREATE
+    # TABLE IF NOT EXISTS leaves it alone, so add the column here (additive, v1 readers
+    # never select it).
+    cols = {row[1] for row in conn.execute("PRAGMA table_info(receipts)").fetchall()}
+    if "tool_use_id" not in cols:
+        conn.execute("ALTER TABLE receipts ADD COLUMN tool_use_id TEXT")
     conn.execute("INSERT OR IGNORE INTO meta(k, v) VALUES ('schema', ?)", (str(SCHEMA),))
     conn.commit()
     return conn
@@ -369,8 +398,11 @@ def record(
     bridge_sha: str,
     root: str,
     ts: Optional[float] = None,
+    tool_use_id: Optional[str] = None,
 ) -> int:
-    """Insert one receipt (+ its nodes/edges) for a single tool call. Returns the receipt id."""
+    """Insert one receipt (+ its nodes/edges) for a single tool call. Returns the receipt id.
+    `tool_use_id` (the payload's `tool_use_id`) is what lets `record_reason` find this
+    call's receipt again from the transcript's `tool_use` block at Stop."""
     kind, target, outcome, detail, symbols, error, read_facts = classify(tool, tool_input, tool_response)
     ts = time.time() if ts is None else ts
 
@@ -388,9 +420,9 @@ def record(
 
     cur = conn.execute(
         "INSERT INTO receipts(ts,session_id,agent,bridge_version,bridge_sha,tool,target,kind,outcome,detail,"
-        "measure_kind,measure_value) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)",
+        "measure_kind,measure_value,tool_use_id) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)",
         (ts, session_id, agent, bridge_version, bridge_sha, tool, target, kind, outcome, detail,
-         measure_kind, measure_value),
+         measure_kind, measure_value, tool_use_id),
     )
     rid = cur.lastrowid
 
@@ -459,7 +491,7 @@ def rebuild_from_transcript(conn: sqlite3.Connection, transcript_path: str, **pr
     n = 0
     for uid in order:
         tool, tin = uses[uid]
-        record(conn, tool, tin, results.get(uid), **prov)
+        record(conn, tool, tin, results.get(uid), tool_use_id=uid, **prov)
         n += 1
     return n
 
@@ -545,7 +577,9 @@ def receipts_per_turn(conn: sqlite3.Connection, session_id: str) -> float:
 
 
 def record_decision(conn: sqlite3.Connection, session_id: str, agent: str, text: str, provenance: str) -> int:
-    """Insert a `decisions` row and its `decided:<id>` node. Returns the decision id."""
+    """Insert a `decisions` row and its `decided:<id>` node, plus `because` edges from the
+    knowledge nodes the decision descends from (`_link_because`; the toy's `f1 → d1`:
+    a decision is made because of facts). Returns the decision id."""
     ts = time.time()
     cur = conn.execute(
         "INSERT INTO decisions(ts,session_id,agent,text,provenance) VALUES(?,?,?,?,?)",
@@ -563,5 +597,58 @@ def record_decision(conn: sqlite3.Connection, session_id: str, agent: str, text:
              session_id=excluded.session_id, agent=excluded.agent""",
         (key, "decided", rid, rid, "decided", _short(text, 160), session_id, agent),
     )
+    # rid is the cursor at Stop: the receipt that produced a fact this decision cites
+    # has first_rid == rid, so "before the decision" is first_rid <= rid here (a reason's
+    # own call, by contrast, must never be its own cause: record_reason uses < rid).
+    _link_because(conn, key, rid, text, before_rid=rid + 1)
     conn.commit()
     return did
+
+
+def _link_because(conn: sqlite3.Connection, dst: str, rid: int, text: str, *, before_rid: int) -> List[str]:
+    """Draw `(key, "because", dst, rid)` for every knowledge node (KNOWLEDGE_KINDS)
+    with `first_rid < before_rid` that shares at least REASON_MIN_OVERLAP distinct
+    non-stopword tokens with `text` -- the selector's own token overlap ("★ matches
+    current prompt"), pointed at `dst` instead of the prompt. Returns the keys linked."""
+    from .query import toks  # lazy: query.py must stay importable on its own
+
+    ttoks = toks(text) - _STOPWORDS
+    linked: List[str] = []
+    if not ttoks:
+        return linked
+    placeholders = ",".join("?" for _ in KNOWLEDGE_KINDS)
+    rows = conn.execute(
+        f"SELECT key, last_detail FROM nodes WHERE kind IN ({placeholders}) AND first_rid < ? AND key != ?",
+        tuple(KNOWLEDGE_KINDS) + (before_rid, dst),
+    ).fetchall()
+    for key, detail in rows:
+        if len(ttoks & (toks(key) | toks(detail or ""))) >= REASON_MIN_OVERLAP:
+            conn.execute("INSERT INTO edges(src,rel,dst,rid) VALUES(?,?,?,?)", (key, "because", dst, rid))
+            linked.append(key)
+    return linked
+
+
+def _reason_tail(text: str) -> str:
+    """The last REASON_CHARS of the text before a call -- the sentence adjacent to the
+    action is the reason; an earlier paragraph is narration."""
+    t = (text or "").strip()
+    return t if len(t) <= REASON_CHARS else "…" + t[-REASON_CHARS:]
+
+
+def record_reason(conn: sqlite3.Connection, rid: int, session_id: str, tool_use_id: Optional[str],
+                  text: str) -> List[str]:
+    """Store the reason the assistant stated for receipt `rid` and draw its `because`
+    edges `(key, "because", r<rid>, rid)` from the knowledge nodes that existed before
+    the call and share tokens with the reason (`_link_because`). A second call for the
+    same rid is a no-op. Returns the keys linked."""
+    exists = conn.execute("SELECT 1 FROM reasons WHERE rid=?", (rid,)).fetchone()
+    if exists:
+        return []
+    reason = _reason_tail(text)
+    conn.execute(
+        "INSERT INTO reasons(rid,session_id,tool_use_id,text) VALUES(?,?,?,?)",
+        (rid, session_id, tool_use_id, reason),
+    )
+    linked = _link_because(conn, f"r{rid}", rid, reason, before_rid=rid)
+    conn.commit()
+    return linked
