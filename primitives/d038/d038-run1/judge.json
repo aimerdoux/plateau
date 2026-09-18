@@ -1,0 +1,26 @@
+{
+ "wt_2c23a2": {
+  "defects_len": 1752,
+  "epics": {
+   "E1": 3,
+   "E2": 3,
+   "E3": 3,
+   "E4": 3
+  },
+  "runner_green": true,
+  "security_items_closed": 5,
+  "task_total": 12
+ },
+ "wt_85150c": {
+  "defects_len": 2164,
+  "epics": {
+   "E1": 3,
+   "E2": 3,
+   "E3": 3,
+   "E4": 3
+  },
+  "runner_green": true,
+  "security_items_closed": 6,
+  "task_total": 12
+ }
+}

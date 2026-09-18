@@ -1,0 +1,33 @@
+{
+ "absorbed_by": "plateau 0.3.0",
+ "arms": {
+  "wt_2c23a2": "A",
+  "wt_85150c": "C"
+ },
+ "cost_usd": {
+  "judge": 1.2830392000000004,
+  "probe": 8.404381999999998,
+  "task": 45.9652629
+ },
+ "experiment": "d038",
+ "forbidden_digest": "ee46ef9df4e7fda196b381f8e486ebbcbbc6eaa63d58e935fa5248b1499d4a53",
+ "raw_files": 1294,
+ "raw_sha256": "6c6b3c07398d77c5f88b59991b468fcb51ac520f5156b66746d85b5cad7f129a",
+ "run_id": "d038-run1",
+ "settings": {
+  "bridge_sha": "c1e56a1827663e51cd2fc2041bb9d0c6fc8ca552343d6d246ad164d8b1bfa084",
+  "bridge_version": "d037-omega-6000",
+  "cli_version": "2.1.273 (Claude Code)",
+  "model_ids": [
+   "claude-sonnet-5"
+  ],
+  "pct": "40",
+  "window": 240000
+ },
+ "source": "experiment",
+ "tarball_sha256": "34d1724b40f022074457a11acb779dcf625bcfc10a559a47ef35a9e4bb1b77a6",
+ "target": {
+  "commit": "ecbe2804d2832ea60825079cc047921525df2da6",
+  "tree": "4443e8aa1bf89a19de19d9eaed008acd2616c4a0"
+ }
+}

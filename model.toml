@@ -11,15 +11,18 @@ model_id = "claude-sonnet-5"
 bridge_version = "none"
 run_id = "D-038 run 1"
 sessions = 1
-alpha = 0.909
-lambda_by_lag = { l0 = 0.0, l1 = 0.31, l2 = 0.66 }
-recall_by_comp = { c0 = 0.933, c1 = 0.462, c2 = 0.333 }
-# arm A has no receipt store (bridge_version = "none"): receipts-per-turn is undefined
-# for it, not zero-measured — recorded as 0 rather than left absent.
-receipts_per_turn = 0
-compactions_per_turn = 2.12
-tokens_per_turn = 143676
-last_updated = "2026-09-16"
+alpha = 0.9090909090909091
+lambda_by_lag = { l0 = 0.0, l1 = 0.3125, l2 = 0.65625 }
+recall_by_comp = { c0 = 0.9333333333333333, c1 = 0.46153846153846156, c2 = 0.3333333333333333 }
+# arm A ran with bridge_version = "none": no receipt hook ever fired for it, so there
+# is no receipt store to count -- `receipts_per_turn` is meaningless here (the old
+# `receipts_per_turn = 0` was a placeholder, not a measurement). This is the same
+# recomputed per-turn tool-call tally under its honest name instead.
+tool_calls_per_turn = 33.1764705882353
+compactions_per_turn = 2.1176470588235294
+tokens_per_turn = 143675.58823529413
+last_updated = "2026-09-17"
+source = "primitives/d038/d038-run1"
 
 [[cell]]
 model_id = "claude-sonnet-5"
@@ -27,8 +30,11 @@ bridge_version = "d037-omega-6000"
 run_id = "D-038 run 1"
 sessions = 1
 alpha = 1.0
-pi_by_comp = { c1 = 0.96, c2 = 0.0 }
-recall_by_comp = { c0 = 0.95, c1 = 0.917, c2 = 0.059 }
-compactions_per_turn = 1.59
-tokens_per_turn = 109215
-last_updated = "2026-09-16"
+pi_by_comp = { c1 = 0.9646739130434782, c2 = 0.0 }
+pi_raw_by_comp = { c1 = 0.9646739130434782, c2 = -0.457516339869281 }
+recall_by_comp = { c0 = 0.95, c1 = 0.9166666666666666, c2 = 0.058823529411764705 }
+receipts_per_turn = 27.41176470588235
+compactions_per_turn = 1.588235294117647
+tokens_per_turn = 109215.41176470589
+last_updated = "2026-09-17"
+source = "primitives/d038/d038-run1"
