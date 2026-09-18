@@ -62,3 +62,23 @@ def test_ground_standalone_splits_live_stale(tmp_path):
     p.write_text("2")
     g2 = ground(sig)
     assert not g2.live and g2.stale_claims() == ["k=1"]
+
+
+def test_inflate_heals_a_blob_that_grew_duplicate_claims(tmp_path):
+    """0.4.1: a persisted blob with the same claim N times (what an unconsumed queue
+    produced before apply_gate deduplicated) inflates to one entry per claim, first
+    occurrence first, and the next emit persists it bounded again."""
+    import json
+    p = tmp_path / "f.txt"; p.write_text("42")
+    set_ground_root(str(tmp_path))
+    vf = {"claim": "v=42", "grounding": {"kind": "file_hash", "source": "f.txt", "value": file_hash(str(p))}}
+    other = {"claim": "w=1", "grounding": {"kind": "file_hash", "source": "f.txt", "value": file_hash(str(p))}}
+    blob = json.dumps({"schema": "plateau.signal.v1", "open_goals": [], "stance": "",
+                       "lessons": [], "pointers": [], "verified_facts": [vf, other] + [vf] * 246})
+    inf = inflate(blob, fresh=True)
+    assert [x["claim"] for x in inf.state.verified_facts] == ["v=42", "w=1"]
+    assert not inf.stale
+    healed = json.loads(emit(SelfState(signal=inf.state)))
+    assert [x["claim"] for x in healed["verified_facts"]] == ["v=42", "w=1"]
+    # fresh=False (no re-grounding) heals the same way
+    assert [x["claim"] for x in inflate(blob, fresh=False).state.verified_facts] == ["v=42", "w=1"]

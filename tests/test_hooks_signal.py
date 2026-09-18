@@ -115,6 +115,103 @@ def test_signal_post_admits_a_grounded_fact(tmp_path, monkeypatch, capsys):
     assert [vf["claim"] for vf in blob["verified_facts"]] == ["real.txt says hello"]
 
 
+def test_signal_post_is_quiet_when_nothing_was_proposed(tmp_path, monkeypatch, capsys):
+    """0.4.1: an idle Stop (no queue) persists the signal without a notice. Before, every
+    Stop of every session printed `Plateau: signal persisted ... (0 fact(s) admitted, 0
+    dropped ungrounded)` whether or not anything had been proposed."""
+    pd = tmp_path / ".plateau"
+    pd.mkdir()
+    sig = dict(_SIG, open_goals=["keep me"])
+    (pd / "signal.json").write_text(json.dumps(sig))
+
+    out = _call_signal_in_process("post", tmp_path, monkeypatch, capsys)
+
+    assert out == {"suppressOutput": True}
+    blob = json.loads((pd / "signal.json").read_text())
+    assert blob["open_goals"] == ["keep me"] and blob["verified_facts"] == []
+    # quiet, but it did persist: the seed was written with the old schema tag and only
+    # emit() writes the current one, so a rewrite is visible (a no-op _save_blob is not).
+    assert blob["schema"] == "plateau.signal.v1"
+
+
+def test_signal_post_consumes_the_queue_so_a_fact_is_gated_once(tmp_path, monkeypatch, capsys):
+    """0.4.1, the reproduced defect: `pending_facts.json` was read at every Stop and
+    never removed, so a queue left behind re-admitted its facts on every Stop -- the
+    signal grew a copy each time while the notice said 0 admitted. Now the first Stop
+    gates and consumes it; the second finds nothing, says nothing, and the signal holds
+    exactly one copy."""
+    pd = tmp_path / ".plateau"
+    pd.mkdir()
+    (pd / "signal.json").write_text(json.dumps(_SIG))
+    src = tmp_path / "real.txt"
+    src.write_text("hello")
+    import hashlib
+    digest = "sha256:" + hashlib.sha256(b"hello").hexdigest()
+    (pd / "pending_facts.json").write_text(json.dumps(
+        [{"claim": "real.txt says hello", "source": "real.txt", "value": digest}]
+    ))
+    (pd / "pending_carry.json").write_text(json.dumps(["always hash before trusting"]))
+
+    first = _call_signal_in_process("post", tmp_path, monkeypatch, capsys)
+    assert "1 fact(s) admitted" in first["systemMessage"]
+    assert not (pd / "pending_facts.json").exists()
+    assert not (pd / "pending_carry.json").exists()
+
+    second = _call_signal_in_process("post", tmp_path, monkeypatch, capsys)
+    assert second == {"suppressOutput": True}
+    blob = json.loads((pd / "signal.json").read_text())
+    assert [vf["claim"] for vf in blob["verified_facts"]] == ["real.txt says hello"]
+    assert blob["lessons"] == ["always hash before trusting"]
+
+
+def test_signal_post_leaves_the_queue_when_the_blob_cannot_be_persisted(tmp_path, monkeypatch, capsys):
+    """The queue is consumed only after the new blob is on disk: a Stop whose persist
+    fails leaves the proposal for the next Stop instead of losing it."""
+    pd = tmp_path / ".plateau"
+    pd.mkdir()
+    (pd / "signal.json").write_text(json.dumps(_SIG))
+    (pd / "pending_facts.json").write_text(json.dumps(
+        [{"claim": "build passes", "source": "nope.txt", "value": "sha256:deadbeef"}]
+    ))
+
+    def boom(_blob):
+        raise OSError("disk full")
+    monkeypatch.setattr(hooks_signal, "_save_blob", boom)
+    monkeypatch.chdir(tmp_path)
+    with pytest.raises(OSError):
+        hooks_signal.post()
+    assert (pd / "pending_facts.json").exists()
+    # ...and the next Stop, persisting fine, gates it and consumes it (the old hook never
+    # consumed the queue at all, so this half is what tells the two apart).
+    monkeypatch.undo()
+    monkeypatch.chdir(tmp_path)
+    out = hooks_signal.post()
+    assert out["dropped_ungrounded"] == ["build passes"]
+    assert not (pd / "pending_facts.json").exists()
+
+
+def test_signal_pre_injects_a_bloated_signal_once_per_claim(tmp_path, monkeypatch, capsys):
+    """0.4.1: the same claim persisted N times (the pre-0.4.1 growth) is injected once,
+    and the next Stop rewrites the blob with one copy -- every directory that grew such
+    a file heals on its own."""
+    pd = tmp_path / ".plateau"
+    pd.mkdir()
+    src = tmp_path / "real.txt"
+    src.write_text("hello")
+    import hashlib
+    digest = "sha256:" + hashlib.sha256(b"hello").hexdigest()
+    vf = {"claim": "real.txt says hello", "grounding": {"kind": "file_hash", "source": "real.txt", "value": digest}}
+    (pd / "signal.json").write_text(json.dumps(dict(_SIG, verified_facts=[vf] * 247)))
+
+    out = _call_signal_in_process("pre", tmp_path, monkeypatch, capsys)
+    ctx = out["hookSpecificOutput"]["additionalContext"]
+    assert ctx.count("real.txt says hello") == 1
+
+    _call_signal_in_process("post", tmp_path, monkeypatch, capsys)
+    blob = json.loads((pd / "signal.json").read_text())
+    assert [x["claim"] for x in blob["verified_facts"]] == ["real.txt says hello"]
+
+
 def test_signal_parent_reads_the_canonical_package_manual(tmp_path, monkeypatch, capsys):
     """S4-A1's one behavior change: no more plugin-root/adapter-relative candidate
     search -- the manual is always the package copy

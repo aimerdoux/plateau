@@ -25,7 +25,7 @@ never raises: an unavailable target module degrades to a no-op with one line in
 | `UserPromptSubmit` | `hook.py pre --cc` | Inflates + re-grounds the carried signal and injects it as `additionalContext` for the next step. |
 | `PostToolUse` | `hook.py receipt --cc` | Records one receipt (+ its nodes/edges) for the tool call into `.plateau/index.sqlite`. |
 | `PreCompact` | `hook.py snapshot --cc` | Snapshots the store to `.plateau/snapshots/`, marks a compaction, and tells the summarizer to preserve `<plateau_index>` facts verbatim. |
-| `Stop` | `hook.py post --cc` | Gates newly proposed facts against the repo and persists the bounded signal to `.plateau/signal.json`. |
+| `Stop` | `hook.py post --cc` | Gates newly proposed facts against the repo, consumes the queue, and persists the bounded signal to `.plateau/signal.json`; says so only when it admitted, dropped, or carried something (0.4.1). |
 | `Stop` | `hook.py lift --cc` | Lifts `DECISION:`/`FACT:` lines from the last assistant message into the receipt graph and the reason stated before each tool call, as `because` arrows (0.4). |
 | `Stop` | `hook.py handoff --cc --print` | Emits the session's `<plateau_handoff v=1>` block as the turn's `systemMessage`. |
 | `SessionEnd` | `hook.py ledger --cc` | Writes one ledger row per (session, agent) -- receipts, compactions, injections, probes, re-derivations, cost -- to `.plateau/ledger.sqlite`. |

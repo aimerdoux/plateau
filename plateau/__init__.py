@@ -46,7 +46,7 @@ from .orchestrator import (
     default_classify_error,
 )
 
-__version__ = "0.4.0"
+__version__ = "0.4.1"
 
 __all__ = [
     "Measurement", "Thought", "RelationalState", "SelfState", "GateResult",

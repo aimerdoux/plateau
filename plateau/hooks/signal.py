@@ -17,7 +17,12 @@ shim that calls `main(mode, argv)` below, and so does `plateau hook <mode>`
 The signal lives at .plateau/signal.json in the project root. Newly proposed facts (for
 post) are read from .plateau/pending_facts.json — a list of
 {claim, source, value} (kind defaults to file_hash). Only facts whose Measurement
-re-verifies are admitted; the rest are dropped (and reported).
+re-verifies are admitted; the rest are dropped (and reported). The queue (and
+.plateau/pending_carry.json) is consumed once the new blob is on disk: a proposal is
+gated by the Stop that finds it, never by every later Stop as well (before 0.4.1 a
+queue left behind re-admitted the same facts on every Stop and the signal grew a copy
+each time while the notice kept saying "0 admitted"). The Stop notice itself speaks only
+when something was admitted, dropped, or carried; an idle Stop persists silently.
 
 One change from the pre-step-4 behaviour (S4-A1): the Parent Agent Manual is read from a
 single canonical location, the package copy `plateau/agency/PARENT_AGENT_MANUAL.md`,
@@ -112,6 +117,11 @@ def post() -> dict:
                 new_signal.lessons = (new_signal.lessons + [les])[-LESS_CAP:]
                 carried.append(les)
     _save_blob(emit(SelfState(signal=new_signal)))
+    # The queues are consumed only after the blob is on disk, so a failed persist leaves
+    # them for the next Stop (re-gating is idempotent now: a carried claim never folds in twice).
+    for queue in (PENDING, PENDING_CARRY):
+        if os.path.exists(queue):
+            os.remove(queue)
     return {"admitted": admitted, "dropped_ungrounded": dropped,
             "carried_lessons": carried, "signal_path": SIGNAL,
             "note": "only facts whose Measurement re-verified were admitted; lessons are bounded"}
@@ -193,7 +203,7 @@ def main(mode: str, argv: List[str]) -> None:
     original `adapters/claude_code/hook.py`). `--cc` emits Claude-Code-hook JSON:
     SessionStart (parent) injects the parent-agent discipline as standing context;
     UserPromptSubmit (pre) injects the carried signal as additionalContext; Stop (post)
-    gates+persists and returns a one-line systemMessage. Without `--cc`, prints the raw
+    gates+persists and returns a one-line systemMessage only when it admitted, dropped or carried something. Without `--cc`, prints the raw
     dict (manual/dry use). The decision logic is unchanged either way."""
     cc = "--cc" in argv
     if cc:
@@ -225,6 +235,10 @@ def main(mode: str, argv: List[str]) -> None:
             "hookEventName": "UserPromptSubmit", "additionalContext": ctx}}))
     else:
         n_adm, n_drop = len(out.get("admitted", [])), len(out.get("dropped_ungrounded", []))
-        print(json.dumps({"suppressOutput": True,
-                          "systemMessage": f"Plateau: signal persisted to {out['signal_path']} "
-                                           f"({n_adm} fact(s) admitted, {n_drop} dropped ungrounded)."}))
+        payload: dict = {"suppressOutput": True}
+        # Speak only when this Stop changed or refused something; an idle Stop (no queue,
+        # nothing to gate) persists the signal without a notice.
+        if n_adm or n_drop or out.get("carried_lessons"):
+            payload["systemMessage"] = (f"Plateau: signal persisted to {out['signal_path']} "
+                                        f"({n_adm} fact(s) admitted, {n_drop} dropped ungrounded).")
+        print(json.dumps(payload))
