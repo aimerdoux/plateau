@@ -59,12 +59,14 @@ class Carry:
 
 def cutoff(turn: int, window: int) -> int:
     """The toy's `cutoff`: the oldest request still in the window at `turn`. Turns are
-    1-based and a window holds at least one request: `turn < 1` or `window < 1` is a
-    ValueError (a cutoff past `turn` would make the request's own nodes "old")."""
+    1-based (`turn < 1` is a ValueError). `window=0` is the compaction: nothing stays,
+    the cutoff is past `turn`, and even the request's own nodes are old -- a Claude Code
+    compaction summarizes the open turn's earlier calls along with everything before
+    them. A negative window is a ValueError."""
     if turn < 1:
         raise ValueError(f"turn must be >= 1, got {turn}")
-    if window < 1:
-        raise ValueError(f"window must be >= 1, got {window}")
+    if window < 0:
+        raise ValueError(f"window must be >= 0, got {window}")
     return max(1, turn - window + 1)
 
 
@@ -221,7 +223,8 @@ def graph_from_store(conn: sqlite3.Connection, session_id: str) -> Tuple[Dict[st
 def carry_from_store(conn: sqlite3.Connection, session_id: str, window: int = 1, *,
                      turn: Optional[int] = None) -> Carry:
     """`carry()` over `graph_from_store`, at the session's open turn unless `turn` is
-    given (`turn=0` is not "the open turn": it is rejected by `cutoff`)."""
+    given (`turn=0` is not "the open turn": it is rejected by `cutoff`). `window=0` is
+    the compaction (see `cutoff`): `carried` is then all of `need`."""
     nodes, edges, current = graph_from_store(conn, session_id)
     return carry(nodes, edges, current if turn is None else turn, window,
                  knowledge=set(common.KNOWLEDGE_KINDS))

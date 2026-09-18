@@ -68,7 +68,10 @@ def _last_assistant_text_blocks(transcript_path: str) -> List[Tuple[int, str]]:
     has no assistant message at all."""
     last: Optional[Tuple[int, Any]] = None
     try:
-        with open(transcript_path, encoding="utf-8") as f:
+        # errors="replace": Claude Code appends the JSONL while Stop reads it, so the tail can be
+        # cut inside a multibyte sequence; a strict decode raised out of lift_decisions and lost the
+        # last message's DECISION/FACT lines for good (only the last assistant message is scanned).
+        with open(transcript_path, encoding="utf-8", errors="replace") as f:
             for line_no, raw in enumerate(f, start=1):
                 raw = raw.strip()
                 if not raw:
@@ -123,12 +126,14 @@ def reasons_from_transcript(transcript_path: str) -> Dict[str, str]:
     assistant message had at least one `text` block before it. Blocks are grouped by
     `message.id` (one block per line, see module docstring; an entry without an id is
     its own group), text accumulates within a message so parallel calls after one
-    sentence share it, and `thinking` blocks are ignored. `{}` on any read trouble."""
+    sentence share it, and `thinking` blocks are ignored. `{}` on any read trouble; a
+    tail cut inside a multibyte sequence (the file is being appended while a hook reads
+    it) is replaced, not raised, and that half line is skipped like any garbage line."""
     out: Dict[str, str] = {}
     current_id: Optional[str] = None
     text_acc: List[str] = []
     try:
-        with open(transcript_path, encoding="utf-8") as f:
+        with open(transcript_path, encoding="utf-8", errors="replace") as f:
             for raw in f:
                 raw = raw.strip()
                 if not raw:

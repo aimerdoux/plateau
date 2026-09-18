@@ -387,8 +387,8 @@ of *receipts* — one row per tool call, each a `Measurement`-backed fact about 
 test, or decision the session actually touched. `PostToolUse` records a receipt; `PreCompact`
 snapshots the graph and marks a compaction; `SessionStart` (on `compact`, or resumed via `plateau
 resume`) injects a budget-bounded, query-aware slice of it back as `additionalContext`; `Stop` lifts
-`DECISION:`/`FACT:` lines and prints a pasteable `<plateau_handoff v=1>` block; `SessionEnd` rebuilds
-the graph from the full transcript and writes that handoff to disk. Unlike the signal core, the
+`DECISION:`/`FACT:` lines and prints a pasteable `<plateau_handoff v=1>` block; `SessionEnd` writes
+the session's ledger row and that handoff to disk. Unlike the signal core, the
 bridge does not replace the transcript Claude Code carries — it re-grounds a session across the
 compactions that transcript still has to survive.
 
@@ -414,7 +414,7 @@ One run; the pre-registered rule needs a second before this is a verdict. Full n
 recall-by-lag and by-compactions-crossed tables, and the raw tarball's SHA-256 are in
 [`docs/d038/report.md`](docs/d038/report.md); the sealed record is `experiments/d038/D-038.md`.
 
-**Two limits, stated plainly.**
+**Three limits, stated plainly.**
 
 - **Facts that never passed through a tool call are invisible to the bridge.** A receipt only exists
   because a `Read`, `Edit`, `Bash`, or similar call happened; something the model reasoned about but
@@ -422,6 +422,29 @@ recall-by-lag and by-compactions-crossed tables, and the raw tarball's SHA-256 a
 - **Paraphrase queries miss lexical matches.** The selector's lexical half scores on token overlap
   with the last user prompt; ask about the same fact in different words at compaction time and the
   bridge's query-aware ranking won't surface it any better than chance.
+- **A call taken without a stated reason has no arrow.** The `because` edge is lifted from the
+  assistant's own text before the call; a call the model made silently, or whose reason shares no
+  identifier with any earlier fact, is a footprint with no ancestry, and nothing is carried for it.
+
+**The continuum (0.4).** The store gains the toy's second arrow ([`docs/toy/continuum-toy.html`](docs/toy/continuum-toy.html)):
+a `because` edge from the fact, error, decision, or symbol the assistant stated as its reason before
+a tool call, lifted from the assistant's own text at `Stop` (`plateau/bridge/lift.py`) and, for the
+open turn, at compaction, since `Stop` has not run for that turn yet.
+
+At a compaction the bridge then forces in the knowledge the current request descends from: walk the
+arrows back from the open turn's calls and keep the facts, errors, decisions, and symbols on that
+path (the toy's carry rule, `plateau/bridge/carry.py`; ground truth
+`tests/fixtures/continuum_toy.json`) -- the whole path, what the open turn's own earlier calls
+produced included, because a Claude Code compaction summarizes that turn too. Those lines are marked
+`◉` in the injected block and go in ahead of everything the selector ranks, as far as the compaction
+budget allows (a carried line that does not fit is dropped, and the log's `carried=` count says how
+many made it); the kill switch is `[continuum] carry` in `bridge.toml`.
+
+Measured honestly: replaying the toy session through the real store reproduces 9 of its 18 reason
+arrows; the 9 it cannot draw are structural (no request node; no action-to-action arrow; a decision
+lifted at `Stop` cannot be the cause of the same-turn call that applied it), so request 5 of the toy
+carries nothing in the store where the toy carries one node, the error `e1`
+(`tests/test_carry_store.py`).
 
 And, as with the signal core: **the bridge does not make the model smarter; it carries what it
 already found.**
@@ -442,7 +465,7 @@ paper/          The Integrator — theory-and-methods preprint (draft)
 BENCHMARKS.md   the live wavex-os run + sealed demos, every number sourced
 RESULTS.md      every sealed cycle, its verdict, and a one-line re-verify command
 RECONCILE.md    paper ↔ sealed reconciliation (flag-only)
-tests/          71 tests; core has zero third-party deps
+tests/          the suite; core has zero third-party deps
 ```
 
 ## The paper

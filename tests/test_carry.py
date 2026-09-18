@@ -121,15 +121,26 @@ def test_carrying_false_never_carries():
     assert c.reachable == "0/1"
 
 
-def test_window_and_turn_below_1_are_rejected():
+def test_negative_window_and_turn_below_1_are_rejected():
     nodes = {"x": Node("x", "fact", 5), "a": Node("a", "act", 5)}
     with pytest.raises(ValueError):
-        cutoff(5, 0)
+        cutoff(5, -1)
     with pytest.raises(ValueError):
-        carry(nodes, [("x", "a")], 5, -3, knowledge={"fact"})       # would make x "old" at its own turn
+        carry(nodes, [("x", "a")], 5, -3, knowledge={"fact"})
     with pytest.raises(ValueError):
         carry(nodes, [("x", "a")], 0, 1, knowledge={"fact"})
     assert cutoff(5, 1) == 5 and cutoff(1, 4) == 1
+
+
+def test_window_0_is_the_compaction_nothing_stays():
+    """`window=0`: the cutoff is past the turn, so even the request's own nodes are old
+    and everything it descends from is carried -- what a Claude Code compaction does to
+    the open turn's earlier calls."""
+    nodes = {"x": Node("x", "fact", 5), "a": Node("a", "act", 5)}
+    assert cutoff(5, 0) == 6
+    c = carry(nodes, [("x", "a")], 5, 0, knowledge={"fact"})
+    assert c.need == {"x"} and c.carried == ["x"] and c.old == ["x"] and c.reachable == "1/1"
+    assert carry(nodes, [("x", "a")], 5, 0, knowledge={"fact"}, carrying=False).reachable == "0/1"
 
 
 def test_self_edge_and_duplicate_edges_are_harmless():

@@ -21,7 +21,7 @@ import json
 import math
 import re
 import sqlite3
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, Dict, Iterable, List, Optional, Set
 
 # Identifier-split tokenizer, shared with the D-037 rung this selector supersedes: splits
 # camelCase/PascalCase/snake_case/dotted/slashed strings into lowercase word-ish tokens.
@@ -141,7 +141,9 @@ def score_nodes(conn: sqlite3.Connection, query: str, cfg: Any, session_id: str)
 
 def render_line(n: Dict[str, Any]) -> str:
     """Render one node as: [r<last_rid>] <kind> <key> -> <outcome> (<detail<=60>) x<degree>,
-    with a trailing " *" (rendered as a star) when lexical_hit is set. No trailing newline."""
+    with a trailing " *" (rendered as a star) when lexical_hit is set, then " ◉" when
+    `carried` is set (the continuum brought it across the compaction; both markers keep
+    that order). No trailing newline."""
     detail = (n.get("detail") or "")[:60]
     line = "[r{}] {} {} → {}".format(n["last_rid"], n["kind"], n["key"], n["outcome"])
     if detail:
@@ -149,6 +151,8 @@ def render_line(n: Dict[str, Any]) -> str:
     line += " ×{}".format(n["degree"])
     if n.get("lexical_hit"):
         line += " ★"
+    if n.get("carried"):
+        line += " ◉"
     return line
 
 
@@ -167,9 +171,15 @@ def select(
     sticky_keys: List[str],
     edited_since: Set[str],
     resolved_errors: Set[str],
+    carried_keys: Iterable[str] = (),
 ) -> List[Dict[str, Any]]:
     """Turn a score_nodes() ranking into a budget-bounded selection.
 
+    0) carried: keys from `carried_keys` that are present in `scored` are included first,
+       in score order, as copies marked `carried=True` -- they are ancestry the current
+       request descends from (plateau.bridge.carry), not an open problem, so neither
+       `edited_since` nor `resolved_errors` applies to them; the input dicts are never
+       mutated.
     1) sticky: keys from `sticky_keys` that are still present in `scored` are re-included,
        unless a file key is in `edited_since` or an error key is in `resolved_errors`.
     2) quota: at least round(bridge_quota * n_lines) of the chosen lines are
@@ -188,11 +198,34 @@ def select(
     def fits(used: int, n: Dict[str, Any]) -> bool:
         return used + len(render_line(n)) + 1 <= budget_chars
 
+    chosen: List[Dict[str, Any]] = []
+    chosen_keys: Set[str] = set()
+    used = reserve
+
+    # --- 0) carried --------------------------------------------------------------
+    carried_nodes = []
+    seen = set()
+    for k in carried_keys:
+        if k in seen:
+            continue
+        n = by_key.get(k)
+        if n is None:
+            continue
+        carried_nodes.append(dict(n, carried=True))
+        seen.add(k)
+    carried_nodes.sort(key=lambda n: n["score"], reverse=True)
+    for n in carried_nodes:
+        if not fits(used, n):
+            continue  # a smaller, lower-scored carried line might still fit
+        chosen.append(n)
+        chosen_keys.add(n["key"])
+        used += len(render_line(n)) + 1
+
     # --- 1) sticky ---------------------------------------------------------------
     sticky_survivors = []
     seen = set()
     for k in sticky_keys:
-        if k in seen:
+        if k in seen or k in chosen_keys:
             continue
         n = by_key.get(k)
         if n is None:
@@ -205,9 +238,6 @@ def select(
         seen.add(k)
     sticky_survivors.sort(key=lambda n: n["score"], reverse=True)
 
-    chosen: List[Dict[str, Any]] = []
-    chosen_keys: Set[str] = set()
-    used = reserve
     for n in sticky_survivors:
         if not fits(used, n):
             continue  # a smaller, lower-scored sticky line might still fit
@@ -262,11 +292,14 @@ def last_user_prompt(transcript_path: str) -> str:
     Skips "user" turns whose content is tool-result feedback (a list whose first block is
     `{"type": "tool_result", ...}`); those are the model's own tool output relayed back on
     the user side of the transcript, not something a person typed. Returns "" if the file
-    is missing/unreadable or no genuine prompt is found; never raises.
+    is missing/unreadable or no genuine prompt is found; never raises. Claude Code appends
+    the JSONL while this hook reads it, so the tail may end inside a multibyte sequence:
+    undecodable bytes are replaced, and that half line then fails to parse like any other
+    garbage line instead of aborting the whole injection.
     """
     last = ""
     try:
-        with open(transcript_path, "r", encoding="utf-8") as f:
+        with open(transcript_path, "r", encoding="utf-8", errors="replace") as f:
             for raw_line in f:
                 raw_line = raw_line.strip()
                 if not raw_line:

@@ -34,8 +34,8 @@ receipt, a node whose `first_rid` predates every boundary, the open turn before 
 has lifted any reason, a symbol literally named `r<N>` shadowed by receipt `r<N>`, a
 decision lifted at the Stop of a turn with no tool calls landing in that turn (also when
 `mark_turn` and `record_decision` share one `ts`, or when another session's receipt lands
-between the two), a decision recorded mid-turn after a receipt keeping that turn, and
-`turn=0` / `window=0` rejected.
+between the two), a decision recorded mid-turn after a receipt keeping that turn, `turn=0`
+and a negative window rejected, and `window=0` (the compaction) carrying all of `need`.
 
 A second session sharing the store (`plateau resume` is a fresh session id over the same
 store): everything it did sits at turn 0 -- its receipts, the knowledge only its receipts
@@ -872,9 +872,11 @@ def test_graph_from_store_edges_are_in_a_fixed_order(tmp_path):
     assert carry_from_store(conn, S1, window=1).need == {D1, "decided:2", E1, E2}
 
 
-def test_turn_0_and_window_0_are_rejected(tmp_path):
+def test_turn_0_and_a_negative_window_are_rejected_and_window_0_carries_all_of_need(tmp_path):
     conn, _rids = _mirror(tmp_path)
     with pytest.raises(ValueError):
         carry_from_store(conn, S1, window=1, turn=0)
     with pytest.raises(ValueError):
-        carry_from_store(conn, S1, window=0)
+        carry_from_store(conn, S1, window=-1)
+    c = carry_from_store(conn, S1, window=0)                       # the compaction: nothing stays
+    assert c.cutoff == 9 and c.carried == sorted(c.need) == sorted([D1, E1, F1, F2]) and c.reachable == "4/4"
