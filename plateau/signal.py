@@ -172,11 +172,20 @@ def gate(thoughts: list[Thought]) -> GateResult:
 
 def apply_gate(self_state: SelfState) -> RelationalState:
     """Run the gate and fold admitted facts into a COPY of the signal. Signal flows
-    freely; only gated thoughts become persisted verified_facts."""
+    freely; only gated thoughts become persisted verified_facts. A claim the signal
+    already carries is not folded in again: re-proposing a carried fact is a no-op,
+    not a second copy (the claim is the fact's identity, as the hook's own
+    admitted/dropped accounting treats it)."""
     res = gate(self_state.thoughts)
     sig = self_state.signal
+    seen = {vf["claim"] for vf in sig.verified_facts}
+    fresh = []
+    for vf in res.admitted:
+        if vf["claim"] not in seen:
+            seen.add(vf["claim"])
+            fresh.append(vf)
     return RelationalState(
         open_goals=list(sig.open_goals), stance=sig.stance,
         lessons=list(sig.lessons), pointers=list(sig.pointers),
-        verified_facts=list(sig.verified_facts) + res.admitted,
+        verified_facts=list(sig.verified_facts) + fresh,
     )

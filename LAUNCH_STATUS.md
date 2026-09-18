@@ -1,7 +1,7 @@
 # LAUNCH_STATUS.md
 
 Ops dashboard for the Plateau OSS launch. Updated each ops cycle.
-Last cycle: 2026-09-18 (0.4.0). All claims grounded in sealed demo artifacts.
+Last cycle: 2026-09-18 (0.4.1). All claims grounded in sealed demo artifacts.
 
 ---
 
@@ -11,7 +11,7 @@ Last cycle: 2026-09-18 (0.4.0). All claims grounded in sealed demo artifacts.
 |---|---|---|
 | Core library (`plateau/`) | ✅ on main | stdlib-only, py3.9+ |
 | Agency layer (`plateau/agency/`) | ✅ on main | prose contracts + driver |
-| Tests (344 collected; 343 pass + 1 skip on 3.11/3.12, 341 + 3 on 3.9 where two tomllib cases skip) | ✅ CI green | pytest 3.9 / 3.11 / 3.12 |
+| Tests (351 collected; 350 pass + 1 skip on 3.11/3.12, 348 + 3 on 3.9 where two tomllib cases skip) | ✅ CI green | pytest 3.9 / 3.11 / 3.12 |
 | Bridge + lab (`plateau/bridge/`, `plateau/lab/`, 0.3) | ✅ on main | receipt graph, query-aware injection, handoff, ledger, shadow probes |
 | The continuum (`plateau/bridge/carry.py`, 0.4) | ✅ on main | `because` arrows + carry at compaction; cut as `v0.4.0` on the 0.4 merge |
 | CI workflow (`.github/workflows/ci.yml`) | ✅ green | badge is live, earned |
@@ -197,5 +197,5 @@ pip install git+https://github.com/aimerdoux/plateau.git
   rebases after 0.4)
 - Latest GitHub Release: none — 0.2.0 and 0.3.0 are git tags (`v0.2.0`, `v0.3.0`); `v0.4.0` is cut
   on the 0.4 merge; the plugin marketplace serves `main`
-- pyproject version: 0.4.0
+- pyproject version: 0.4.1
 - PyPI published version: not published, and cannot be under this name (see the table above)

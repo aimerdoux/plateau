@@ -137,3 +137,19 @@ def test_result_kind_malformed_json_fails_closed(tmp_path):
     set_ground_root(str(tmp_path))
     m = Measurement("test_result", "bad.json", file_hash(str(p)))
     assert m.reverify() is False
+
+
+def test_apply_gate_does_not_fold_a_carried_claim_in_twice(tmp_path):
+    """0.4.1: re-proposing a fact the signal already carries is a no-op, not a second
+    copy. Before, a queue that was never consumed re-admitted the same facts on every
+    Stop and the signal grew one copy per Stop (1,256 facts, 13 distinct, in a real
+    ~/.plateau/signal.json) while the set-based admitted count kept saying 0."""
+    th, _ = _grounded_thought(tmp_path, claim="total=5")
+    once = apply_gate(SelfState(signal=RelationalState(), thoughts=[th]))
+    assert [vf["claim"] for vf in once.verified_facts] == ["total=5"]
+    twice = apply_gate(SelfState(signal=once, thoughts=[th]))
+    assert [vf["claim"] for vf in twice.verified_facts] == ["total=5"]
+    # and a batch that proposes the same new claim twice folds it in once
+    th2, _ = _grounded_thought(tmp_path, claim="total=6")
+    batch = apply_gate(SelfState(signal=once, thoughts=[th2, th2]))
+    assert [vf["claim"] for vf in batch.verified_facts] == ["total=5", "total=6"]

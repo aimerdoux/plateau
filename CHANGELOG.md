@@ -4,6 +4,42 @@ All notable changes to Plateau are recorded here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project
 adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.1] — 2026-09-18
+
+### Fixed
+
+- **The signal grew a copy of every queued fact on every Stop, and the Stop notice said
+  `0 admitted` while it did.** `plateau.hooks.signal.post` read `.plateau/pending_facts.json`
+  but never removed it, and `apply_gate` folded every admitted fact in without checking
+  whether the signal already carried that claim -- so a queue left behind by one session
+  was re-gated by every later Stop in that directory, each one appending the same facts
+  again, while the notice's count (a set difference of claims) stayed at zero. Found in a
+  real `~/.plateau/signal.json`: 1,256 facts, 13 distinct, five of them 248 times, 389 KB,
+  the whole of it injected into every prompt by `pre` (160,747 characters, 248 copies of
+  one claim). Three changes, each pinned by a test that replays the defect:
+  - `apply_gate` folds a claim in once; re-proposing a carried fact is a no-op
+    (`tests/test_signal_gate.py`).
+  - `inflate` keeps one entry per claim, first occurrence first, so a blob that already
+    grew duplicates heals on its next `pre`/`post` and the next emit persists it bounded
+    again -- every directory with such a file repairs itself (`tests/test_continuum.py`).
+  - `post` consumes `pending_facts.json` and `pending_carry.json` once the new blob is on
+    disk (a failed persist leaves them for the next Stop); a proposal is gated by the Stop
+    that finds it, never by every later one (`tests/test_hooks_signal.py`,
+    `tests/test_cc_adapter.py`).
+- **The Stop notice speaks only when it did something.** `post --cc` printed `Plateau:
+  signal persisted to .plateau/signal.json (0 fact(s) admitted, 0 dropped ungrounded)` as a
+  `systemMessage` on every Stop of every session. It now prints the notice only when a
+  fact was admitted or dropped or a lesson carried; an idle Stop persists silently
+  (`{"suppressOutput": true}` alone; `parent` likewise sets `suppressOutput` when it has
+  nothing to inject).
+
+### Findings
+
+- The plugin marketplace serves `main`, but an installed plugin stays at the commit it was
+  installed from until `/plugin update`: the operator's own install was still `0.1.0`
+  (2026-06-02) -- the two-hook table, none of 0.3/0.4 -- which is how the defect above ran
+  unnoticed for three months.
+
 ## [0.4.0] — 2026-09-18
 
 The continuum (`docs/toy/continuum-toy.html`): a context window holds the last few requests,
@@ -362,6 +398,7 @@ Initial release of the bounded-context core.
 - Pre-registered, sealed demos under `demo/` (recall + real-code efficiency) with
   recompute-verifiable verdicts; results in `RESULTS.md`.
 
+[0.4.1]: https://github.com/aimerdoux/plateau/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/aimerdoux/plateau/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/aimerdoux/plateau/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/aimerdoux/plateau/releases/tag/v0.2.0

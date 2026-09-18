@@ -90,18 +90,25 @@ def inflate(signal_blob: str, fresh: bool = True) -> Inflated:
     re-check; structural fields (goals/stance/lessons/pointers) always carry — they
     re-ground safely because they are not factual claims about a mutable world."""
     b = json.loads(signal_blob)
+    # One entry per claim, first occurrence wins: a blob that grew duplicates (a queue
+    # that was re-gated on every step before 0.4.1) heals here, so the next emit
+    # persists it bounded again and nothing downstream sees a claim twice.
+    seen: set = set()
+    facts = []
+    for vf in b.get("verified_facts", []):
+        if vf["claim"] in seen:
+            continue
+        seen.add(vf["claim"])
+        facts.append({"claim": vf["claim"],
+                      "grounding_kind": vf.get("grounding", {}).get("kind", "file_hash"),
+                      "grounding_source": vf.get("grounding", {}).get("source", ""),
+                      "grounding_value": vf.get("grounding", {}).get("value", "")})
     carried = RelationalState(
         open_goals=list(b.get("open_goals", [])),
         stance=b.get("stance", ""),
         lessons=list(b.get("lessons", [])),
         pointers=list(b.get("pointers", [])),
-        verified_facts=[
-            {"claim": vf["claim"],
-             "grounding_kind": vf.get("grounding", {}).get("kind", "file_hash"),
-             "grounding_source": vf.get("grounding", {}).get("source", ""),
-             "grounding_value": vf.get("grounding", {}).get("value", "")}
-            for vf in b.get("verified_facts", [])
-        ],
+        verified_facts=facts,
     )
     if not fresh:
         return Inflated(state=carried, stale=[])

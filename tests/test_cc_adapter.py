@@ -57,6 +57,25 @@ def test_cc_post_drops_ungrounded_fact_and_persists(tmp_path):
     assert blob["verified_facts"] == []
 
 
+def test_cc_post_consumes_the_queue_and_is_quiet_when_idle(tmp_path):
+    """0.4.1, through the shipped shim: the queue is gated once and removed; a Stop with
+    nothing queued prints no systemMessage at all (before, every Stop of every session
+    printed `... (0 fact(s) admitted, 0 dropped ungrounded)`)."""
+    src = tmp_path / "real.txt"
+    src.write_text("hello")
+    import hashlib
+    digest = "sha256:" + hashlib.sha256(b"hello").hexdigest()
+    first = _run("post", tmp_path,
+                 pending=[{"claim": "real.txt says hello", "source": "real.txt", "value": digest}])
+    assert "1 fact(s) admitted" in first["systemMessage"]
+    assert not (tmp_path / ".plateau" / "pending_facts.json").exists()
+    signal = json.loads((tmp_path / ".plateau" / "signal.json").read_text())
+    second = _run("post", tmp_path, signal=signal)          # no pending this time
+    assert second == {"suppressOutput": True}
+    blob = json.loads((tmp_path / ".plateau" / "signal.json").read_text())
+    assert [vf["claim"] for vf in blob["verified_facts"]] == ["real.txt says hello"]
+
+
 # ---------------------------------------------------------------------------
 # step 3: hooks.json <-> hook.py wiring, inject, handoff
 # ---------------------------------------------------------------------------
