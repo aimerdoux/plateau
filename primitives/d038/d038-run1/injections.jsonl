@@ -1,0 +1,16 @@
+{"budget": 6000, "chars": 1668, "compaction_k": null, "event": "SessionStart", "holdout": 0, "nodes": 14, "of_nodes": 14, "rid_at": null, "token": "wt_85150c"}
+{"budget": 6000, "chars": 1994, "compaction_k": null, "event": "SessionStart", "holdout": 0, "nodes": 17, "of_nodes": 17, "rid_at": null, "token": "wt_85150c"}
+{"budget": 6000, "chars": 3107, "compaction_k": null, "event": "SessionStart", "holdout": 0, "nodes": 26, "of_nodes": 26, "rid_at": null, "token": "wt_85150c"}
+{"budget": 6000, "chars": 3521, "compaction_k": null, "event": "SessionStart", "holdout": 0, "nodes": 30, "of_nodes": 30, "rid_at": null, "token": "wt_85150c"}
+{"budget": 6000, "chars": 4059, "compaction_k": null, "event": "SessionStart", "holdout": 0, "nodes": 34, "of_nodes": 34, "rid_at": null, "token": "wt_85150c"}
+{"budget": 6000, "chars": 4416, "compaction_k": null, "event": "SessionStart", "holdout": 0, "nodes": 37, "of_nodes": 37, "rid_at": null, "token": "wt_85150c"}
+{"budget": 6000, "chars": 4618, "compaction_k": null, "event": "SessionStart", "holdout": 0, "nodes": 39, "of_nodes": 39, "rid_at": null, "token": "wt_85150c"}
+{"budget": 6000, "chars": 5003, "compaction_k": null, "event": "SessionStart", "holdout": 0, "nodes": 42, "of_nodes": 42, "rid_at": null, "token": "wt_85150c"}
+{"budget": 6000, "chars": 5444, "compaction_k": null, "event": "SessionStart", "holdout": 0, "nodes": 46, "of_nodes": 46, "rid_at": null, "token": "wt_85150c"}
+{"budget": 6000, "chars": 5890, "compaction_k": null, "event": "SessionStart", "holdout": 0, "nodes": 50, "of_nodes": 56, "rid_at": null, "token": "wt_85150c"}
+{"budget": 6000, "chars": 5984, "compaction_k": null, "event": "SessionStart", "holdout": 0, "nodes": 51, "of_nodes": 58, "rid_at": null, "token": "wt_85150c"}
+{"budget": 6000, "chars": 5943, "compaction_k": null, "event": "SessionStart", "holdout": 0, "nodes": 52, "of_nodes": 64, "rid_at": null, "token": "wt_85150c"}
+{"budget": 6000, "chars": 5884, "compaction_k": null, "event": "SessionStart", "holdout": 0, "nodes": 52, "of_nodes": 68, "rid_at": null, "token": "wt_85150c"}
+{"budget": 6000, "chars": 5943, "compaction_k": null, "event": "SessionStart", "holdout": 0, "nodes": 53, "of_nodes": 72, "rid_at": null, "token": "wt_85150c"}
+{"budget": 6000, "chars": 5966, "compaction_k": null, "event": "SessionStart", "holdout": 0, "nodes": 53, "of_nodes": 81, "rid_at": null, "token": "wt_85150c"}
+{"budget": 6000, "chars": 5863, "compaction_k": null, "event": "SessionStart", "holdout": 0, "nodes": 58, "of_nodes": 102, "rid_at": null, "token": "wt_85150c"}

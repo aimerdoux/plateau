@@ -1,0 +1,15 @@
+wrote 13 tasks, fixture 2650 words, seed 2 -> experiments/d037/raw/C/2/work
+{"k": 1, "rc": 0, "seconds": 24.3, "session_id": "08265fef-bddd-49da-a281-def44b8af89b", "subtype": "success", "cost": 0.1153252, "models": ["claude-haiku-4-5-20251001", "claude-sonnet-5"], "num_turns": 7}
+{"k": 2, "rc": 0, "seconds": 19.8, "session_id": "08265fef-bddd-49da-a281-def44b8af89b", "subtype": "success", "cost": 0.08873299999999999, "models": ["claude-sonnet-5"], "num_turns": 6}
+{"k": 3, "rc": 0, "seconds": 18.3, "session_id": "08265fef-bddd-49da-a281-def44b8af89b", "subtype": "success", "cost": 0.0986606, "models": ["claude-sonnet-5"], "num_turns": 6}
+{"k": 4, "rc": 0, "seconds": 26.5, "session_id": "08265fef-bddd-49da-a281-def44b8af89b", "subtype": "success", "cost": 0.13058720000000001, "models": ["claude-sonnet-5"], "num_turns": 8}
+{"k": 5, "rc": 0, "seconds": 107.3, "session_id": "08265fef-bddd-49da-a281-def44b8af89b", "subtype": "success", "cost": 0.2507686, "models": ["claude-sonnet-5"], "num_turns": 10}
+{"k": 6, "rc": 0, "seconds": 24.3, "session_id": "08265fef-bddd-49da-a281-def44b8af89b", "subtype": "success", "cost": 0.11676100000000002, "models": ["claude-sonnet-5"], "num_turns": 8}
+{"k": 7, "rc": 0, "seconds": 21.5, "session_id": "08265fef-bddd-49da-a281-def44b8af89b", "subtype": "success", "cost": 0.106925, "models": ["claude-sonnet-5"], "num_turns": 7}
+{"k": 8, "rc": 0, "seconds": 76.3, "session_id": "08265fef-bddd-49da-a281-def44b8af89b", "subtype": "success", "cost": 0.24563580000000002, "models": ["claude-sonnet-5"], "num_turns": 10}
+{"k": 9, "rc": 0, "seconds": 30.0, "session_id": "08265fef-bddd-49da-a281-def44b8af89b", "subtype": "success", "cost": 0.136683, "models": ["claude-sonnet-5"], "num_turns": 9}
+{"k": 10, "rc": 0, "seconds": 27.2, "session_id": "08265fef-bddd-49da-a281-def44b8af89b", "subtype": "success", "cost": 0.11454420000000001, "models": ["claude-sonnet-5"], "num_turns": 8}
+{"k": 11, "rc": 0, "seconds": 89.2, "session_id": "08265fef-bddd-49da-a281-def44b8af89b", "subtype": "success", "cost": 0.24783769999999997, "models": ["claude-sonnet-5"], "num_turns": 9}
+{"k": 12, "rc": 0, "seconds": 29.5, "session_id": "08265fef-bddd-49da-a281-def44b8af89b", "subtype": "success", "cost": 0.13385619999999998, "models": ["claude-sonnet-5"], "num_turns": 8}
+{"k": 13, "rc": 0, "seconds": 23.3, "session_id": "08265fef-bddd-49da-a281-def44b8af89b", "subtype": "success", "cost": 0.1028636, "models": ["claude-sonnet-5"], "num_turns": 8}
+status OK -> experiments/d037/raw/C/2

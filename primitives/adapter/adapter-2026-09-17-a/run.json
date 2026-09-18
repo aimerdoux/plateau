@@ -1,0 +1,29 @@
+{
+ "absorbed_by": "plateau 0.3.0",
+ "cost_usd": {
+  "judge": 0.0,
+  "probe": 0.0,
+  "task": 0
+ },
+ "forbidden_digest": "4929a7dd624872d61c9512de593a77da480acc84dbdbcb06ba32201bf85754cd",
+ "raw_files": 20,
+ "raw_sha256": "55d718966f180985594d916f6a1e99caae827d2e8b00b3af22bd6eecfd4a548d",
+ "run_id": "adapter-2026-09-17-a",
+ "sessions": 2,
+ "settings": {
+  "bridge_sha": null,
+  "bridge_version": "2.0",
+  "cli_version": null,
+  "model_ids": [
+   "claude-sonnet-5"
+  ],
+  "pct": null,
+  "window": null
+ },
+ "source": "adapter",
+ "tarball_sha256": null,
+ "target": {
+  "commit": null,
+  "tree": null
+ }
+}

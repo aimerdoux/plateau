@@ -13,7 +13,9 @@ Usage:
                    [--run-id ID] [--resume runs/ID/RESUME.json] [--stub]
 """
 import argparse
+import contextlib
 import json
+import os
 import re
 import subprocess
 import time
@@ -44,6 +46,68 @@ def append_jsonl(path, record):
         f.write(json.dumps(record) + "\n")
 
 
+# docs/harness-0.3/PLAN-step3.md "Agency worker return path": a worker now ends its reply
+# with `plateau handoff --print`'s block (see prompts.HANDOFF_FOOTER); look for that block
+# first and expose its `cursor`/`open` fields to the parent, falling back to the store's
+# own `.plateau/handoff/<session_id>.json` file when the worker's own text carries none.
+# The pre-existing one-line JSON return (extract_json, below) is untouched either way --
+# this is additive plumbing, not a replacement of it.
+_HANDOFF_BLOCK_RE = re.compile(r"<plateau_handoff v=1>(.*?)</plateau_handoff>", re.S)
+_HANDOFF_CURSOR_RE = re.compile(r"^cursor:\s*(\S+)", re.M)
+_HANDOFF_OPEN_RE = re.compile(r"^open:\s*(.+)$", re.M)
+
+
+def _parse_handoff_text(text):
+    """`(cursor, open)` parsed out of a `<plateau_handoff v=1>` block's own text, or
+    `(None, None)` if no such block (or no matching line inside it) is present."""
+    if not text:
+        return None, None
+    m = _HANDOFF_BLOCK_RE.search(text)
+    if not m:
+        return None, None
+    body = m.group(1)
+    cursor_m = _HANDOFF_CURSOR_RE.search(body)
+    open_m = _HANDOFF_OPEN_RE.search(body)
+    cursor = cursor_m.group(1) if cursor_m else None
+    open_val = open_m.group(1).strip() if open_m else None
+    return cursor, open_val
+
+
+def _read_handoff_file(repo, session_id):
+    """`cursor`/`open` straight from `.plateau/handoff/<session_id>.json`, for when the
+    worker's own final text carried no `<plateau_handoff v=1>` block at all (e.g. it ran
+    `plateau handoff --write` instead of `--print`, or forgot the footer instruction)."""
+    if not session_id:
+        return None, None
+    path = Path(repo) / ".plateau" / "handoff" / ("%s.json" % session_id)
+    try:
+        block = json.loads(path.read_text())
+    except Exception:
+        return None, None
+    if not isinstance(block, dict):
+        return None, None
+    cursor = block.get("cursor")
+    cursor = ("r%s" % cursor) if isinstance(cursor, int) else cursor
+    open_block = block.get("open") or {}
+    errors = open_block.get("errors") or []
+    tests = open_block.get("tests") or []
+    open_val = ", ".join(list(errors) + list(tests)) if (errors or tests) else None
+    return cursor, open_val
+
+
+def _handoff_return_path(out, envelope, result_text, repo):
+    """First the worker's raw stdout, then its parsed `result` text, then the handoff
+    file for its session -- see module-level comment above `_HANDOFF_BLOCK_RE`. Returns
+    `(cursor, open)`, `(None, None)` when none of those sources has one."""
+    cursor, open_val = _parse_handoff_text(out)
+    if cursor is None and open_val is None:
+        cursor, open_val = _parse_handoff_text(result_text)
+    if cursor is None and open_val is None:
+        session_id = envelope.get("session_id") if isinstance(envelope, dict) else None
+        cursor, open_val = _read_handoff_file(repo, session_id)
+    return cursor, open_val
+
+
 def extract_json(text):
     """Pull the single JSON object the agent printed as its final message."""
     if not text:
@@ -63,19 +127,54 @@ def extract_json(text):
 
 # ------------------------------------------------------------ spawn step --
 
-def spawn_agent(prompt_text, mode, repo, max_turns=20):
+@contextlib.contextmanager
+def _child_spawn_env():
+    """Scope `os.environ` around one spawned `claude -p` call to
+    `plateau.bridge.common.child_env()` (S4-A2, docs/harness-0.3/PLAN-step4.md
+    "Session identity everywhere a process is spawned"): a fresh session id is
+    guaranteed only when the child cannot see the parent's own Claude Code
+    session-identity variables. `gate.run()` (not owned by the ledger-probes
+    step-4 slice) always forks with the ambient `os.environ` and takes no `env`
+    kwarg, so rather than editing it, this pops exactly the handful of vars
+    `child_env()` strips -- and only those -- from `os.environ` for the
+    duration of the `with` block, then restores them verbatim. A no-op (the
+    environment is left untouched) if `plateau.bridge.common` cannot be
+    imported for any reason -- this must never be the thing that breaks a
+    spawn."""
+    try:
+        from plateau.bridge.common import child_env
+        target = child_env()
+    except Exception:
+        yield
+        return
+    removed = {}
+    for k in list(os.environ.keys()):
+        if k not in target:
+            removed[k] = os.environ.pop(k)
+    try:
+        yield
+    finally:
+        os.environ.update(removed)
+
+
+def spawn_agent(prompt_text, mode, repo, max_turns=20, worker_model=None):
     """One fresh `claude -p` process. Returns parsed agent dict or an error."""
     tools = prompts.AUDIT_TOOLS if mode == "audit" else prompts.WRITE_TOOLS
-    cmd = [
-        "claude", "-p", prompt_text,
-        "--output-format", "json",
-        "--permission-mode", "acceptEdits",
-        "--max-turns", str(max_turns),
+    cmd = ["claude", "-p", prompt_text, "--output-format", "json",
+           "--permission-mode", "acceptEdits", "--max-turns", str(max_turns),
+           # lean workers: no inherited MCP connectors (~274K tok of schemas) -> the
+           # subtask stays in STANDARD context, dodging the 1M-context credits gate and
+           # cutting per-worker cost ~20-50x. These workers only need Read/Grep/Bash.
+           "--strict-mcp-config"]
+    if worker_model:
+        cmd += ["--model", worker_model]   # cost lever: cheap workers for long runs
+    cmd += [
         "--allowedTools", *tools,
         "--disallowedTools", *prompts.DISALLOWED_TOOLS,
         "--append-system-prompt", prompts.SAFETY_FLOOR,
     ]
-    rc, out, err = gate.run(cmd, repo, timeout=600)
+    with _child_spawn_env():
+        rc, out, err = gate.run(cmd, repo, timeout=600)
     if rc != 0 and not out:
         return {"class": "blocked", "carry": "agent exit %d: %s" % (rc, err[:80]),
                 "clean": False, "evidence": [], "edited_files": []}
@@ -91,6 +190,11 @@ def spawn_agent(prompt_text, mode, repo, max_turns=20):
     inner.setdefault("edited_files", [])
     inner.setdefault("carry", "")
     inner["_usage"] = envelope.get("usage") if isinstance(envelope, dict) else None
+    cursor, open_val = _handoff_return_path(out, envelope, result_text, repo)
+    if cursor is not None:
+        inner["cursor"] = cursor
+    if open_val is not None:
+        inner["open"] = open_val
     return inner
 
 
@@ -195,12 +299,154 @@ def write_resume(run_dir, sig, last_step, cov_path, by_tier, counters):
     return rp
 
 
+# ----------------------------------------------------------- role mode ----
+
+ROLE_SUMMARY_CAP = 2000   # bounded running_summary: keep only the tail
+ROLE_LESSON_CAP = 8       # carry only the last few lessons into the next worker
+ROLE_STALL_CEIL = 5       # consecutive no-progress steps -> stop "stalled"
+
+
+def _resolve_goal(args):
+    """goal-file content wins over --goal; returns the goal text or None."""
+    if args.goal_file:
+        return Path(args.goal_file).read_text().strip()
+    if args.goal:
+        return args.goal.strip()
+    return None
+
+
+def stub_role(goal, step):
+    """Deterministic canned role worker (no claude). Completes at step>=2."""
+    return {
+        "class": "role",
+        "did": "stub step",
+        "evidence": [{"check": "stub", "location": "-", "observed": "-"}],
+        "edited_files": [],
+        "summary_line": "stub progress %d" % step,
+        "goal_complete": step >= 2,
+        "next_hint": "continue",
+    }
+
+
+def run_role(args, repo, run_dir):
+    """Bounded orchestrator loop for a GENERAL goal. The orchestrator's only
+    memory is a small signal dict on disk; workers are fresh-and-discarded.
+
+    signal = {goal, running_summary, lessons, step, done}. Each step builds a
+    lean worker prompt from {goal + bounded running_summary + last <=8 lessons +
+    step}, never a growing transcript."""
+    sig_path = run_dir / "signal.json"
+    kpis = run_dir / "kpis.jsonl"
+
+    if args.resume:
+        signal = state.load_json(args.resume, None)
+        if not isinstance(signal, dict):
+            print("RESUME file unreadable:", args.resume); return
+        signal.setdefault("goal", "")
+        signal.setdefault("running_summary", "")
+        signal.setdefault("lessons", [])
+        signal.setdefault("step", 0)
+        signal.setdefault("done", False)
+    else:
+        goal = _resolve_goal(args)
+        if not goal:
+            print("role mode requires --goal or --goal-file"); return
+        signal = {"goal": goal, "running_summary": "", "lessons": [],
+                  "step": 0, "done": False}
+    # bind run_id into the signal so --resume lands in the ORIGINAL run dir.
+    signal["run_id"] = run_dir.name
+    state.save_json(sig_path, signal)
+
+    run_start = now()
+    stall = 0
+    stop_reason = "loop-exited"
+
+    while (signal["step"] < args.max_steps and not signal["done"]
+           and (now() - run_start) < args.target_seconds):
+        step = signal["step"]
+        if args.stub:
+            agent = stub_role(signal["goal"], step)
+            ptext = ""
+        else:
+            ptext = prompts.build_role_subtask(
+                signal["goal"], signal["running_summary"],
+                signal["lessons"], repo, step)
+            agent = spawn_agent(ptext, "role", repo, worker_model=args.worker_model)
+
+        # General progress gate (no audit gate).
+        if agent.get("class") == "blocked":
+            state.add_lesson(signal, "blocked: " + agent.get("carry", ""))
+            stall += 1
+            last = "blocked"
+        else:
+            summary_line = (agent.get("summary_line") or "").strip()
+            if summary_line:
+                merged = (signal["running_summary"] + " | " + summary_line
+                          if signal["running_summary"] else summary_line)
+                signal["running_summary"] = merged[-ROLE_SUMMARY_CAP:]  # keep the tail
+            state.add_lesson(signal, agent.get("next_hint") or summary_line)
+            if agent.get("goal_complete") is True:
+                signal["done"] = True
+            progressed = bool(agent.get("evidence") or agent.get("edited_files")
+                              or summary_line)
+            stall = 0 if progressed else stall + 1
+            last = summary_line[:60] or "no-op"
+
+        # cap lessons to the last few (bounded context is the whole point).
+        signal["lessons"] = signal["lessons"][-ROLE_LESSON_CAP:]
+        state.enforce_caps(signal)
+        signal["step"] = step + 1
+        state.save_json(sig_path, signal)
+
+        elapsed = now() - run_start
+        append_jsonl(kpis, {
+            "step": step, "elapsed_s": round(elapsed), "mode": "role",
+            "done": signal["done"], "stall_counter": stall,
+            "orch_signal_tokens": max(1, len(json.dumps(signal)) // 4),
+            "worker_prompt_tokens": (max(1, len(ptext) // 4) if ptext else 0),
+            "worker_usage": agent.get("_usage"),
+        })
+        print("step %d | t=%ds | role | last=%s" % (step, round(elapsed), last))
+
+        if stall >= ROLE_STALL_CEIL:
+            stop_reason = "stalled"
+            break
+
+    steps = signal["step"]
+    if signal["done"]:
+        stop_reason = "goal_complete"
+    elif stop_reason == "stalled":
+        pass
+    elif (now() - run_start) >= args.target_seconds:
+        stop_reason = "target_met"
+    elif signal["step"] >= args.max_steps:
+        # mid-goal budget hit -> checkpoint a bounded resume signal.
+        rp = run_dir / "resume.json"
+        state.save_json(rp, signal)
+        stop_reason = "step_budget_checkpoint"
+        print("CHECKPOINT step_budget. resume:")
+        print("  plateau-agency --repo %s --mode role --resume %s" % (repo, rp))
+
+    state.save_json(run_dir / "role_result.json", {
+        "goal": signal["goal"], "done": signal["done"], "steps": steps,
+        "running_summary": signal["running_summary"], "lessons": signal["lessons"],
+        "stop_reason": stop_reason,
+    })
+    state.save_json(sig_path, signal)
+    print("STOP reason=%s steps=%d" % (stop_reason, steps))
+    print("artifacts: %s" % run_dir)
+
+
 # -------------------------------------------------------------- main ------
 
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--repo", required=True)
-    ap.add_argument("--mode", choices=["audit", "write"], default="audit")
+    ap.add_argument("--mode", choices=["audit", "write", "role"], default="audit")
+    ap.add_argument("--goal", default=None,
+                    help="role mode: the long-horizon objective (string)")
+    ap.add_argument("--goal-file", default=None,
+                    help="role mode: path to a file whose content is the goal (wins over --goal)")
     ap.add_argument("--run-id", default=time.strftime("%Y%m%dT%H%M%S"))
     ap.add_argument("--max-steps", type=int, default=80)   # STEP_BUDGET
     ap.add_argument("--target-seconds", type=int, default=7200)
@@ -208,6 +454,11 @@ def main():
     ap.add_argument("--resume", default=None)
     ap.add_argument("--stub", action="store_true",
                     help="use a canned agent result (no claude call) to test machinery")
+    ap.add_argument("--worker-model", default=None,
+                    help="model for fresh claude -p workers (cost lever); default = CLI default")
+    ap.add_argument("--include-source", action="store_true",
+                    help="also audit source modules (scan_source), not just web surfaces -- "
+                         "enriches the backlog for long-horizon runs")
     ap.add_argument("--config", default=None,
                     help="JSON config override path; else auto-detected from the repo")
     ap.add_argument("--base", default="main", help="base branch for PRs (write mode)")
@@ -217,6 +468,19 @@ def main():
 
     repo = str(Path(args.repo).resolve())
     cfg = load_config(repo, args.config)
+
+    # GENERAL bounded-context role executor. No worklist/coverage/audit gate;
+    # the orchestrator derives the next subtask from the GOAL + bounded progress.
+    if args.mode == "role":
+        run_id = args.run_id
+        if args.resume:
+            prior = state.load_json(args.resume, None)
+            if isinstance(prior, dict) and prior.get("run_id"):
+                run_id = prior["run_id"]
+        run_dir = HERE / "runs" / run_id
+        run_dir.mkdir(parents=True, exist_ok=True)
+        run_role(args, repo, run_dir)
+        return
 
     # Resume must bind to the ORIGINAL run's dir, not a fresh timestamp.
     resume_blob = None
@@ -258,6 +522,9 @@ def main():
         run_start = now()
         sig = state.new_signal(run_id, run_start)
         coverage = bootstrap.build_coverage(repo, cfg)
+        if args.include_source:                       # enrich backlog for long-horizon runs
+            have = {e["id"] for e in coverage}
+            coverage += [e for e in bootstrap.scan_source(repo, cfg) if e["id"] not in have]
         state.save_json(cov_path, coverage)
         start_step = 1
 
@@ -315,7 +582,7 @@ def main():
         else:
             ptext = prompts.build_subtask(
                 state.compact_signal(sig), item, args.mode, repo, args.run_id, step)
-            agent = spawn_agent(ptext, args.mode, repo)
+            agent = spawn_agent(ptext, args.mode, repo, worker_model=args.worker_model)
 
         cls = agent.get("class", "blocked")
         pk = agent.get("pattern_key")

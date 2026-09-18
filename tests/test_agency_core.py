@@ -12,6 +12,16 @@ def test_enforce_caps_lessons():
     assert all(len(l) <= state.LESSON_CHARS for l in sig["lessons"])
 
 
+def test_add_lesson_dedupes():
+    """A repeated carry must not fill the capped lessons list with copies and
+    evict distinct lessons (the long-horizon signal-bloat bug)."""
+    sig = state.new_signal("r", 0.0)
+    for _ in range(20):
+        state.add_lesson(sig, "same carried lesson")
+    state.add_lesson(sig, "a distinct lesson")
+    assert sig["lessons"] == ["same carried lesson", "a distinct lesson"]
+
+
 def test_next_pending_ascending_tier():
     cov = [{"id": "a", "tier": 3, "status": "pending"},
            {"id": "b", "tier": 1, "status": "pending"},

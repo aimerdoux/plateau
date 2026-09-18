@@ -1,0 +1,5 @@
+{"budget": 6000, "chars": 218, "compaction_k": null, "event": "startup", "holdout": 0, "nodes": 0, "of_nodes": null, "rid_at": 0, "token": "98e6f070-0b45-4a7c-9e35-fd4ccebdc09f"}
+{"budget": 12000, "chars": 1662, "compaction_k": 0, "event": "compact", "holdout": 0, "nodes": 18, "of_nodes": null, "rid_at": 19, "token": "98e6f070-0b45-4a7c-9e35-fd4ccebdc09f"}
+{"budget": 12000, "chars": 1797, "compaction_k": 1, "event": "compact", "holdout": 0, "nodes": 20, "of_nodes": null, "rid_at": 21, "token": "98e6f070-0b45-4a7c-9e35-fd4ccebdc09f"}
+{"budget": 12000, "chars": 3293, "compaction_k": 2, "event": "compact", "holdout": 0, "nodes": 35, "of_nodes": null, "rid_at": 25, "token": "98e6f070-0b45-4a7c-9e35-fd4ccebdc09f"}
+{"budget": 6000, "chars": 5761, "compaction_k": null, "event": "startup", "holdout": 0, "nodes": 62, "of_nodes": null, "rid_at": 0, "token": "58031f63-2e1c-456a-8843-f6a7c753db41"}
