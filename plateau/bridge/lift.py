@@ -18,6 +18,16 @@ skipped (idempotent across a Stop that fires more than once, and across an unrel
 Stop that repeats an already-recorded line). Prints nothing: this hook never adds or shapes
 any `hookSpecificOutput`.
 
+0.4 (the continuum): the same Stop pass also lifts *reasons*. Claude Code writes an
+assistant message one content block per transcript line, all lines sharing `message.id`;
+the `text` block(s) that precede a `tool_use` block within one message are the reason the
+model stated for that call, caught at the moment it had it. `lift_reasons()` pairs each
+`tool_use` id with that text (never a `thinking` block -- raw thought does not cross), finds
+the call's receipt by `receipts.tool_use_id`, and hands it to `common.record_reason`, which
+stores the reason and draws the `because` edges. Receipts that already carry a reason are
+skipped, so a Stop that fires twice, or a later Stop over the same transcript, records
+nothing twice.
+
 This is also THE Stop-path turn boundary (docs/harness-0.3/target-run-wavex.md finding #4):
 `common.mark_turn()` was defined but never called from anywhere in the shipped hook
 pipeline, so the `turns` table was always empty and `receipts_per_turn()`/the selector's
@@ -38,7 +48,7 @@ import json
 import re
 import sys
 from os.path import basename
-from typing import Any, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 from . import common
 from . import config
@@ -108,6 +118,68 @@ def _already_recorded(conn, session_id: str, text: str) -> bool:
     return row is not None
 
 
+def reasons_from_transcript(transcript_path: str) -> Dict[str, str]:
+    """`{tool_use_id: reason_text}` for every `tool_use` block in the transcript whose
+    assistant message had at least one `text` block before it. Blocks are grouped by
+    `message.id` (one block per line, see module docstring; an entry without an id is
+    its own group), text accumulates within a message so parallel calls after one
+    sentence share it, and `thinking` blocks are ignored. `{}` on any read trouble."""
+    out: Dict[str, str] = {}
+    current_id: Optional[str] = None
+    text_acc: List[str] = []
+    try:
+        with open(transcript_path, encoding="utf-8") as f:
+            for raw in f:
+                raw = raw.strip()
+                if not raw:
+                    continue
+                try:
+                    entry = json.loads(raw)
+                except ValueError:
+                    continue
+                if not isinstance(entry, dict):
+                    continue
+                msg = entry.get("message")
+                if not isinstance(msg, dict) or msg.get("role") != "assistant":
+                    continue
+                mid = msg.get("id") or entry.get("uuid") or id(entry)
+                if mid != current_id:
+                    current_id, text_acc = mid, []
+                content = msg.get("content")
+                blocks = content if isinstance(content, list) else [{"type": "text", "text": content}]
+                for block in blocks:
+                    if not isinstance(block, dict):
+                        continue
+                    if block.get("type") == "text" and isinstance(block.get("text"), str) and block["text"].strip():
+                        text_acc.append(block["text"].strip())
+                    elif block.get("type") == "tool_use" and block.get("id") and text_acc:
+                        out[str(block["id"])] = "\n".join(text_acc)
+    except OSError:
+        return {}
+    return out
+
+
+def lift_reasons(conn, session_id: str, transcript_path: str) -> int:
+    """Record a reason for every receipt of `session_id` whose `tool_use_id` the
+    transcript pairs with preceding text and that has no `reasons` row yet. Returns how
+    many were recorded."""
+    reasons = reasons_from_transcript(transcript_path)
+    if not reasons:
+        return 0
+    rows = conn.execute(
+        "SELECT id, tool_use_id FROM receipts WHERE session_id=? AND tool_use_id IS NOT NULL "
+        "AND id NOT IN (SELECT rid FROM reasons) ORDER BY id",
+        (session_id,),
+    ).fetchall()
+    n = 0
+    for rid, uid in rows:
+        text = reasons.get(uid)
+        if text:
+            common.record_reason(conn, rid, session_id, uid, text)
+            n += 1
+    return n
+
+
 def main(argv: Optional[List[str]] = None) -> None:
     argv = sys.argv[1:] if argv is None else argv
     argparse.ArgumentParser(add_help=False).parse_known_args(argv)  # lift takes no flags
@@ -143,6 +215,11 @@ def main(argv: Optional[List[str]] = None) -> None:
                         lifted_n += 1
                     if lifted_n:
                         common.log(root, "lift session={} n={}".format(session_id, lifted_n))
+
+            if transcript_path:
+                reasons_n = lift_reasons(conn, session_id, transcript_path)
+                if reasons_n:
+                    common.log(root, "reason session={} n={}".format(session_id, reasons_n))
         finally:
             conn.close()
 
