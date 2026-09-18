@@ -1,0 +1,15 @@
+{
+  "task_id": "h6_base62",
+  "depth": 4,
+  "kpi": "encode62/decode62 round-trip incl. 0 and large ints, no leading zero, RAISE on negative / bad chars",
+  "frozen_hash": "sha256:c1045c88c9b4106a4ee87a802c44cec1f524688cdb9f780e66bd9c9d3ddfc927",
+  "without": {
+    "all_pass": true,
+    "feasibility": 1.0,
+    "iterations": 1,
+    "calls": 1,
+    "cost": 1.0,
+    "candidate_code": "ALPHABET = \"0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz\"\n_BASE = len(ALPHABET)\n_VALUES = {c: i for i, c in enumerate(ALPHABET)}\n\n\ndef encode62(n):\n    if not isinstance(n, int) or isinstance(n, bool):\n        raise TypeError(\"n must be an int\")\n    if n < 0:\n        raise ValueError(\"n must be non-negative\")\n    if n == 0:\n        return \"0\"\n    out = []\n    while n > 0:\n        n, rem = divmod(n, _BASE)\n        out.append(ALPHABET[rem])\n    return \"\".join(reversed(out))\n\n\ndef decode62(s):\n    if not isinstance(s, str):\n        raise TypeError(\"s must be a str\")\n    if s == \"\":\n        raise ValueError(\"empty string is not a valid base62 value\")\n    n = 0\n    for c in s:\n        try:\n            n = n * _BASE + _VALUES[c]\n        except KeyError:\n            raise ValueError(f\"invalid base62 character: {c!r}\")\n    return n"
+  },
+  "ts_without": 1781549458.454128
+}

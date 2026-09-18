@@ -1,0 +1,1 @@
+{"code": "{\n  \"name\": \"web-service\",\n  \"version\": \"1.2.0\",\n  \"port\": 8080,\n  \"retries\": 3,\n  \"enabled\": true,\n  \"tags\": [\"http\", \"api\"]\n}", "text": "```json\n{\n  \"name\": \"web-service\",\n  \"version\": \"1.2.0\",\n  \"port\": 8080,\n  \"retries\": 3,\n  \"enabled\": true,\n  \"tags\": [\"http\", \"api\"]\n}\n```"}

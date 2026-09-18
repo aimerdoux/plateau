@@ -1,0 +1,60 @@
+{
+  "task_id": "8b3e2489-73e__test_spend",
+  "session_file": "8b3e2489-73e0-43a7-b1ec-b9e66023acbb.jsonl",
+  "n_turns_in_original": 141,
+  "n_user_prompts": 12,
+  "pkg": "spend",
+  "test_name": "test_spend.py",
+  "v_assert_count": 49,
+  "leakage_ratio": 0.0,
+  "iota_naive_chars": 1077,
+  "sigma_schema_chars": 2337,
+  "d_orig_pass": true,
+  "d_orig_summary": "18 passed",
+  "cold": {
+    "calls": 1,
+    "reply_chars": 33690,
+    "pass": false,
+    "v_summary": "1 error",
+    "runner": "pytest",
+    "n_ran": 2,
+    "n_parsed_files": 8,
+    "wrote_layout": [
+      "spend/__init__.py",
+      "spend/__main__.py",
+      "spend/cli.py",
+      "spend/config.py",
+      "spend/migrate.py",
+      "spend/model.py",
+      "spend/store.py",
+      "test_spend.py"
+    ],
+    "stdout_tail": " sure your test modules/packages have valid Python names.\nTraceback:\n/Users/geniex/.local/share/uv/python/cpython-3.11.15-macos-aarch64-none/lib/python3.11/importlib/__init__.py:126: in import_module\n    return _bootstrap._gcd_import(name[level:], package, level)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n/var/folders/fb/t8l0y38x7vd971kr0qmfncym0000gn/T/tmp40rp6jw0/test_spend.py:18: in <module>\n    from spend import core, csvexport, money, storage, summary\nE   ImportError: cannot import name 'core' from 'spend' (/var/folders/fb/t8l0y38x7vd971kr0qmfncym0000gn/T/tmp40rp6jw0/spend/__init__.py)\n=========================== short test summary info ============================\nERROR ../../../../../../../var/folders/fb/t8l0y38x7vd971kr0qmfncym0000gn/T/tmp40rp6jw0/test_spend.py\n!!!!!!!!!!!!!!!!!!!! Interrupted: 1 error during collection !!!!!!!!!!!!!!!!!!!!\n1 error in 0.05s\n\n",
+    "reply_head": "# FILE: spend/__init__.py\n```python\n\"\"\"spend \u2014 a small standard-library-only expense-tracker CLI and library.\n\nPublic API:\n    Store               persistent collection of expense entries (JSON on disk)\n    Entry               one expense record\n    Config              default-category / date-format settings\n    migrate_raw         normalize any on-disk format to the current schema\n    CURRENT_VER"
+  },
+  "ts_cold": 1781552288.673228,
+  "sigma": {
+    "calls": 1,
+    "reply_chars": 14534,
+    "pass": false,
+    "v_summary": "1 error",
+    "runner": "pytest",
+    "n_ran": 2,
+    "n_parsed_files": 10,
+    "wrote_layout": [
+      "spend/__init__.py",
+      "spend/__main__.py",
+      "spend/cli.py",
+      "spend/config.py",
+      "spend/core.py",
+      "spend/csvexport.py",
+      "spend/models.py",
+      "spend/money.py",
+      "spend/storage.py",
+      "spend/summary.py"
+    ],
+    "stdout_tail": " test modules/packages have valid Python names.\nTraceback:\n/Users/geniex/.local/share/uv/python/cpython-3.11.15-macos-aarch64-none/lib/python3.11/importlib/__init__.py:126: in import_module\n    return _bootstrap._gcd_import(name[level:], package, level)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n/var/folders/fb/t8l0y38x7vd971kr0qmfncym0000gn/T/tmpamhgbiae/test_spend.py:19: in <module>\n    from spend.models import SCHEMA_VERSION, Entry, Store\nE   ImportError: cannot import name 'SCHEMA_VERSION' from 'spend.models' (/var/folders/fb/t8l0y38x7vd971kr0qmfncym0000gn/T/tmpamhgbiae/spend/models.py)\n=========================== short test summary info ============================\nERROR ../../../../../../../var/folders/fb/t8l0y38x7vd971kr0qmfncym0000gn/T/tmpamhgbiae/test_spend.py\n!!!!!!!!!!!!!!!!!!!! Interrupted: 1 error during collection !!!!!!!!!!!!!!!!!!!!\n1 error in 0.05s\n\n",
+    "reply_head": "# FILE: spend/__init__.py\n```python\n\"\"\"spend \u2014 a tiny, standard-library-only spending tracker.\n\nMoney is stored as integer minor units (cents). The on-disk store is\nschema-versioned and auto-migrates old files forward on load.\n\"\"\"\nfrom . import config\nfrom . import money\nfrom . import models\nfrom . import storage\nfrom . import core\nfrom . import summary\nfrom . import csvexport\nfrom . import cli\n\nf"
+  },
+  "ts_sigma": 1781552518.5087712
+}

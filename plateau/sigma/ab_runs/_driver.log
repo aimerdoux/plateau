@@ -1,0 +1,22 @@
+[ab] === t1_palindrome (depth 1) ===
+[ab]   WITH  pass=True iters=1 calls=1 trace=[1.0]
+[ab]   WITHOUT pass=True calls=1 err=
+[ab] === t2_fizzbuzz (depth 1) ===
+[ab]   WITH  pass=True iters=1 calls=1 trace=[1.0]
+[ab]   WITHOUT pass=True calls=1 err=
+[ab] === t3_json_config (depth 2) ===
+[ab]   WITH  pass=True iters=1 calls=1 trace=[1.0]
+[ab]   WITHOUT pass=True calls=1 err=
+[ab] === t4_rpn (depth 3) ===
+[ab]   WITH  pass=True iters=1 calls=1 trace=[1.0]
+[ab]   WITHOUT pass=True calls=1 err=
+[ab] === t5_md_table (depth 3) ===
+[ab]   WITH  pass=True iters=2 calls=2 trace=[0.0, 1.0]
+[ab]   WITHOUT pass=True calls=1 err=
+[ab] === t6_ledger (depth 4) ===
+[ab]   WITH  pass=True iters=2 calls=2 trace=[0.0, 1.0]
+[ab]   WITHOUT pass=True calls=1 err=
+[ab] === t7_fsm (depth 5) ===
+[ab]   WITH  pass=True iters=1 calls=1 trace=[1.0]
+[ab]   WITHOUT pass=True calls=1 err=
+[ab] ALL DONE 7 tasks

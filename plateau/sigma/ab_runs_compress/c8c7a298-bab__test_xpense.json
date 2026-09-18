@@ -1,0 +1,57 @@
+{
+  "task_id": "c8c7a298-bab__test_xpense",
+  "session_file": "c8c7a298-babe-4bf2-b16b-76c43dbf4196.jsonl",
+  "n_turns_in_original": 132,
+  "n_user_prompts": 12,
+  "pkg": "xpense",
+  "test_name": "test_xpense.py",
+  "v_assert_count": 33,
+  "leakage_ratio": 0.0,
+  "iota_naive_chars": 1077,
+  "sigma_schema_chars": 2569,
+  "d_orig_pass": true,
+  "d_orig_summary": "15 passed",
+  "cold": {
+    "calls": 1,
+    "reply_chars": 26012,
+    "pass": false,
+    "v_summary": "1 error",
+    "runner": "pytest",
+    "n_ran": 2,
+    "n_parsed_files": 9,
+    "wrote_layout": [
+      "tests/test_xpense.py",
+      "xpense/__init__.py",
+      "xpense/__main__.py",
+      "xpense/cli.py",
+      "xpense/config.py",
+      "xpense/exporter.py",
+      "xpense/model.py",
+      "xpense/query.py",
+      "xpense/store.py"
+    ],
+    "stdout_tail": "Hint: make sure your test modules/packages have valid Python names.\nTraceback:\n/Users/geniex/.local/share/uv/python/cpython-3.11.15-macos-aarch64-none/lib/python3.11/importlib/__init__.py:126: in import_module\n    return _bootstrap._gcd_import(name[level:], package, level)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n/var/folders/fb/t8l0y38x7vd971kr0qmfncym0000gn/T/tmphcfks5wj/test_xpense.py:15: in <module>\n    from xpense import model, storage, config\nE   ImportError: cannot import name 'storage' from 'xpense' (/var/folders/fb/t8l0y38x7vd971kr0qmfncym0000gn/T/tmphcfks5wj/xpense/__init__.py)\n=========================== short test summary info ============================\nERROR ../../../../../../../var/folders/fb/t8l0y38x7vd971kr0qmfncym0000gn/T/tmphcfks5wj/test_xpense.py\n!!!!!!!!!!!!!!!!!!!! Interrupted: 1 error during collection !!!!!!!!!!!!!!!!!!!!\n1 error in 0.05s\n\n",
+    "reply_head": "# FILE: xpense/__init__.py\n```python\n\"\"\"xpense \u2014 a small, standard-library-only personal expense tracker.\n\nBuilt feature-by-feature; the load-bearing decision is the storage schema in\n``model.py``. Persistence, migration, querying, export and an undo model are all\nlayered on top of that single ``Entry`` shape.\n\"\"\"\nfrom .model import (\n    Entry,\n    SCHEMA_VERSION,\n    DEFAULT_DATE_FORMAT,\n    nor"
+  },
+  "ts_cold": 1781552722.514545,
+  "sigma": {
+    "calls": 1,
+    "reply_chars": 15312,
+    "pass": false,
+    "v_summary": "10 failed",
+    "runner": "pytest",
+    "n_ran": 15,
+    "n_parsed_files": 6,
+    "wrote_layout": [
+      "xpense/__init__.py",
+      "xpense/__main__.py",
+      "xpense/cli.py",
+      "xpense/config.py",
+      "xpense/model.py",
+      "xpense/storage.py"
+    ],
+    "stdout_tail": "y_default_from_config\nFAILED ../../../../../../../var/folders/fb/t8l0y38x7vd971kr0qmfncym0000gn/T/tmpgk4c01ea/test_xpense.py::TestCLI::test_delete_with_yes\nFAILED ../../../../../../../var/folders/fb/t8l0y38x7vd971kr0qmfncym0000gn/T/tmpgk4c01ea/test_xpense.py::TestCLI::test_edit\nFAILED ../../../../../../../var/folders/fb/t8l0y38x7vd971kr0qmfncym0000gn/T/tmpgk4c01ea/test_xpense.py::TestCLI::test_export_csv\nFAILED ../../../../../../../var/folders/fb/t8l0y38x7vd971kr0qmfncym0000gn/T/tmpgk4c01ea/test_xpense.py::TestCLI::test_summary_totals_and_by_category\nFAILED ../../../../../../../var/folders/fb/t8l0y38x7vd971kr0qmfncym0000gn/T/tmpgk4c01ea/test_xpense.py::TestCLI::test_undo_restores_delete\nFAILED ../../../../../../../var/folders/fb/t8l0y38x7vd971kr0qmfncym0000gn/T/tmpgk4c01ea/test_xpense.py::TestLegacyData::test_export_handles_entry_written_before_tags_existed\n10 failed, 5 passed in 0.27s\n\n",
+    "reply_head": "# FILE: xpense/__init__.py\n```python\n\"\"\"xpense \u2014 a tiny, dependency-free expense tracker.\n\nMoney is stored as integer minor units (cents). The on-disk store is\nschema-versioned and auto-migrates old files forward on load.\n\"\"\"\n\nfrom . import config, model, storage, cli\nfrom .model import (\n    SCHEMA_VERSION,\n    new_store,\n    add_entry,\n    filter_entries,\n    parse_amount,\n    format_amount,\n   "
+  },
+  "ts_sigma": 1781553009.471241
+}

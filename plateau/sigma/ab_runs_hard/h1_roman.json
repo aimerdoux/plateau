@@ -1,0 +1,30 @@
+{
+  "task_id": "h1_roman",
+  "depth": 4,
+  "kpi": "to_roman/from_roman round-trip 1..3999, subtractive notation, RAISE on out-of-range and malformed numerals",
+  "frozen_hash": "sha256:5bc4d93fec773c3e1631b0f4841c80a631c7c152a9bbf5e9125bfc599a99ca79",
+  "without": {
+    "all_pass": true,
+    "feasibility": 1.0,
+    "iterations": 1,
+    "calls": 1,
+    "cost": 1.0,
+    "candidate_code": "def to_roman(n):\n    if not isinstance(n, int) or isinstance(n, bool):\n        raise TypeError(\"n must be an int\")\n    if n < 1 or n > 3999:\n        raise ValueError(\"n must be in range 1..3999\")\n    table = (\n        (1000, \"M\"), (900, \"CM\"), (500, \"D\"), (400, \"CD\"),\n        (100, \"C\"), (90, \"XC\"), (50, \"L\"), (40, \"XL\"),\n        (10, \"X\"), (9, \"IX\"), (5, \"V\"), (4, \"IV\"), (1, \"I\"),\n    )\n    result = []\n    for value, symbol in table:\n        count, n = divmod(n, value)\n        result.append(symbol * count)\n    return \"\".join(result)\n\n\ndef from_roman(s):\n    if not isinstance(s, str):\n        raise TypeError(\"s must be a str\")\n    if s == \"\":\n        raise ValueError(\"empty string is not a valid Roman numeral\")\n    # The only way to guarantee a *standard* numeral is accepted is to\n    # require that it round-trips through to_roman. This rejects \"IIII\",\n    # \"VV\", \"IC\", \"MMMM\", lowercase, etc. in one stroke.\n    values = {\"I\": 1, \"V\": 5, \"X\": 10, \"L\": 50, \"C\": 100, \"D\": 500, \"M\": 1000}\n    total = 0\n    prev = 0\n    for ch in s:\n        if ch not in values:\n            raise ValueError(\"invalid character in Roman numeral: %r\" % ch)\n        cur = values[ch]\n        if cur > prev:\n            total += cur - 2 * prev\n        else:\n            total += cur\n        prev = cur\n    if total < 1 or total > 3999 or to_roman(total) != s:\n        raise ValueError(\"not a standard Roman numeral: %r\" % s)\n    return total"
+  },
+  "ts_without": 1781549359.011539,
+  "is_control": true,
+  "with": {
+    "all_pass": true,
+    "feasibility": 1.0,
+    "iterations": 1,
+    "calls": 1,
+    "cost": 1.0,
+    "feasibility_trace": [
+      1.0
+    ],
+    "fossils_written": 1,
+    "stop_reason": "all_gates_pass",
+    "candidate_code": "def to_roman(n):\n    if not isinstance(n, int) or isinstance(n, bool):\n        raise TypeError(\"n must be an int\")\n    if n < 1 or n > 3999:\n        raise ValueError(\"n must be in range 1..3999\")\n    table = (\n        (1000, \"M\"), (900, \"CM\"), (500, \"D\"), (400, \"CD\"),\n        (100, \"C\"), (90, \"XC\"), (50, \"L\"), (40, \"XL\"),\n        (10, \"X\"), (9, \"IX\"), (5, \"V\"), (4, \"IV\"), (1, \"I\"),\n    )\n    result = []\n    for value, symbol in table:\n        count, n = divmod(n, value)\n        result.append(symbol * count)\n    return \"\".join(result)\n\n\ndef from_roman(s):\n    if not isinstance(s, str):\n        raise TypeError(\"s must be a str\")\n    if s == \"\":\n        raise ValueError(\"empty string is not a valid Roman numeral\")\n    values = {\"I\": 1, \"V\": 5, \"X\": 10, \"L\": 50, \"C\": 100, \"D\": 500, \"M\": 1000}\n    for ch in s:\n        if ch not in values:\n            raise ValueError(\"invalid Roman numeral character: %r\" % ch)\n    total = 0\n    prev = 0\n    for ch in reversed(s):\n        cur = values[ch]\n        if cur < prev:\n            total -= cur\n        else:\n            total += cur\n            prev = cur\n    # The only way to guarantee a string is a valid *standard* numeral\n    # (rejecting \"IIII\", \"VV\", \"IC\", \"MMMM\", etc.) is to require that it\n    # round-trips through the canonical encoder.\n    if total < 1 or total > 3999 or to_roman(total) != s:\n        raise ValueError(\"not a standard Roman numeral: %r\" % s)\n    return total"
+  },
+  "ts_with": 1781549730.540127
+}

@@ -1,0 +1,15 @@
+{
+  "task_id": "h10_verdict_json",
+  "depth": 5,
+  "kpi": "sealed-verdict JSON with cross-field consistency: passed==(score==1), verdict==AND, pass_count, unique ids, feasibility==mean(score) rounded 3dp",
+  "frozen_hash": "sha256:10b948a3887320c0d20047d3424c987a95c5159ce463d8a1e16a0232b6ce4e2d",
+  "without": {
+    "all_pass": true,
+    "feasibility": 1.0,
+    "iterations": 1,
+    "calls": 1,
+    "cost": 1.0,
+    "candidate_code": "{\n  \"gates\": [\n    {\"id\": \"build\", \"passed\": true, \"score\": 1.0},\n    {\"id\": \"verify\", \"passed\": true, \"score\": 1.0},\n    {\"id\": \"seal\", \"passed\": false, \"score\": 0.4}\n  ],\n  \"pass_count\": 2,\n  \"feasibility\": 0.800,\n  \"verdict\": \"FAIL\"\n}"
+  },
+  "ts_without": 1781549554.036038
+}

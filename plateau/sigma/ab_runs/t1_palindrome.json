@@ -1,0 +1,29 @@
+{
+  "task_id": "t1_palindrome",
+  "depth": 1,
+  "frozen_hash": "sha256:9d2ab682752f82b5342aff34541fc29a5dc9911fc25be3c2a643564f842df1c7",
+  "kpi": "is_palindrome passes all objective cases (case/punct-insensitive)",
+  "ts": 1781548468.054511,
+  "with": {
+    "all_pass": true,
+    "feasibility": 1.0,
+    "iterations": 1,
+    "calls": 1,
+    "cost": 1.0,
+    "feasibility_trace": [
+      1.0
+    ],
+    "fossils_written": 1,
+    "stop_reason": "all_gates_pass",
+    "candidate_code": "def is_palindrome(s):\n    cleaned = [c.lower() for c in s if c.isalnum()]\n    return cleaned == cleaned[::-1]"
+  },
+  "without": {
+    "all_pass": true,
+    "feasibility": 1.0,
+    "iterations": 1,
+    "calls": 1,
+    "cost": 1.0,
+    "candidate_code": "def is_palindrome(s):\n    cleaned = [c.lower() for c in s if c.isalnum()]\n    return cleaned == cleaned[::-1]"
+  },
+  "done_ts": 1781548486.232955
+}

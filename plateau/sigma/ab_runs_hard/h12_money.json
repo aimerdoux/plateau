@@ -1,0 +1,15 @@
+{
+  "task_id": "h12_money",
+  "depth": 5,
+  "kpi": "exact decimal money: add(a,b) no float error, split(total,n) sums exactly, round_money banker's rounding to 2dp",
+  "frozen_hash": "sha256:59020bb5ec3166733690139539cf634bc3082493d14a5be6554bb9d7bdd06fe8",
+  "without": {
+    "all_pass": true,
+    "feasibility": 1.0,
+    "iterations": 1,
+    "calls": 1,
+    "cost": 1.0,
+    "candidate_code": "from decimal import Decimal, ROUND_HALF_EVEN\n\n\ndef _to_cents(s):\n    \"\"\"Parse a decimal money string into an integer number of cents (half-even on sub-cent).\"\"\"\n    q = Decimal(s).quantize(Decimal(\"0.01\"), rounding=ROUND_HALF_EVEN)\n    return int((q * 100).to_integral_value(rounding=ROUND_HALF_EVEN))\n\n\ndef _cents_to_str(c):\n    \"\"\"Format integer cents as a normalized 'X.XX' string.\"\"\"\n    sign = \"-\" if c < 0 else \"\"\n    c = abs(c)\n    return f\"{sign}{c // 100}.{c % 100:02d}\"\n\n\ndef add(a, b):\n    return _cents_to_str(_to_cents(a) + _to_cents(b))\n\n\ndef split(total, n):\n    if n <= 0:\n        raise ValueError(\"n must be a positive integer\")\n    total_cents = _to_cents(total)\n    base, rem = divmod(total_cents, n)  # rem is in [0, n) since n > 0\n    # Give the first `rem` parts one extra cent so the parts sum exactly to total.\n    parts = [base + 1 if i < rem else base for i in range(n)]\n    return [_cents_to_str(c) for c in parts]\n\n\ndef round_money(value):\n    q = Decimal(value).quantize(Decimal(\"0.01\"), rounding=ROUND_HALF_EVEN)\n    return _cents_to_str(int((q * 100).to_integral_value(rounding=ROUND_HALF_EVEN)))"
+  },
+  "ts_without": 1781549603.1191812
+}

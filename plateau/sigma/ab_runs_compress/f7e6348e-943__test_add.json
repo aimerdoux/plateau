@@ -1,0 +1,44 @@
+{
+  "task_id": "f7e6348e-943__test_add",
+  "session_file": "f7e6348e-9430-46bf-bc2a-6788c5fddb1b.jsonl",
+  "n_turns_in_original": 184,
+  "n_user_prompts": 16,
+  "pkg": "todo",
+  "test_name": "test_add.py",
+  "v_assert_count": 3,
+  "leakage_ratio": 0.0,
+  "iota_naive_chars": 1956,
+  "sigma_schema_chars": 994,
+  "d_orig_pass": true,
+  "d_orig_summary": "1 passed",
+  "cold": {
+    "calls": 1,
+    "reply_chars": 2347,
+    "pass": false,
+    "v_summary": "1 error",
+    "runner": "pytest",
+    "n_ran": 2,
+    "n_parsed_files": 1,
+    "wrote_layout": [
+      "todo.py"
+    ],
+    "stdout_tail": "tlib._bootstrap>:1176: in _find_and_load\n    ???\n<frozen importlib._bootstrap>:1147: in _find_and_load_unlocked\n    ???\n<frozen importlib._bootstrap>:690: in _load_unlocked\n    ???\n/Users/geniex/bmacp-trunk/.venv/lib/python3.11/site-packages/_pytest/assertion/rewrite.py:197: in exec_module\n    exec(co, module.__dict__)\n/var/folders/fb/t8l0y38x7vd971kr0qmfncym0000gn/T/tmpg4aukolx/test_add.py:9: in <module>\n    from todo import add_task\nE     File \"/var/folders/fb/t8l0y38x7vd971kr0qmfncym0000gn/T/tmpg4aukolx/todo.py\", line 1\nE       /plugin marketplace add aimerdoux/plateau\nE       ^\nE   SyntaxError: invalid syntax\n=========================== short test summary info ============================\nERROR ../../../../../../../var/folders/fb/t8l0y38x7vd971kr0qmfncym0000gn/T/tmpg4aukolx/test_add.py\n!!!!!!!!!!!!!!!!!!!! Interrupted: 1 error during collection !!!!!!!!!!!!!!!!!!!!\n1 error in 0.08s\n\n",
+    "reply_head": "**Step 1 \u2014 done, honestly reported.**\n\n`uv pip install --python python3 git+https://github.com/aimerdoux/plateau.git` **worked** (the `uv` path, not the pip fallback). Notes worth flagging:\n\n- It resolved Plateau from git rev `7eb10cd` (`plateau==0.2.0`) and **replaced** a prior editable/local install that was pointing at this very repo (`file:///Users/geniex/bmacp-trunk/plateau-sigma-exp`). So py"
+  },
+  "ts_cold": 1781553470.477663,
+  "sigma": {
+    "calls": 1,
+    "reply_chars": 6436,
+    "pass": false,
+    "v_summary": "1 error",
+    "runner": "pytest",
+    "n_ran": 2,
+    "n_parsed_files": 1,
+    "wrote_layout": [
+      "todo.py"
+    ],
+    "stdout_tail": "0000gn/T/tmprjhwi3vh/test_add.py'.\nHint: make sure your test modules/packages have valid Python names.\nTraceback:\n/Users/geniex/.local/share/uv/python/cpython-3.11.15-macos-aarch64-none/lib/python3.11/importlib/__init__.py:126: in import_module\n    return _bootstrap._gcd_import(name[level:], package, level)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n/var/folders/fb/t8l0y38x7vd971kr0qmfncym0000gn/T/tmprjhwi3vh/test_add.py:9: in <module>\n    from todo import add_task\nE   ImportError: cannot import name 'add_task' from 'todo' (/var/folders/fb/t8l0y38x7vd971kr0qmfncym0000gn/T/tmprjhwi3vh/todo.py)\n=========================== short test summary info ============================\nERROR ../../../../../../../var/folders/fb/t8l0y38x7vd971kr0qmfncym0000gn/T/tmprjhwi3vh/test_add.py\n!!!!!!!!!!!!!!!!!!!! Interrupted: 1 error during collection !!!!!!!!!!!!!!!!!!!!\n1 error in 0.05s\n\n",
+    "reply_head": "# FILE: todo.py\n```python\n\"\"\"A tiny, self-contained to-do list.\n\nStandard library only. Importable as ``todo``.\n\nEach task is represented as a plain ``dict`` with exactly these keys:\n\n    - ``id``   : int, unique, auto-incrementing (starts at 1)\n    - ``text`` : str, the task description\n    - ``done`` : bool, completion state (starts ``False``)\n\nThe module exposes a :class:`TodoList` class as wel"
+  },
+  "ts_sigma": 1781553518.087127
+}

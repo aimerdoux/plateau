@@ -1,0 +1,27 @@
+[cmp] pre-registered manifest hash = sha256:da8641884ae41bb185247f32072545d38c8714d95ea8ac56dec13265fd83a31a
+[cmp] kept=6 dropped_for_leakage=0
+[cmp] === 8b3e2489-73e__test_spend (turns=141 V_asserts=49) ===
+[cmp]   D_orig vs V: PASS
+[cmp]   COLD  pass=False [1 error]
+[cmp]   SIGMA pass=False [1 error]
+[cmp] === c8c7a298-bab__test_xpense (turns=132 V_asserts=33) ===
+[cmp]   D_orig vs V: PASS
+[cmp]   COLD  pass=False [1 error]
+[cmp]   SIGMA pass=False [10 failed]
+[cmp] === f7e6348e-943__test_done (turns=184 V_asserts=3) ===
+[cmp]   D_orig vs V: PASS
+[cmp]   COLD  pass=False [1 error]
+[cmp]   SIGMA pass=False [1 error]
+[cmp] === f7e6348e-943__test_persist (turns=184 V_asserts=3) ===
+[cmp]   D_orig vs V: PASS
+[cmp]   COLD  pass=False [1 error]
+[cmp]   SIGMA pass=False [1 error]
+[cmp] === f7e6348e-943__test_add (turns=184 V_asserts=3) ===
+[cmp]   D_orig vs V: PASS
+[cmp]   COLD  pass=False [1 error]
+[cmp]   SIGMA pass=False [1 error]
+[cmp] === f7e6348e-943__test_list (turns=184 V_asserts=2) ===
+[cmp]   D_orig vs V: PASS
+[cmp]   COLD  pass=False [1 error]
+[cmp]   SIGMA pass=False [1 error]
+[cmp] ALL DONE

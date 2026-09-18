@@ -1,0 +1,49 @@
+{
+  "task_id": "f7e6348e-943__test_done",
+  "session_file": "f7e6348e-9430-46bf-bc2a-6788c5fddb1b.jsonl",
+  "n_turns_in_original": 184,
+  "n_user_prompts": 16,
+  "pkg": "todo",
+  "test_name": "test_done.py",
+  "v_assert_count": 3,
+  "leakage_ratio": 0.0,
+  "iota_naive_chars": 1956,
+  "sigma_schema_chars": 986,
+  "d_orig_pass": true,
+  "d_orig_summary": "2 passed",
+  "cold": {
+    "calls": 1,
+    "reply_chars": 8082,
+    "pass": false,
+    "v_summary": "1 error",
+    "runner": "pytest",
+    "n_ran": 2,
+    "n_parsed_files": 5,
+    "wrote_layout": [
+      "todo/__init__.py",
+      "todo/__main__.py",
+      "todo/cli.py",
+      "todo/models.py",
+      "todo/store.py"
+    ],
+    "stdout_tail": "st_done.py'.\nHint: make sure your test modules/packages have valid Python names.\nTraceback:\n/Users/geniex/.local/share/uv/python/cpython-3.11.15-macos-aarch64-none/lib/python3.11/importlib/__init__.py:126: in import_module\n    return _bootstrap._gcd_import(name[level:], package, level)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n/var/folders/fb/t8l0y38x7vd971kr0qmfncym0000gn/T/tmp_0gm2olf/test_done.py:9: in <module>\n    from todo import add_task, mark_done\nE   ImportError: cannot import name 'add_task' from 'todo' (/var/folders/fb/t8l0y38x7vd971kr0qmfncym0000gn/T/tmp_0gm2olf/todo/__init__.py)\n=========================== short test summary info ============================\nERROR ../../../../../../../var/folders/fb/t8l0y38x7vd971kr0qmfncym0000gn/T/tmp_0gm2olf/test_done.py\n!!!!!!!!!!!!!!!!!!!! Interrupted: 1 error during collection !!!!!!!!!!!!!!!!!!!!\n1 error in 0.05s\n\n",
+    "reply_head": "# FILE: todo/__init__.py\n```python\n\"\"\"todo \u2014 a tiny, dependency-free todo CLI and library.\n\nPublic API:\n    Task        \u2014 a single todo item\n    TodoList    \u2014 an ordered collection with persistence to JSON\n    main        \u2014 argparse-based command line entry point\n\"\"\"\nfrom .models import Task\nfrom .store import TodoList, DEFAULT_PATH\nfrom .cli import main, build_parser\n\n__all__ = [\"Task\", \"TodoList"
+  },
+  "ts_cold": 1781553091.752005,
+  "sigma": {
+    "calls": 1,
+    "reply_chars": 7308,
+    "pass": false,
+    "v_summary": "1 error",
+    "runner": "pytest",
+    "n_ran": 2,
+    "n_parsed_files": 2,
+    "wrote_layout": [
+      "todo/__init__.py",
+      "todo/todo.py"
+    ],
+    "stdout_tail": "st_done.py'.\nHint: make sure your test modules/packages have valid Python names.\nTraceback:\n/Users/geniex/.local/share/uv/python/cpython-3.11.15-macos-aarch64-none/lib/python3.11/importlib/__init__.py:126: in import_module\n    return _bootstrap._gcd_import(name[level:], package, level)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n/var/folders/fb/t8l0y38x7vd971kr0qmfncym0000gn/T/tmpxxtnpt5s/test_done.py:9: in <module>\n    from todo import add_task, mark_done\nE   ImportError: cannot import name 'add_task' from 'todo' (/var/folders/fb/t8l0y38x7vd971kr0qmfncym0000gn/T/tmpxxtnpt5s/todo/__init__.py)\n=========================== short test summary info ============================\nERROR ../../../../../../../var/folders/fb/t8l0y38x7vd971kr0qmfncym0000gn/T/tmpxxtnpt5s/test_done.py\n!!!!!!!!!!!!!!!!!!!! Interrupted: 1 error during collection !!!!!!!!!!!!!!!!!!!!\n1 error in 0.05s\n\n",
+    "reply_head": "# FILE: todo/__init__.py\n```python\n\"\"\"todo \u2014 a tiny standard-library todo package.\n\nImportable as ``todo``. Records are plain dicts with the keys\n``id`` and ``done`` (plus ``text``).\n\"\"\"\n\nfrom .todo import (\n    TodoList,\n    Todo,\n    add,\n    get,\n    all,\n    list_all,\n    complete,\n    mark_done,\n    uncomplete,\n    mark_undone,\n    toggle,\n    remove,\n    delete,\n    clear,\n    count,\n    pen"
+  },
+  "ts_sigma": 1781553131.8103209
+}

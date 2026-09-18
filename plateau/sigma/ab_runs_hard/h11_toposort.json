@@ -1,0 +1,15 @@
+{
+  "task_id": "h11_toposort",
+  "depth": 5,
+  "kpi": "toposort(nodes,edges) valid topological order over all nodes; RAISE on any cycle incl. self-loop",
+  "frozen_hash": "sha256:86d246b68858c853cc1d4d5f6127955660589e2086326edf88976030cf4dbf40",
+  "without": {
+    "all_pass": true,
+    "feasibility": 1.0,
+    "iterations": 1,
+    "calls": 1,
+    "cost": 1.0,
+    "candidate_code": "def toposort(nodes, edges):\n    from collections import defaultdict, deque\n\n    adj = defaultdict(list)\n    indegree = {n: 0 for n in nodes}\n\n    for a, b in edges:\n        adj[a].append(b)\n        indegree[a] = indegree.get(a, 0)\n        indegree[b] = indegree.get(b, 0) + 1\n\n    queue = deque(n for n in nodes if indegree[n] == 0)\n    order = []\n\n    while queue:\n        node = queue.popleft()\n        order.append(node)\n        for nxt in adj[node]:\n            indegree[nxt] -= 1\n            if indegree[nxt] == 0:\n                queue.append(nxt)\n\n    if len(order) != len(nodes):\n        raise ValueError(\"graph contains a cycle\")\n\n    return order"
+  },
+  "ts_without": 1781549569.5578518
+}
