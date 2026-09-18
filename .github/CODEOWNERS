@@ -1,0 +1,12 @@
+# Guardrails (docs/harness-0.3/PLAN-step4.md "S4-A3 Guardrails are part of this step"):
+# these paths carry the promotion rule, the fitted model, the sealed experiment record,
+# and the plan itself. They are changed only by a human commit -- never by an automated
+# PR (a bot author, or `plateau learn`'s own `plateau/learn-*` branch). CODEOWNERS review
+# alone only blocks a merge once branch protection requires it; `.github/workflows/
+# guardrails.yml` enforces the same rule independently, as a required status check that
+# does not depend on that repository setting.
+plateau/lab/model.py       @aimerdoux
+plateau/lab/fit.py         @aimerdoux
+plateau/lab/promote.py     @aimerdoux
+experiments/                @aimerdoux
+docs/harness-0.3/PLAN*.md  @aimerdoux

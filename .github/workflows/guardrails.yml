@@ -1,0 +1,87 @@
+name: guardrails
+
+# docs/harness-0.3/PLAN-step4.md "S4-A3 Guardrails are part of this step": stop an
+# AUTOMATED pull request (a bot author, or a head branch `plateau learn --open-pr`
+# itself opens, named `plateau/learn-<version>`) from touching the paths
+# `.github/CODEOWNERS` reserves for a human commit (`plateau/lab/model.py`,
+# `plateau/lab/fit.py`, `plateau/lab/promote.py`, `experiments/`,
+# `docs/harness-0.3/PLAN*.md`). CODEOWNERS review alone only blocks a merge once branch
+# protection is configured to require it; this job is a required-status-check backstop
+# that does not depend on that repository setting.
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  protected-paths:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout (full history, for the base..head diff)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Guard protected paths on bot / plateau/learn-* PRs
+        shell: bash
+        env:
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+
+          # Same path set as .github/CODEOWNERS; experiments/ and docs/harness-0.3/PLAN*.md
+          # are prefix/glob entries there, spelled out here as one anchored regex.
+          PROTECTED_REGEX='^(plateau/lab/model\.py|plateau/lab/fit\.py|plateau/lab/promote\.py|experiments/.*|docs/harness-0\.3/PLAN.*\.md)$'
+
+          echo "PR author: ${PR_AUTHOR:-<none>}"
+          echo "Head ref:  ${HEAD_REF:-<none>}"
+
+          is_automated=0
+          if [[ "${PR_AUTHOR:-}" == *"[bot]" ]]; then
+            echo "-> author login ends with [bot]"
+            is_automated=1
+          fi
+          if [[ "${HEAD_REF:-}" == plateau/learn-* ]]; then
+            echo "-> head ref starts with plateau/learn-"
+            is_automated=1
+          fi
+
+          if [[ "$is_automated" -eq 0 ]]; then
+            echo "not a bot / plateau/learn-* PR -- nothing to guard"
+            exit 0
+          fi
+
+          # Primary: git diff against the recorded base/head commits (works whenever
+          # fetch-depth:0 above actually gave us both of them locally). Fallback: the
+          # GitHub API's own PR-files list, for a fork PR or any ref git can't resolve.
+          changed=""
+          if [[ -n "${BASE_SHA:-}" && -n "${HEAD_SHA:-}" ]] \
+             && git cat-file -e "${BASE_SHA}^{commit}" 2>/dev/null \
+             && git cat-file -e "${HEAD_SHA}^{commit}" 2>/dev/null; then
+            changed="$(git diff --name-only "${BASE_SHA}" "${HEAD_SHA}" || true)"
+          fi
+          if [[ -z "$changed" ]]; then
+            echo "git diff found nothing usable locally -- falling back to the GitHub API"
+            changed="$(gh api "repos/${REPO}/pulls/${PR_NUMBER}/files" --paginate --jq '.[].filename' || true)"
+          fi
+
+          echo "changed files:"
+          echo "${changed:-<none>}"
+
+          hit="$(printf '%s\n' "$changed" | grep -E "$PROTECTED_REGEX" || true)"
+          if [[ -n "$hit" ]]; then
+            echo "::error::Automated PR (bot author or plateau/learn-* branch) touches path(s) reserved for a human commit:"
+            echo "$hit"
+            exit 1
+          fi
+
+          echo "no protected paths touched -- OK"

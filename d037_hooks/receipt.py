@@ -1,11 +1,17 @@
 #!/usr/bin/env python3
-"""Arm C — PostToolUse: one receipt per tool call, online. Emits nothing."""
-import sys; sys.path.insert(0, __import__("os").path.dirname(__file__))
-from d037_common import *
-p = read_payload(); r = root(p)
-try:
-    c = db(r); rid = record(c, p.get("tool_name", "?"), p.get("tool_input"), p.get("tool_response")); c.close()
-    log(r, f"receipt r{rid} {p.get('tool_name')}")
-except Exception as e:
-    log(r, f"receipt ERROR {e!r}")
-sys.exit(0)
+"""Deprecated shim: moved to plateau.bridge.receipt; kept so the sealed D-037/D-038 instruments run unchanged."""
+
+from __future__ import annotations
+
+import os
+import sys
+
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
+os.environ["PLATEAU_DB_REL"] = ".d037/index.sqlite"
+os.environ["PLATEAU_LOG_REL"] = ".d037/hooks.log"
+os.environ["PLATEAU_LEGACY_TAG"] = "1"
+
+from plateau.bridge.receipt import main
+
+if __name__ == "__main__":
+    main()

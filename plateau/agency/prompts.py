@@ -48,6 +48,15 @@ Return EXACTLY one JSON object as your final message, matching this shape:
 }
 A clean audit with an empty evidence array is INVALID. Anchor every claim."""
 
+# docs/harness-0.3/PLAN-step3.md "Agency worker return path": appended to every worker
+# prompt's footer so `plateau/agency/driver.py`'s return-path parser has a
+# `<plateau_handoff v=1>` block to look for (falling back to `.plateau/handoff/<session_id
+# >.json` when a worker's context has no `plateau` bridge installed at all).
+HANDOFF_FOOTER = (
+    "End by running `plateau handoff --print` and pasting its block verbatim as your "
+    "last lines."
+)
+
 
 def build_subtask(compact_signal, item, mode, repo, run_id, step):
     """item = coverage entry {id, kind, tier, ...}. mode in {audit, write}."""
@@ -91,6 +100,8 @@ What to do:
 {edit_clause}
 
 {contract}
+
+{footer}
 """.format(
         repo=repo,
         run_id=run_id,
@@ -102,6 +113,7 @@ What to do:
         goal_class=goal_class,
         edit_clause=edit_clause,
         contract=RETURN_CONTRACT,
+        footer=HANDOFF_FOOTER,
     )
 
 
@@ -152,6 +164,8 @@ What to do THIS step:
 - Set goal_complete=true ONLY when the entire GOAL is verifiably done.
 
 {contract}
+
+{footer}
 """.format(
         repo=repo,
         step=step,
@@ -160,6 +174,7 @@ What to do THIS step:
         nl=len(last_lessons),
         lessons_block=lessons_block,
         contract=ROLE_RETURN_CONTRACT,
+        footer=HANDOFF_FOOTER,
     )
 
 

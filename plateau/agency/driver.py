@@ -13,7 +13,9 @@ Usage:
                    [--run-id ID] [--resume runs/ID/RESUME.json] [--stub]
 """
 import argparse
+import contextlib
 import json
+import os
 import re
 import subprocess
 import time
@@ -44,6 +46,68 @@ def append_jsonl(path, record):
         f.write(json.dumps(record) + "\n")
 
 
+# docs/harness-0.3/PLAN-step3.md "Agency worker return path": a worker now ends its reply
+# with `plateau handoff --print`'s block (see prompts.HANDOFF_FOOTER); look for that block
+# first and expose its `cursor`/`open` fields to the parent, falling back to the store's
+# own `.plateau/handoff/<session_id>.json` file when the worker's own text carries none.
+# The pre-existing one-line JSON return (extract_json, below) is untouched either way --
+# this is additive plumbing, not a replacement of it.
+_HANDOFF_BLOCK_RE = re.compile(r"<plateau_handoff v=1>(.*?)</plateau_handoff>", re.S)
+_HANDOFF_CURSOR_RE = re.compile(r"^cursor:\s*(\S+)", re.M)
+_HANDOFF_OPEN_RE = re.compile(r"^open:\s*(.+)$", re.M)
+
+
+def _parse_handoff_text(text):
+    """`(cursor, open)` parsed out of a `<plateau_handoff v=1>` block's own text, or
+    `(None, None)` if no such block (or no matching line inside it) is present."""
+    if not text:
+        return None, None
+    m = _HANDOFF_BLOCK_RE.search(text)
+    if not m:
+        return None, None
+    body = m.group(1)
+    cursor_m = _HANDOFF_CURSOR_RE.search(body)
+    open_m = _HANDOFF_OPEN_RE.search(body)
+    cursor = cursor_m.group(1) if cursor_m else None
+    open_val = open_m.group(1).strip() if open_m else None
+    return cursor, open_val
+
+
+def _read_handoff_file(repo, session_id):
+    """`cursor`/`open` straight from `.plateau/handoff/<session_id>.json`, for when the
+    worker's own final text carried no `<plateau_handoff v=1>` block at all (e.g. it ran
+    `plateau handoff --write` instead of `--print`, or forgot the footer instruction)."""
+    if not session_id:
+        return None, None
+    path = Path(repo) / ".plateau" / "handoff" / ("%s.json" % session_id)
+    try:
+        block = json.loads(path.read_text())
+    except Exception:
+        return None, None
+    if not isinstance(block, dict):
+        return None, None
+    cursor = block.get("cursor")
+    cursor = ("r%s" % cursor) if isinstance(cursor, int) else cursor
+    open_block = block.get("open") or {}
+    errors = open_block.get("errors") or []
+    tests = open_block.get("tests") or []
+    open_val = ", ".join(list(errors) + list(tests)) if (errors or tests) else None
+    return cursor, open_val
+
+
+def _handoff_return_path(out, envelope, result_text, repo):
+    """First the worker's raw stdout, then its parsed `result` text, then the handoff
+    file for its session -- see module-level comment above `_HANDOFF_BLOCK_RE`. Returns
+    `(cursor, open)`, `(None, None)` when none of those sources has one."""
+    cursor, open_val = _parse_handoff_text(out)
+    if cursor is None and open_val is None:
+        cursor, open_val = _parse_handoff_text(result_text)
+    if cursor is None and open_val is None:
+        session_id = envelope.get("session_id") if isinstance(envelope, dict) else None
+        cursor, open_val = _read_handoff_file(repo, session_id)
+    return cursor, open_val
+
+
 def extract_json(text):
     """Pull the single JSON object the agent printed as its final message."""
     if not text:
@@ -63,6 +127,36 @@ def extract_json(text):
 
 # ------------------------------------------------------------ spawn step --
 
+@contextlib.contextmanager
+def _child_spawn_env():
+    """Scope `os.environ` around one spawned `claude -p` call to
+    `plateau.bridge.common.child_env()` (S4-A2, docs/harness-0.3/PLAN-step4.md
+    "Session identity everywhere a process is spawned"): a fresh session id is
+    guaranteed only when the child cannot see the parent's own Claude Code
+    session-identity variables. `gate.run()` (not owned by the ledger-probes
+    step-4 slice) always forks with the ambient `os.environ` and takes no `env`
+    kwarg, so rather than editing it, this pops exactly the handful of vars
+    `child_env()` strips -- and only those -- from `os.environ` for the
+    duration of the `with` block, then restores them verbatim. A no-op (the
+    environment is left untouched) if `plateau.bridge.common` cannot be
+    imported for any reason -- this must never be the thing that breaks a
+    spawn."""
+    try:
+        from plateau.bridge.common import child_env
+        target = child_env()
+    except Exception:
+        yield
+        return
+    removed = {}
+    for k in list(os.environ.keys()):
+        if k not in target:
+            removed[k] = os.environ.pop(k)
+    try:
+        yield
+    finally:
+        os.environ.update(removed)
+
+
 def spawn_agent(prompt_text, mode, repo, max_turns=20, worker_model=None):
     """One fresh `claude -p` process. Returns parsed agent dict or an error."""
     tools = prompts.AUDIT_TOOLS if mode == "audit" else prompts.WRITE_TOOLS
@@ -79,7 +173,8 @@ def spawn_agent(prompt_text, mode, repo, max_turns=20, worker_model=None):
         "--disallowedTools", *prompts.DISALLOWED_TOOLS,
         "--append-system-prompt", prompts.SAFETY_FLOOR,
     ]
-    rc, out, err = gate.run(cmd, repo, timeout=600)
+    with _child_spawn_env():
+        rc, out, err = gate.run(cmd, repo, timeout=600)
     if rc != 0 and not out:
         return {"class": "blocked", "carry": "agent exit %d: %s" % (rc, err[:80]),
                 "clean": False, "evidence": [], "edited_files": []}
@@ -95,6 +190,11 @@ def spawn_agent(prompt_text, mode, repo, max_turns=20, worker_model=None):
     inner.setdefault("edited_files", [])
     inner.setdefault("carry", "")
     inner["_usage"] = envelope.get("usage") if isinstance(envelope, dict) else None
+    cursor, open_val = _handoff_return_path(out, envelope, result_text, repo)
+    if cursor is not None:
+        inner["cursor"] = cursor
+    if open_val is not None:
+        inner["open"] = open_val
     return inner
 
 

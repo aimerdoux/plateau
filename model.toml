@@ -1,0 +1,40 @@
+# Plateau lab model aggregates (public ring; see docs/harness-0.3/PLAN.md "Lab model").
+#
+# One `[[cell]]` per (model_id, bridge_version, run_id) combination the lab has scored.
+# Seeded here from D-038 run 1 (experiments/d038/results.json, sealed; never edited):
+# arm A ("none") is the no-bridge control, arm C ("d037-omega-6000") is the D-037 Omega
+# hook bundle at a 6000-char compaction budget. `plateau/lab/model.py`'s pure functions
+# consume these fields; this file has no loader of its own in step 2.
+
+[[cell]]
+model_id = "claude-sonnet-5"
+bridge_version = "none"
+run_id = "D-038 run 1"
+sessions = 1
+alpha = 0.9090909090909091
+lambda_by_lag = { l0 = 0.0, l1 = 0.3125, l2 = 0.65625 }
+recall_by_comp = { c0 = 0.9333333333333333, c1 = 0.46153846153846156, c2 = 0.3333333333333333 }
+# arm A ran with bridge_version = "none": no receipt hook ever fired for it, so there
+# is no receipt store to count -- `receipts_per_turn` is meaningless here (the old
+# `receipts_per_turn = 0` was a placeholder, not a measurement). This is the same
+# recomputed per-turn tool-call tally under its honest name instead.
+tool_calls_per_turn = 33.1764705882353
+compactions_per_turn = 2.1176470588235294
+tokens_per_turn = 143675.58823529413
+last_updated = "2026-09-17"
+source = "primitives/d038/d038-run1"
+
+[[cell]]
+model_id = "claude-sonnet-5"
+bridge_version = "d037-omega-6000"
+run_id = "D-038 run 1"
+sessions = 1
+alpha = 1.0
+pi_by_comp = { c1 = 0.9646739130434782, c2 = 0.0 }
+pi_raw_by_comp = { c1 = 0.9646739130434782, c2 = -0.457516339869281 }
+recall_by_comp = { c0 = 0.95, c1 = 0.9166666666666666, c2 = 0.058823529411764705 }
+receipts_per_turn = 27.41176470588235
+compactions_per_turn = 1.588235294117647
+tokens_per_turn = 109215.41176470589
+last_updated = "2026-09-17"
+source = "primitives/d038/d038-run1"

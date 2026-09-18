@@ -4,6 +4,142 @@ All notable changes to Plateau are recorded here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project
 adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] — 2026-09-18
+
+The harness refactor (`docs/harness-0.3/PLAN.md`): the sealed D-037 Ω hook bundle becomes
+a public `plateau.bridge` package with its own selector, provenance-tracked config, and
+session handoff blocks, plus a `plateau.lab` recall/loss/presence model and a `plateau`
+CLI. `d037_hooks/` keeps running byte-for-byte as a thin shim over the new package — the
+sealed D-037/D-038 instruments are never edited and never change behavior.
+
+### Added
+
+- **`plateau.bridge` package** — the receipt store and its hook entry points, ported from
+  the sealed D-037 Ω bundle (`d037_hooks/` at git tag `d037-hooks-sealed`, commit
+  `a342094`) into `plateau/bridge/{common,config,query,receipt,snapshot,inject,lookup,
+  handoff}.py` over a schema-v1 sqlite store (`receipts`, `nodes`, `edges`, `compactions`,
+  `injections`, `decisions`, `turns`, `meta`; WAL mode, stdlib `sqlite3` only).
+  `common.classify()` keeps the D-037 classification rules verbatim and adds "read facts"
+  (signatures / config keys / grep hits lifted from Read/Grep results) and Stop-time
+  decisions as new node kinds.
+- **Selector v2** (`plateau/bridge/query.py`) — query-aware, budget-bounded node
+  selection: a structural score (recency scaled by a receipts-per-turn-derived `tau`,
+  degree, per-kind weight) blended with a BM25-lite lexical match against the last user
+  prompt at compaction; stickiness across compactions; a "bridge quota" floor that
+  reserves budget for nodes older than the previous compaction so a burst of recent
+  activity cannot starve out still-relevant older facts.
+- **Config with provenance** (`plateau/bridge/config.py`, `_toml.py`, `bridge.toml`) —
+  `BridgeConfig` resolution order is packaged defaults ← `~/.plateau/bridge.toml` ← root
+  `bridge.toml` (or a deterministically-bucketed `bridge.canary.toml`) ←
+  `.plateau/config.toml [bridge] enabled`; every receipt and injection row now records
+  which file won (`role`: incumbent/canary/off) and its sha256, not just its version
+  string. A dependency-free fallback TOML parser (`_toml.py`) covers the exact subset
+  `bridge.toml` and `.plateau/config.toml` use, for Python 3.9/3.10 (no `tomllib`).
+- **Handoff block v1** (`plateau/bridge/handoff.py`) — a `<plateau_handoff v=1>` text
+  block (and its JSON form) summarizing a session's git identity, store cursor, last
+  injection, last snapshot, open errors/failing tests, and recent decisions, with ready
+  `lookup`/`resume` commands for whoever (or whichever agent) picks the session back up.
+  Reads the store directly via `sqlite3` against the schema-v1 table/column names,
+  independent of `plateau.bridge.common`, so it degrades to all-zero/`none` fields
+  instead of failing when no store exists yet.
+- **`plateau.lab.model`** — the recall/loss/presence decay model as six pure, dependency-
+  free functions (`recall`, `auc`, `presence`, `loss`, `break_even_chars`,
+  `crossover_lag`), and root `model.toml`, seeded from D-038 run 1
+  (`experiments/d038/results.json`, sealed): arm A ("none") `recall_by_comp` 0.933 /
+  0.462 / 0.333, `lambda_by_lag` 0.0 / 0.31 / 0.66, AUC 0.618, 142 rederivations, 143 676
+  tokens/turn; arm C ("d037-omega-6000") `recall_by_comp` 0.95 / 0.917 / 0.059,
+  `pi_by_comp` 0.96 / 0.0, AUC 0.744, 105 rederivations, 109 215 tokens/turn. Arm A has no
+  receipt store, so its `receipts_per_turn` is recorded as 0 with an explanatory comment,
+  not measured as zero.
+- **`plateau` CLI** (`plateau/cli.py`; `[project.scripts] plateau = "plateau.cli:main"`)
+  — `lookup`, `handoff`, `version`, and `doctor` (spins up a scratch git repo, drives
+  `receipt`/`snapshot`/`inject` through it as subprocesses against synthetic hook
+  payloads, and checks that a receipt is recorded, a snapshot file is written, the
+  injection stays under budget, and a handoff block renders — printing PASS/FAIL per
+  check, SKIP while the bridge package is mid-edit). `init`, `resume`, `report`, `fit`,
+  `propose`, `learn`, and `sync` are registered so the full command surface exists, and
+  each prints `not implemented in 0.3.0-step2` (exit 2) until a later step fills it in.
+- **Legacy shims** — every hook in `d037_hooks/` (except `test_hooks.py`,
+  `settings.*.json`, `CLAUDE.md.snippet`, `launch_toy.sh`) is now a thin re-export of its
+  `plateau.bridge` twin, pointed at the old `.d037/` paths and the `<d037_index>` tag via
+  env overrides the new modules honor (`PLATEAU_DB_REL`, `PLATEAU_LOG_REL`,
+  `PLATEAU_LEGACY_TAG`) — so the sealed D-037/D-038 instruments keep running unchanged
+  and `python3 d037_hooks/test_hooks.py` still prints
+  `ALL CHECKS PASSED; B≡C store parity OK`.
+- **Claude Code adapter wiring, `init`/`resume`, decided-fact lifter** — the plugin's
+  `hooks.json` now wires all nine hook modes (`SessionStart` `parent`+`inject`,
+  `UserPromptSubmit` `pre`, `PostToolUse` `receipt`, `PreCompact` `snapshot`, `Stop`
+  `post`+`lift`+`handoff --print`, `SessionEnd` `ledger`+`handoff --write`,
+  `SubagentStop` `handoff --write --agent subagent`). `plateau init [--global]` writes
+  the same table into `.claude/settings.json` (idempotent merge, foreign entries kept,
+  one `.plateau.bak` backup, `--uninstall` removes only our entries) and `plateau
+  init --global` also seeds `~/.plateau/bridge.toml`. `plateau resume <session_id>
+  [prompt]` starts a fresh `claude -p` whose `SessionStart(startup)` injection is
+  prefixed with the stored handoff block, so the shared store's receipt ids continue
+  rather than restart. `plateau/bridge/lift.py` lifts `DECISION:`/`FACT:` lines from the
+  last assistant message at Stop into `decisions`/`decided` rows, deduped per session.
+  Subagent handoffs write to `.plateau/handoff/<session_id>.subagent-<agent_id>.json` so
+  `SessionEnd` never clobbers one.
+- **One install story** — `parent`/`pre`/`post` moved out of the adapter into
+  `plateau.hooks.signal`, so `adapters/claude_code/hook.py` and `plateau hook <mode>`
+  are two entry points over one implementation for all nine modes, byte-for-byte
+  identical hook JSON either way.
+- **Session identity on every spawn** — every process Plateau spawns (`plateau resume`,
+  the shadow-probe fork, `plateau.agency.driver.spawn_agent`, `plateau propose`) goes
+  through `plateau.bridge.common.child_env()`, which strips the inherited
+  `CLAUDECODE`/`CLAUDE_CODE_SESSION_ID`/`CLAUDE_CODE_REMOTE_SESSION_ID`/
+  `CLAUDE_AUTOCOMPACT_PCT_OVERRIDE` so the child always gets a fresh session id. Ledger
+  rows, handoff files, and holdout hashes key on `(session_id, agent_id)`, with the main
+  agent's `agent_id` the empty string; shadow probes run for the main agent only.
+- **`plateau.lab`** — a shadow-probe/ledger/fit/promote/propose lab layered on top of
+  the bridge, off by default (`[lab] shadow_probes = false`; spends tokens once on):
+  `ledger.py` upserts one `sessions` row per session plus `probes`/`rederivations` rows
+  at `SessionEnd`, reading the store, the transcript, and `.plateau/hooks.log`;
+  `probes.py` runs a shadow probe from the Stop hook every `shadow_probe_every_turns`
+  turns on a `--fork-session` child (never in the main session) and grades it
+  exact/fuzzy/wrong; `fit.py` implements `plateau report`/`plateau fit` (refits α, λ,
+  π into `model.toml` cells only where sessions ≥ 5, never deleting existing cells);
+  `promote.py` implements `plateau learn` and the promotion rule (`MIN_SESSIONS = 20`,
+  `PI_GAIN = 0.15`, `REDERIV_TOL`/`TOKENS_TOL = 0.05`, `RETIRE_AFTER = 60`,
+  `decide(...) -> "promote"|"keep"|"retire"`), writes PR bodies containing only
+  aggregates, and refuses to write one that `body_leaks` flags; `propose.py` implements
+  `plateau propose` (builds a prompt from `report --json`, runs a `claude -p` proposal
+  turn, writes `proposals/<date>.md`) but is **never executed in this step** — it is
+  exercised only against a stubbed runner, so step 4 spends zero dollars on live
+  `claude -p` calls.
+- **Private ring** (`plateau/ring.py`) — `plateau sync` clones/pulls a git-or-path
+  remote named in `.plateau/config.toml` (off, printing `private ring: off`, when the
+  remote or its token env var is unset), pushes the session ledger and a curated
+  layer (`files`, `fixes`, `decisions`, `procedures` tables) under a per-repo key, and
+  `ring.curate()` promotes a receipt shape that repeats 3× into a named procedure and
+  demotes entries unused over the last 10 sessions. `plateau/bridge/config.default.toml`
+  is the packaged `.plateau/config.toml` template (`[bridge] enabled`, `[lab]
+  shadow_probes`, `[private_ring] remote`/`key`).
+- **`plateau doctor` (full)** (`plateau/doctor.py`) — drives one fake `PostToolUse`,
+  `PreCompact`, `SessionStart(compact)`, and `Stop` through the hooks the project's or
+  global `settings.json` actually installs (falling back to the package modules
+  directly), and additionally checks the ledger is writable, config resolves, and
+  reports private-ring status; PASS/FAIL/SKIP per check, exit 1 on any FAIL.
+- **Guardrails** — `.github/CODEOWNERS` requires a human (`@aimerdoux`) on
+  `plateau/lab/model.py`, `plateau/lab/fit.py`, `plateau/lab/promote.py`,
+  `experiments/`, and `docs/harness-0.3/PLAN*.md`; `.github/workflows/guardrails.yml`
+  fails a PR that touches those paths when its author login ends `[bot]` or its head
+  branch starts `plateau/learn-`, as an independent required-status-check backstop to
+  branch-protection settings.
+- **Single owner for `plateau/cli.py`** — every lab/ring/doctor subcommand
+  (`report`, `fit`, `propose`, `learn`, `sync`, `doctor`) is a thin `importlib`
+  delegation from `cli.py` to its module's entry point, with a `not available` message
+  on `ImportError`, so the CLI never depends on landing order across owners.
+
+### Notes
+
+- **D-037 erratum**, carried forward unedited from the sealed record
+  (`experiments/d037/D-037.md`): "Bash was denied under headless acceptEdits; no pytest
+  ran and arm C's lookup path never executed. File-based recall result unaffected." This
+  refactor moves where that bundle's code lives; it does not revisit D-037's own
+  conclusion (online loop unsupported on that chain — λ̂ = 0 in 3/3 runs, no arm lost a
+  k−3 fact).
+
 ## [Unreleased]
 
 Docs-only pass — no core or agency logic changed. Adopts the polish of a strong
