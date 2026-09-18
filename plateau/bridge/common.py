@@ -577,7 +577,9 @@ def receipts_per_turn(conn: sqlite3.Connection, session_id: str) -> float:
 
 
 def record_decision(conn: sqlite3.Connection, session_id: str, agent: str, text: str, provenance: str) -> int:
-    """Insert a `decisions` row and its `decided:<id>` node. Returns the decision id."""
+    """Insert a `decisions` row and its `decided:<id>` node, plus `because` edges from the
+    knowledge nodes the decision descends from (`_link_because`; the toy's `f1 → d1`:
+    a decision is made because of facts). Returns the decision id."""
     ts = time.time()
     cur = conn.execute(
         "INSERT INTO decisions(ts,session_id,agent,text,provenance) VALUES(?,?,?,?,?)",
@@ -595,8 +597,35 @@ def record_decision(conn: sqlite3.Connection, session_id: str, agent: str, text:
              session_id=excluded.session_id, agent=excluded.agent""",
         (key, "decided", rid, rid, "decided", _short(text, 160), session_id, agent),
     )
+    # rid is the cursor at Stop: the receipt that produced a fact this decision cites
+    # has first_rid == rid, so "before the decision" is first_rid <= rid here (a reason's
+    # own call, by contrast, must never be its own cause: record_reason uses < rid).
+    _link_because(conn, key, rid, text, before_rid=rid + 1)
     conn.commit()
     return did
+
+
+def _link_because(conn: sqlite3.Connection, dst: str, rid: int, text: str, *, before_rid: int) -> List[str]:
+    """Draw `(key, "because", dst, rid)` for every knowledge node (KNOWLEDGE_KINDS)
+    with `first_rid < before_rid` that shares at least REASON_MIN_OVERLAP distinct
+    non-stopword tokens with `text` -- the selector's own token overlap ("★ matches
+    current prompt"), pointed at `dst` instead of the prompt. Returns the keys linked."""
+    from .query import toks  # lazy: query.py must stay importable on its own
+
+    ttoks = toks(text) - _STOPWORDS
+    linked: List[str] = []
+    if not ttoks:
+        return linked
+    placeholders = ",".join("?" for _ in KNOWLEDGE_KINDS)
+    rows = conn.execute(
+        f"SELECT key, last_detail FROM nodes WHERE kind IN ({placeholders}) AND first_rid < ? AND key != ?",
+        tuple(KNOWLEDGE_KINDS) + (before_rid, dst),
+    ).fetchall()
+    for key, detail in rows:
+        if len(ttoks & (toks(key) | toks(detail or ""))) >= REASON_MIN_OVERLAP:
+            conn.execute("INSERT INTO edges(src,rel,dst,rid) VALUES(?,?,?,?)", (key, "because", dst, rid))
+            linked.append(key)
+    return linked
 
 
 def _reason_tail(text: str) -> str:
@@ -609,13 +638,9 @@ def _reason_tail(text: str) -> str:
 def record_reason(conn: sqlite3.Connection, rid: int, session_id: str, tool_use_id: Optional[str],
                   text: str) -> List[str]:
     """Store the reason the assistant stated for receipt `rid` and draw its `because`
-    edges: `(key, "because", r<rid>, rid)` for every knowledge node (KNOWLEDGE_KINDS)
-    that existed before the call (first_rid < rid) and shares at least REASON_MIN_OVERLAP
-    distinct non-stopword tokens with the reason -- the same token overlap the selector
-    uses for "★ matches current prompt", pointed at the call instead of the prompt. A
-    second call for the same rid is a no-op. Returns the keys linked."""
-    from .query import toks  # lazy: query.py must stay importable on its own
-
+    edges `(key, "because", r<rid>, rid)` from the knowledge nodes that existed before
+    the call and share tokens with the reason (`_link_because`). A second call for the
+    same rid is a no-op. Returns the keys linked."""
     exists = conn.execute("SELECT 1 FROM reasons WHERE rid=?", (rid,)).fetchone()
     if exists:
         return []
@@ -624,17 +649,6 @@ def record_reason(conn: sqlite3.Connection, rid: int, session_id: str, tool_use_
         "INSERT INTO reasons(rid,session_id,tool_use_id,text) VALUES(?,?,?,?)",
         (rid, session_id, tool_use_id, reason),
     )
-    rtoks = toks(reason) - _STOPWORDS
-    linked: List[str] = []
-    if rtoks:
-        placeholders = ",".join("?" for _ in KNOWLEDGE_KINDS)
-        rows = conn.execute(
-            f"SELECT key, last_detail FROM nodes WHERE kind IN ({placeholders}) AND first_rid < ?",
-            tuple(KNOWLEDGE_KINDS) + (rid,),
-        ).fetchall()
-        for key, detail in rows:
-            if len(rtoks & (toks(key) | toks(detail or ""))) >= REASON_MIN_OVERLAP:
-                conn.execute("INSERT INTO edges(src,rel,dst,rid) VALUES(?,?,?,?)", (key, "because", f"r{rid}", rid))
-                linked.append(key)
+    linked = _link_because(conn, f"r{rid}", rid, reason, before_rid=rid)
     conn.commit()
     return linked

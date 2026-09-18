@@ -167,6 +167,20 @@ def test_reason_is_recorded_once_per_receipt(tmp_path):
     assert conn.execute("SELECT COUNT(*) FROM reasons").fetchone() == (1,)
 
 
+def test_decision_descends_from_the_facts_it_cites(tmp_path):
+    """The toy's `f1 → d1 "retries alone are not safe"`: a decision recorded at Stop
+    gets because edges from the earlier knowledge it shares tokens with, never from
+    itself or from a footprint."""
+    root = str(tmp_path)
+    conn = common.db(root)
+    _record(conn, root, "Read", {"file_path": "payment/client.py"},
+            {"file": {"content": "def charge(amount, retries=0, timeout=2):\n    pass\n"}}, uid="tu1")
+    did = common.record_decision(conn, "s1", "main", "charge retries=2 with an idempotency key", "t.jsonl:9")
+
+    assert _edges(conn) == [("read:payment/client.py:charge", "because", f"decided:{did}",
+                             conn.execute("SELECT MAX(id) FROM receipts").fetchone()[0])]
+
+
 def test_reason_keeps_the_tail_of_long_text(tmp_path):
     root = str(tmp_path)
     conn = common.db(root)
