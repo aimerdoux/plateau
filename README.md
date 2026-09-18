@@ -250,6 +250,8 @@ This section is the credibility. These are results we went looking for and did *
   collapsing a **conditioning context**, not a head-to-head beating Headroom on per-payload
   compression. Plateau wins on footprint law / local / recompute-verifiable / published-nulls; the QA
   table proves accuracy *holds* under its collapse, not that it out-compresses a dedicated compressor.
+- **Not a smarter model.** The bridge (see [The bridge and the lab](#the-bridge-and-the-lab)) does
+  not make the model smarter; it carries what it already found.
 
 So the defensible claim is **bounded context at no recall cost**, and nothing stronger.
 
@@ -375,6 +377,54 @@ works**, including macOS's system `/usr/bin/python3`.
 > demo (HTTPS, not the SSH shorthand), but the exact invocation is not captured in a sealed artifact;
 > re-run them on a fresh machine before relying on this section verbatim.
 </details>
+
+---
+
+## The bridge and the lab
+
+Plugin `0.3` adds a second mechanism alongside the signal core: the **bridge**, a small on-disk graph
+of *receipts* — one row per tool call, each a `Measurement`-backed fact about a file, symbol, error,
+test, or decision the session actually touched. `PostToolUse` records a receipt; `PreCompact`
+snapshots the graph and marks a compaction; `SessionStart` (on `compact`, or resumed via `plateau
+resume`) injects a budget-bounded, query-aware slice of it back as `additionalContext`; `Stop` lifts
+`DECISION:`/`FACT:` lines and prints a pasteable `<plateau_handoff v=1>` block; `SessionEnd` rebuilds
+the graph from the full transcript and writes that handoff to disk. Unlike the signal core, the
+bridge does not replace the transcript Claude Code carries — it re-grounds a session across the
+compactions that transcript still has to survive.
+
+**The three rings.** *Public* (this repo): the bridge code, `bridge.toml`, `model.toml` aggregates,
+the promotion rule, and these docs. *Private* (an org's own remote or path, named in
+`.plateau/config.toml`, never committed here): the curated procedure layer and session ledgers a
+team accumulates — `plateau sync` pushes/pulls it, `plateau learn` only ever writes aggregates
+(counts, means, margins) back out to a PR body, never raw ledger rows. *Session* (`.plateau/` in the
+worktree, gitignored): the receipt graph, snapshots, and transcripts for one checkout.
+
+**D-038 run 1, one run, no verdict** — a real multi-epic task (the WaveX concierge agent), same
+script for both arms, decay probes forked and graded blind. Arm A = no bridge, arm C = the bridge
+(`d037-omega-6000`):
+
+| | arm A (no bridge) | arm C (bridge) |
+|---|--:|--:|
+| far-lag recall (gate: A below 0.70 ⇒ decay is real) | **0.393** | — |
+| AUC | 0.618 | **0.744** |
+| re-derivations | 142 | **105** |
+| tokens/turn | 143 676 | **109 215** |
+
+One run; the pre-registered rule needs a second before this is a verdict. Full numbers, the
+recall-by-lag and by-compactions-crossed tables, and the raw tarball's SHA-256 are in
+[`docs/d038/report.md`](docs/d038/report.md); the sealed record is `experiments/d038/D-038.md`.
+
+**Two limits, stated plainly.**
+
+- **Facts that never passed through a tool call are invisible to the bridge.** A receipt only exists
+  because a `Read`, `Edit`, `Bash`, or similar call happened; something the model reasoned about but
+  never touched on disk leaves no receipt to carry forward.
+- **Paraphrase queries miss lexical matches.** The selector's lexical half scores on token overlap
+  with the last user prompt; ask about the same fact in different words at compaction time and the
+  bridge's query-aware ranking won't surface it any better than chance.
+
+And, as with the signal core: **the bridge does not make the model smarter; it carries what it
+already found.**
 
 ---
 

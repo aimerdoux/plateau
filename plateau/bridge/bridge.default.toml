@@ -1,0 +1,19 @@
+version = "2.0"
+[budget]
+compaction_chars = 12000
+startup_chars = 6000
+prompt_chars = 0            # per-prompt injection off; D-037 measured ρ̂ ≈ 0.26 with it
+[selector]
+tau_turns = 3               # τ = tau_turns × measured receipts-per-turn; default 90 receipts
+degree_cap = 3              # ln(1 + min(degree, degree_cap))
+weights = { symbol = 1.4, error = 1.3, decided = 1.4, read = 1.2, test = 1.2, file = 0.7, command = 0.6, search = 0.3 }
+bridge_quota = 0.40         # share of lines reserved for nodes older than the previous compaction
+sticky = true               # a line injected at k is re-injected at k+1 unless its file was edited or its error resolved
+lexical = true               # query-aware: last user prompt from the transcript is the query at compaction
+[nodes]
+read_facts = true           # signatures / config keys / file:line from Read results (regex: def|function|export|class|KEY=)
+decided_facts = true        # DECISION: / FACT: marker lines lifted at Stop
+[lab]
+holdout_rate = 0.10
+shadow_probe_every_turns = 4
+canary_share = 0.20

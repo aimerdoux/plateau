@@ -1,0 +1,6 @@
+# Everything a run writes carries content of the private target subtree (worktrees, judge views, transcripts with
+# Read output). It never enters this public tree; hash_raw.py records its hashes in raw_hashes.txt, which is committed.
+raw/
+selftest_out/
+preflight/
+raw_void/

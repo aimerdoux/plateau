@@ -1,0 +1,566 @@
+{
+ "experiment": "D-038",
+ "runs": {
+  "1": {
+   "C": {
+    "arm": "C",
+    "token": "wt_85150c",
+    "run": 1,
+    "status": "OK",
+    "probe_mode": "fork",
+    "turns_completed": 17,
+    "task_cost_usd": 19.558505,
+    "probe_cost_usd": 4.376892,
+    "n_probes": 43,
+    "n_graded": 43,
+    "recall_by_lag": {
+     "0": 1.0,
+     "1": 0.9230769230769231,
+     "2": 0.13157894736842105
+    },
+    "n_by_lag": {
+     "0": 11,
+     "1": 13,
+     "2": 19
+    },
+    "recall_by_comp": {
+     "0": 0.95,
+     "1": 0.9166666666666666,
+     "2": 0.058823529411764705
+    },
+    "recall_by_class": {
+     "read": 0.4583333333333333,
+     "exec": 0.5333333333333333,
+     "decided": 0.75
+    },
+    "far_recall": 0.2826086956521739,
+    "n_far": 23,
+    "auc": 0.7444331983805669,
+    "n_compactions": 27,
+    "rederivations": 105,
+    "rederivation_lines": [
+     [
+      125,
+      "/home/user/plateau/experiments/d038/raw/1/wt_85150c/work/concierge-agent/server.mjs"
+     ],
+     [
+      127,
+      "/home/user/plateau/experiments/d038/raw/1/wt_85150c/work/concierge-agent/agent.mjs"
+     ],
+     [
+      129,
+      "/home/user/plateau/experiments/d038/raw/1/wt_85150c/work/concierge-agent/train.mjs"
+     ],
+     [
+      229,
+      "/home/user/plateau/experiments/d038/raw/1/wt_85150c/work/concierge-agent/package.json"
+     ],
+     [
+      239,
+      "/home/user/plateau/experiments/d038/raw/1/wt_85150c/work/concierge-agent/d038.test.mjs"
+     ],
+     [
+      431,
+      "/home/user/plateau/experiments/d038/raw/1/wt_85150c/work/concierge-agent/server.mjs"
+     ],
+     [
+      438,
+      "/home/user/plateau/experiments/d038/raw/1/wt_85150c/work/concierge-agent/agent.mjs"
+     ],
+     [
+      467,
+      "/home/user/plateau/experiments/d038/raw/1/wt_85150c/work/concierge-agent/errors.mjs"
+     ],
+     [
+      469,
+      "/home/user/plateau/experiments/d038/raw/1/wt_85150c/work/concierge-agent/qa.mjs"
+     ],
+     [
+      471,
+      "/home/user/plateau/experiments/d038/raw/1/wt_85150c/work/concierge-agent/train.mjs"
+     ],
+     [
+      543,
+      "/home/user/plateau/experiments/d038/raw/1/wt_85150c/work/concierge-agent/d038.test.mjs"
+     ],
+     [
+      545,
+      "/home/user/plateau/experiments/d038/raw/1/wt_85150c/work/concierge-agent/errors.mjs"
+     ],
+     [
+      549,
+      "/home/user/plateau/experiments/d038/raw/1/wt_85150c/work/concierge-agent/server.mjs"
+     ],
+     [
+      551,
+      "/home/user/plateau/experiments/d038/raw/1/wt_85150c/work/concierge-agent/agent.mjs"
+     ],
+     [
+      558,
+      "/home/user/plateau/experiments/d038/raw/1/wt_85150c/work/concierge-agent/train.mjs"
+     ],
+     [
+      613,
+      "/home/user/plateau/experiments/d038/raw/1/wt_85150c/work/concierge-agent/server.mjs"
+     ],
+     [
+      615,
+      "/home/user/plateau/experiments/d038/raw/1/wt_85150c/work/concierge-agent/agent.mjs"
+     ],
+     [
+      617,
+      "/home/user/plateau/experiments/d038/raw/1/wt_85150c/work/concierge-agent/qa.mjs"
+     ],
+     [
+      619,
+      "/home/user/plateau/experiments/d038/raw/1/wt_85150c/work/concierge-agent/train.mjs"
+     ],
+     [
+      663,
+      "/home/user/plateau/experiments/d038/raw/1/wt_85150c/work/concierge-agent/server.mjs"
+     ],
+     [
+      673,
+      "/home/user/plateau/experiments/d038/raw/1/wt_85150c/work/concierge-agent/qa.mjs"
+     ],
+     [
+      675,
+      "/home/user/plateau/experiments/d038/raw/1/wt_85150c/work/concierge-agent/train.mjs"
+     ],
+     [
+      677,
+      "/home/user/plateau/experiments/d038/raw/1/wt_85150c/work/concierge-agent/errors.mjs"
+     ],
+     [
+      679,
+      "/home/user/plateau/experiments/d038/raw/1/wt_85150c/work/concierge-agent/classify.mjs"
+     ],
+     [
+      712,
+      "/home/user/plateau/experiments/d038/raw/1/wt_85150c/work/concierge-agent/errors.mjs"
+     ],
+     [
+      725,
+      "/home/user/plateau/experiments/d038/raw/1/wt_85150c/work/concierge-agent/train.mjs"
+     ],
+     [
+      758,
+      "/home/user/plateau/experiments/d038/raw/1/wt_85150c/work/concierge-agent/server.mjs"
+     ],
+     [
+      827,
+      "/home/user/plateau/experiments/d038/raw/1/wt_85150c/work/concierge-agent/package.json"
+     ],
+     [
+      941,
+      "/home/user/plateau/experiments/d038/raw/1/wt_85150c/work/concierge-agent/errors.mjs"
+     ],
+     [
+      945,
+      "/home/user/plateau/experiments/d038/raw/1/wt_85150c/work/concierge-agent/server.mjs"
+     ],
+     [
+      952,
+      "/home/user/plateau/experiments/d038/raw/1/wt_85150c/work/concierge-agent/agent.mjs"
+     ],
+     [
+      954,
+      "/home/user/plateau/experiments/d038/raw/1/wt_85150c/work/concierge-agent/qa.mjs"
+     ],
+     [
+      956,
+      "/home/user/plateau/experiments/d038/raw/1/wt_85150c/work/concierge-agent/train.mjs"
+     ],
+     [
+      958,
+      "/home/user/plateau/experiments/d038/raw/1/wt_85150c/work/concierge-agent/report.mjs"
+     ],
+     [
+      971,
+      "/home/user/plateau/experiments/d038/raw/1/wt_85150c/work/concierge-agent/d038.test.mjs"
+     ],
+     [
+      973,
+      "/home/user/plateau/experiments/d038/raw/1/wt_85150c/work/concierge-agent/errors.test.mjs"
+     ],
+     [
+      1017,
+      "/home/user/plateau/experiments/d038/raw/1/wt_85150c/work/concierge-agent/config.mjs"
+     ],
+     [
+      1024,
+      "/home/user/plateau/experiments/d038/raw/1/wt_85150c/work/concierge-agent/server.mjs"
+     ],
+     [
+      1045,
+      "/home/user/plateau/experiments/d038/raw/1/wt_85150c/work/concierge-agent/agent.mjs"
+     ],
+     [
+      1059,
+      "/home/user/plateau/experiments/d038/raw/1/wt_85150c/work/concierge-agent/qa.mjs"
+     ],
+     [
+      1082,
+      "/home/user/plateau/experiments/d038/raw/1/wt_85150c/work/concierge-agent/train.mjs"
+     ],
+     [
+      1120,
+      "/home/user/plateau/experiments/d038/raw/1/wt_85150c/work/concierge-agent/train.mjs"
+     ],
+     [
+      1212,
+      "/home/user/plateau/experiments/d038/raw/1/wt_85150c/work/concierge-agent/server.mjs"
+     ],
+     [
+      1214,
+      "/home/user/plateau/experiments/d038/raw/1/wt_85150c/work/concierge-agent/errors.mjs"
+     ],
+     [
+      1268,
+      "/home/user/plateau/experiments/d038/raw/1/wt_85150c/work/concierge-agent/report.mjs"
+     ],
+     [
+      1270,
+      "/home/user/plateau/experiments/d038/raw/1/wt_85150c/work/concierge-agent/config.mjs"
+     ],
+     [
+      1278,
+      "/home/user/plateau/experiments/d038/raw/1/wt_85150c/work/concierge-agent/qa.mjs"
+     ],
+     [
+      1280,
+      "/home/user/plateau/experiments/d038/raw/1/wt_85150c/work/concierge-agent/train.mjs"
+     ],
+     [
+      1315,
+      "/home/user/plateau/experiments/d038/raw/1/wt_85150c/work/concierge-agent/config.mjs"
+     ],
+     [
+      1334,
+      "/home/user/plateau/experiments/d038/raw/1/wt_85150c/work/concierge-agent/qa.mjs"
+     ]
+    ],
+    "tokens_per_turn": 109215.41176470589,
+    "judge": {
+     "epics": {
+      "E1": 3,
+      "E2": 3,
+      "E3": 3,
+      "E4": 3
+     },
+     "task_total": 12,
+     "security_items_closed": 6,
+     "runner_green": true
+    },
+    "void": []
+   },
+   "A": {
+    "arm": "A",
+    "token": "wt_2c23a2",
+    "run": 1,
+    "status": "COST_CAP",
+    "probe_mode": "fork",
+    "turns_completed": 17,
+    "task_cost_usd": 26.4067579,
+    "probe_cost_usd": 4.027489999999999,
+    "n_probes": 43,
+    "n_graded": 43,
+    "recall_by_lag": {
+     "0": 0.9090909090909091,
+     "1": 0.625,
+     "2": 0.3125
+    },
+    "n_by_lag": {
+     "0": 11,
+     "1": 16,
+     "2": 16
+    },
+    "recall_by_comp": {
+     "0": 0.9333333333333333,
+     "1": 0.46153846153846156,
+     "2": 0.3333333333333333
+    },
+    "recall_by_class": {
+     "read": 0.5384615384615384,
+     "exec": 0.46153846153846156,
+     "decided": 0.7058823529411765
+    },
+    "far_recall": 0.39285714285714285,
+    "n_far": 28,
+    "auc": 0.6178977272727273,
+    "n_compactions": 36,
+    "rederivations": 142,
+    "rederivation_lines": [
+     [
+      113,
+      "/home/user/plateau/experiments/d038/raw/1/wt_2c23a2/work/concierge-agent/server.mjs"
+     ],
+     [
+      115,
+      "/home/user/plateau/experiments/d038/raw/1/wt_2c23a2/work/concierge-agent/agent.mjs"
+     ],
+     [
+      117,
+      "/home/user/plateau/experiments/d038/raw/1/wt_2c23a2/work/concierge-agent/classify.mjs"
+     ],
+     [
+      119,
+      "/home/user/plateau/experiments/d038/raw/1/wt_2c23a2/work/concierge-agent/qa.mjs"
+     ],
+     [
+      121,
+      "/home/user/plateau/experiments/d038/raw/1/wt_2c23a2/work/concierge-agent/train.mjs"
+     ],
+     [
+      257,
+      "/home/user/plateau/experiments/d038/raw/1/wt_2c23a2/work/concierge-agent/server.mjs"
+     ],
+     [
+      264,
+      "/home/user/plateau/experiments/d038/raw/1/wt_2c23a2/work/concierge-agent/train.mjs"
+     ],
+     [
+      555,
+      "/home/user/plateau/experiments/d038/raw/1/wt_2c23a2/work/concierge-agent/server.mjs"
+     ],
+     [
+      559,
+      "/home/user/plateau/experiments/d038/raw/1/wt_2c23a2/work/concierge-agent/agent.mjs"
+     ],
+     [
+      606,
+      "/home/user/plateau/experiments/d038/raw/1/wt_2c23a2/work/concierge-agent/train.mjs"
+     ],
+     [
+      608,
+      "/home/user/plateau/experiments/d038/raw/1/wt_2c23a2/work/concierge-agent/qa.mjs"
+     ],
+     [
+      610,
+      "/home/user/plateau/experiments/d038/raw/1/wt_2c23a2/work/concierge-agent/trends_sync.py"
+     ],
+     [
+      612,
+      "/home/user/plateau/experiments/d038/raw/1/wt_2c23a2/work/concierge-agent/qa-corpus.mjs"
+     ],
+     [
+      704,
+      "/home/user/plateau/experiments/d038/raw/1/wt_2c23a2/work/concierge-agent/errors.mjs"
+     ],
+     [
+      706,
+      "/home/user/plateau/experiments/d038/raw/1/wt_2c23a2/work/concierge-agent/server.mjs"
+     ],
+     [
+      715,
+      "/home/user/plateau/experiments/d038/raw/1/wt_2c23a2/work/concierge-agent/train.mjs"
+     ],
+     [
+      742,
+      "/home/user/plateau/experiments/d038/raw/1/wt_2c23a2/work/concierge-agent/qa.mjs"
+     ],
+     [
+      744,
+      "/home/user/plateau/experiments/d038/raw/1/wt_2c23a2/work/concierge-agent/train.mjs"
+     ],
+     [
+      746,
+      "/home/user/plateau/experiments/d038/raw/1/wt_2c23a2/work/concierge-agent/report.mjs"
+     ],
+     [
+      748,
+      "/home/user/plateau/experiments/d038/raw/1/wt_2c23a2/work/concierge-agent/agent.mjs"
+     ],
+     [
+      876,
+      "/home/user/plateau/experiments/d038/raw/1/wt_2c23a2/work/concierge-agent/classify.mjs"
+     ],
+     [
+      889,
+      "/home/user/plateau/experiments/d038/raw/1/wt_2c23a2/work/concierge-agent/d038.test.mjs"
+     ],
+     [
+      891,
+      "/home/user/plateau/experiments/d038/raw/1/wt_2c23a2/work/concierge-agent/train.mjs"
+     ],
+     [
+      898,
+      "/home/user/plateau/experiments/d038/raw/1/wt_2c23a2/work/concierge-agent/ERRORS.md"
+     ],
+     [
+      930,
+      "/home/user/plateau/experiments/d038/raw/1/wt_2c23a2/work/concierge-agent/server.mjs"
+     ],
+     [
+      932,
+      "/home/user/plateau/experiments/d038/raw/1/wt_2c23a2/work/concierge-agent/errors.mjs"
+     ],
+     [
+      1053,
+      "/home/user/plateau/experiments/d038/raw/1/wt_2c23a2/work/concierge-agent/package.json"
+     ],
+     [
+      1085,
+      "/home/user/plateau/experiments/d038/raw/1/wt_2c23a2/work/concierge-agent/SECURITY_AUDIT.md"
+     ],
+     [
+      1123,
+      "/home/user/plateau/experiments/d038/raw/1/wt_2c23a2/work/concierge-agent/agent.mjs"
+     ],
+     [
+      1127,
+      "/home/user/plateau/experiments/d038/raw/1/wt_2c23a2/work/concierge-agent/errors.mjs"
+     ],
+     [
+      1138,
+      "/home/user/plateau/experiments/d038/raw/1/wt_2c23a2/work/concierge-agent/report.mjs"
+     ],
+     [
+      1145,
+      "/home/user/plateau/experiments/d038/raw/1/wt_2c23a2/work/concierge-agent/train.mjs"
+     ],
+     [
+      1173,
+      "/home/user/plateau/experiments/d038/raw/1/wt_2c23a2/work/concierge-agent/qa.mjs"
+     ],
+     [
+      1175,
+      "/home/user/plateau/experiments/d038/raw/1/wt_2c23a2/work/concierge-agent/config.mjs"
+     ],
+     [
+      1177,
+      "/home/user/plateau/experiments/d038/raw/1/wt_2c23a2/work/concierge-agent/errors.mjs"
+     ],
+     [
+      1179,
+      "/home/user/plateau/experiments/d038/raw/1/wt_2c23a2/work/concierge-agent/server.mjs"
+     ],
+     [
+      1181,
+      "/home/user/plateau/experiments/d038/raw/1/wt_2c23a2/work/concierge-agent/train.mjs"
+     ],
+     [
+      1195,
+      "/home/user/plateau/experiments/d038/raw/1/wt_2c23a2/work/concierge-agent/d038.test.mjs"
+     ],
+     [
+      1229,
+      "/home/user/plateau/experiments/d038/raw/1/wt_2c23a2/work/concierge-agent/agent.mjs"
+     ],
+     [
+      1237,
+      "/home/user/plateau/experiments/d038/raw/1/wt_2c23a2/work/concierge-agent/config.mjs"
+     ],
+     [
+      1239,
+      "/home/user/plateau/experiments/d038/raw/1/wt_2c23a2/work/concierge-agent/qa.mjs"
+     ],
+     [
+      1265,
+      "/home/user/plateau/experiments/d038/raw/1/wt_2c23a2/work/concierge-agent/agent.mjs"
+     ],
+     [
+      1294,
+      "/home/user/plateau/experiments/d038/raw/1/wt_2c23a2/work/concierge-agent/train.mjs"
+     ],
+     [
+      1326,
+      "/home/user/plateau/experiments/d038/raw/1/wt_2c23a2/work/concierge-agent/train.mjs"
+     ],
+     [
+      1379,
+      "/home/user/plateau/experiments/d038/raw/1/wt_2c23a2/work/concierge-agent/qa.mjs"
+     ],
+     [
+      1449,
+      "/home/user/plateau/experiments/d038/raw/1/wt_2c23a2/work/concierge-agent/server.mjs"
+     ],
+     [
+      1465,
+      "/home/user/plateau/experiments/d038/raw/1/wt_2c23a2/work/concierge-agent/errors.mjs"
+     ],
+     [
+      1549,
+      "/home/user/plateau/experiments/d038/raw/1/wt_2c23a2/work/concierge-agent/report.mjs"
+     ],
+     [
+      1551,
+      "/home/user/plateau/experiments/d038/raw/1/wt_2c23a2/work/concierge-agent/train.mjs"
+     ],
+     [
+      1559,
+      "/home/user/plateau/experiments/d038/raw/1/wt_2c23a2/work/concierge-agent/qa.mjs"
+     ]
+    ],
+    "tokens_per_turn": 143675.58823529413,
+    "judge": {
+     "epics": {
+      "E1": 3,
+      "E2": 3,
+      "E3": 3,
+      "E4": 3
+     },
+     "task_total": 12,
+     "security_items_closed": 5,
+     "runner_green": true
+    },
+    "void": []
+   }
+  }
+ },
+ "table": [
+  {
+   "run": 1,
+   "void": [],
+   "far_recall_A": 0.39285714285714285,
+   "auc": {
+    "A": 0.6178977272727273,
+    "C": 0.7444331983805669
+   },
+   "rederivations": {
+    "A": 142,
+    "C": 105
+   },
+   "task_score": {
+    "A": 12,
+    "C": 12
+   },
+   "tokens_per_turn": {
+    "A": 143675.58823529413,
+    "C": 109215.41176470589
+   },
+   "compactions": {
+    "A": 36,
+    "C": 27
+   },
+   "probes_graded": {
+    "A": 43,
+    "C": 43
+   },
+   "cost": {
+    "A": 30.4342479,
+    "C": 23.935397000000002
+   },
+   "scored": true,
+   "bets": {
+    "B1": true,
+    "B2": true,
+    "B3": true,
+    "B4": true,
+    "B5": true
+   },
+   "margins": {
+    "B1": 0.3071428571428571,
+    "B2": 0.026535471107839576
+   }
+  }
+ ],
+ "verdicts": {
+  "B1": "WIN",
+  "B2": "WIN",
+  "B3": "WIN",
+  "B4": "WIN",
+  "B5": "WIN"
+ },
+ "conclusion": null
+}

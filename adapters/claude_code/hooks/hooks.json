@@ -2,13 +2,27 @@
   "hooks": {
     "SessionStart": [
       {
-        "matcher": "startup|clear|compact",
+        "matcher": "startup|clear",
         "hooks": [
           {
             "type": "command",
             "command": "python3 ${CLAUDE_PLUGIN_ROOT}/hook.py parent --cc",
-            "timeout": 15,
-            "statusMessage": "Plateau: loading parent-agent discipline as standing context"
+            "timeout": 15
+          },
+          {
+            "type": "command",
+            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/hook.py inject --cc",
+            "timeout": 15
+          }
+        ]
+      },
+      {
+        "matcher": "compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/hook.py inject --cc",
+            "timeout": 30
           }
         ]
       }
@@ -19,8 +33,42 @@
           {
             "type": "command",
             "command": "python3 ${CLAUDE_PLUGIN_ROOT}/hook.py pre --cc",
-            "timeout": 15,
-            "statusMessage": "Plateau: inflating + re-grounding carried signal"
+            "timeout": 15
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/hook.py receipt --cc",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PostToolUseFailure": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/hook.py receipt --cc",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/hook.py snapshot --cc",
+            "timeout": 30
           }
         ]
       }
@@ -31,8 +79,44 @@
           {
             "type": "command",
             "command": "python3 ${CLAUDE_PLUGIN_ROOT}/hook.py post --cc",
-            "timeout": 15,
-            "statusMessage": "Plateau: gating facts + persisting bounded signal"
+            "timeout": 15
+          },
+          {
+            "type": "command",
+            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/hook.py lift --cc",
+            "timeout": 10
+          },
+          {
+            "type": "command",
+            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/hook.py handoff --cc --print",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/hook.py ledger --cc",
+            "timeout": 20
+          },
+          {
+            "type": "command",
+            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/hook.py handoff --cc --write",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/hook.py handoff --cc --write --agent subagent",
+            "timeout": 10
           }
         ]
       }

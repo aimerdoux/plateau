@@ -1,0 +1,186 @@
+{
+ "arm": "B",
+ "run": 3,
+ "seed": 3,
+ "n": 13,
+ "fixture_words": 2650,
+ "budget": 1500,
+ "window": 200000,
+ "pct": "40",
+ "uid": 0,
+ "hooks": {
+  "experiments/d037/raw/B/3/work/.claude/settings.json": "7544b237c1075c73e0f2d6ee44a59463c77b516327931d24c0ca46f046e57547",
+  "experiments/d037/raw/B/3/work/.claude/hooks/d037/query.py": "0cf4566ec216b1c6a35b13c7659f3df0cf9009fdd8270b2deba4fdee42d9d49b",
+  "experiments/d037/raw/B/3/work/.claude/hooks/d037/ledger.py": "b3907243464a235e10870deb2ea97288f0dee05d2629387b9fa6d46916a89e7f",
+  "experiments/d037/raw/B/3/work/.claude/hooks/d037/lookup.py": "f188a5e28d9e19c7048edc57365b1e1a0f425c192bfd805b852ac1b63a6bc74f",
+  "experiments/d037/raw/B/3/work/.claude/hooks/d037/receipt.py": "1690b3f4aba993264c78b99aaad820660d13261608e77887c05971243e6b2e41",
+  "experiments/d037/raw/B/3/work/.claude/hooks/d037/d037_common.py": "a1d50196b5766df94efeb9f3499895a76c3eb4cd58a326e263286f1950122675",
+  "experiments/d037/raw/B/3/work/.claude/hooks/d037/inject.py": "9dabc69818770d206597ef70ec1a495a04435a239280db9be1168d1e09ab74b1",
+  "experiments/d037/raw/B/3/work/.claude/hooks/d037/snapshot.py": "105c26be3aa2b4bd2d7f817840b58ba7df1e4649d412909f613a0f3d7b0d4411"
+ },
+ "tasks": [
+  {
+   "k": 1,
+   "rc": 0,
+   "seconds": 30.9,
+   "session_id": "4bc864df-6065-42d9-83e2-b4f256d806b9",
+   "subtype": "success",
+   "cost": 0.129132,
+   "models": [
+    "claude-haiku-4-5-20251001",
+    "claude-sonnet-5"
+   ],
+   "num_turns": 8
+  },
+  {
+   "k": 2,
+   "rc": 0,
+   "seconds": 16.1,
+   "session_id": "4bc864df-6065-42d9-83e2-b4f256d806b9",
+   "subtype": "success",
+   "cost": 0.0792242,
+   "models": [
+    "claude-sonnet-5"
+   ],
+   "num_turns": 6
+  },
+  {
+   "k": 3,
+   "rc": 0,
+   "seconds": 21.4,
+   "session_id": "4bc864df-6065-42d9-83e2-b4f256d806b9",
+   "subtype": "success",
+   "cost": 0.10090840000000001,
+   "models": [
+    "claude-sonnet-5"
+   ],
+   "num_turns": 7
+  },
+  {
+   "k": 4,
+   "rc": 0,
+   "seconds": 24.3,
+   "session_id": "4bc864df-6065-42d9-83e2-b4f256d806b9",
+   "subtype": "success",
+   "cost": 0.09886280000000001,
+   "models": [
+    "claude-sonnet-5"
+   ],
+   "num_turns": 8
+  },
+  {
+   "k": 5,
+   "rc": 0,
+   "seconds": 101.6,
+   "session_id": "4bc864df-6065-42d9-83e2-b4f256d806b9",
+   "subtype": "success",
+   "cost": 0.24279699999999999,
+   "models": [
+    "claude-sonnet-5"
+   ],
+   "num_turns": 11
+  },
+  {
+   "k": 6,
+   "rc": 0,
+   "seconds": 22.8,
+   "session_id": "4bc864df-6065-42d9-83e2-b4f256d806b9",
+   "subtype": "success",
+   "cost": 0.1047468,
+   "models": [
+    "claude-sonnet-5"
+   ],
+   "num_turns": 7
+  },
+  {
+   "k": 7,
+   "rc": 0,
+   "seconds": 23.1,
+   "session_id": "4bc864df-6065-42d9-83e2-b4f256d806b9",
+   "subtype": "success",
+   "cost": 0.0983678,
+   "models": [
+    "claude-sonnet-5"
+   ],
+   "num_turns": 8
+  },
+  {
+   "k": 8,
+   "rc": 0,
+   "seconds": 134.2,
+   "session_id": "4bc864df-6065-42d9-83e2-b4f256d806b9",
+   "subtype": "success",
+   "cost": 0.2808192,
+   "models": [
+    "claude-sonnet-5"
+   ],
+   "num_turns": 9
+  },
+  {
+   "k": 9,
+   "rc": 0,
+   "seconds": 23.1,
+   "session_id": "4bc864df-6065-42d9-83e2-b4f256d806b9",
+   "subtype": "success",
+   "cost": 0.1079118,
+   "models": [
+    "claude-sonnet-5"
+   ],
+   "num_turns": 8
+  },
+  {
+   "k": 10,
+   "rc": 0,
+   "seconds": 22.9,
+   "session_id": "4bc864df-6065-42d9-83e2-b4f256d806b9",
+   "subtype": "success",
+   "cost": 0.1000504,
+   "models": [
+    "claude-sonnet-5"
+   ],
+   "num_turns": 8
+  },
+  {
+   "k": 11,
+   "rc": 0,
+   "seconds": 102.2,
+   "session_id": "4bc864df-6065-42d9-83e2-b4f256d806b9",
+   "subtype": "success",
+   "cost": 0.2499421,
+   "models": [
+    "claude-sonnet-5"
+   ],
+   "num_turns": 10
+  },
+  {
+   "k": 12,
+   "rc": 0,
+   "seconds": 32.3,
+   "session_id": "4bc864df-6065-42d9-83e2-b4f256d806b9",
+   "subtype": "success",
+   "cost": 0.13253600000000001,
+   "models": [
+    "claude-sonnet-5"
+   ],
+   "num_turns": 8
+  },
+  {
+   "k": 13,
+   "rc": 0,
+   "seconds": 23.0,
+   "session_id": "4bc864df-6065-42d9-83e2-b4f256d806b9",
+   "subtype": "success",
+   "cost": 0.0993264,
+   "models": [
+    "claude-sonnet-5"
+   ],
+   "num_turns": 8
+  }
+ ],
+ "status": "OK",
+ "claude_version": "2.1.273 (Claude Code)",
+ "transcripts": {
+  "4bc864df-6065-42d9-83e2-b4f256d806b9.jsonl": "6ef70791dbe32b79dd7abcc78638354b07db5dd389bb9aeedc761ec346adfc2d"
+ },
+ "tasks_json_sha": "9b2f4412f6a784c8f1dfacd06edd5cc8914b7745b68a9b90acc7231739ef6cd0"
+}

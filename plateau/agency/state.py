@@ -69,7 +69,10 @@ def enforce_caps(sig):
 
 def add_lesson(sig, text):
     if text:
-        sig.setdefault("lessons", []).append(str(text)[:LESSON_CHARS])
+        lessons = sig.setdefault("lessons", [])
+        t = str(text)[:LESSON_CHARS]
+        if t not in lessons:        # dedupe: never carry the same lesson twice
+            lessons.append(t)
     return enforce_caps(sig)
 
 

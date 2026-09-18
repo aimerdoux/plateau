@@ -1,0 +1,7 @@
+[bridge]
+enabled = true
+[lab]
+shadow_probes = false
+[private_ring]
+remote = ""     # git URL or path; empty = no private ring
+key = ""        # env var name holding the token, never the token

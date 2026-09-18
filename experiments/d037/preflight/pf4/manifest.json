@@ -1,0 +1,55 @@
+{
+ "arm": "A",
+ "run": 0,
+ "seed": 999,
+ "n": 13,
+ "fixture_words": 6500,
+ "budget": 1500,
+ "window": 200000,
+ "pct": "40",
+ "uid": 0,
+ "hooks": {},
+ "tasks": [
+  {
+   "k": 1,
+   "rc": 0,
+   "seconds": 16.1,
+   "session_id": "5b1b6639-d157-43a6-a159-5a62cd478e74",
+   "subtype": "success",
+   "cost": 0.1729656,
+   "models": [
+    "claude-haiku-4-5-20251001",
+    "claude-sonnet-5"
+   ],
+   "num_turns": 8
+  },
+  {
+   "k": 2,
+   "rc": 0,
+   "seconds": 9.7,
+   "session_id": "5b1b6639-d157-43a6-a159-5a62cd478e74",
+   "subtype": "success",
+   "cost": 0.1267866,
+   "models": [
+    "claude-sonnet-5"
+   ],
+   "num_turns": 6
+  },
+  {
+   "k": 3,
+   "rc": 0,
+   "seconds": 65.6,
+   "session_id": "5b1b6639-d157-43a6-a159-5a62cd478e74",
+   "subtype": "success",
+   "cost": 0.19522240000000002,
+   "models": [
+    "claude-sonnet-5"
+   ],
+   "num_turns": 7
+  }
+ ],
+ "status": "OK",
+ "claude_version": "2.1.273 (Claude Code)",
+ "transcripts": {},
+ "tasks_json_sha": "47366bbef1262ddf8a69a848ef5c0038651a1098df497ddf093180f0eed26116"
+}
