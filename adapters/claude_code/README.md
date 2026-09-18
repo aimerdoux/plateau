@@ -8,7 +8,7 @@ runtime. Keep that in mind when wiring paths.
 ## What the plugin does (hooks)
 
 `hook.py` holds no hook logic of its own — it is a thin shim over the `plateau` package for
-all nine modes (`plateau/harness-0.3/PLAN-step4.md` "S4-A1 One install story"), whether
+all nine modes (`docs/harness-0.3/PLAN-step4.md` "S4-A1 One install story"), whether
 `plateau` is pip-installed alongside this plugin or run straight out of a dev checkout:
 `parent`/`pre`/`post` dispatch to `plateau.hooks.signal`, `receipt`/`snapshot`/`inject`/
 `handoff`/`lift` to their `plateau.bridge.*` twins, and `ledger` to `plateau.lab.ledger`.
@@ -49,7 +49,7 @@ echo '{}' | python3 adapters/claude_code/hook.py receipt --cc
 active — the Claude Code instance receives the parent-agent laws and starts delegating without the
 user prompting it — and the discipline disappears when the plugin is disabled.
 
-**Mechanism:** a `SessionStart` hook (matcher `startup|clear|compact`) runs
+**Mechanism:** a `SessionStart` hook (matcher `startup|clear`) runs
 `hook.py parent --cc`. That mode reads the **Parent Agent Manual**, extracts its
 **section-4 `PARENT SYSTEM-PROMPT BLOCK`** (the fenced block of parent laws, verbatim), and emits it
 as the session's `additionalContext`:
@@ -64,9 +64,10 @@ as the session's `additionalContext`:
 ```
 
 Because Claude Code adds `additionalContext` before the first user prompt, the discipline is loaded
-*passively* on every new/cleared/compacted session while the plugin is enabled — and is simply not
-emitted once the plugin is disabled. The `resume` matcher is intentionally excluded: a resumed
-session already carries the block from its prior context, so re-injecting it would be redundant.
+*passively* on every new/cleared session while the plugin is enabled — and is simply not
+emitted once the plugin is disabled. The `resume` and `compact` matchers are intentionally excluded: a resumed
+session already carries the block from its prior context, so re-injecting it would be redundant,
+and the `compact` restart runs only `hook.py inject --cc` (the table above; `hooks.json`).
 
 If the manual cannot be found, the hook emits `{"suppressOutput": true}` (no half-formed prompt)
 rather than injecting a partial block.

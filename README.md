@@ -458,6 +458,10 @@ plateau/        core: signal (gate), continuum (emit/inflate/ground), orchestrat
 plateau/agency/ bounded background QA driver (plateau-agency) + the 3 layer contracts
                   (PARENT_AGENT_MANUAL.md, ORCHESTRATOR_PROMPT.md, BACKGROUND_AGENCY.md)
                   + bench_summary.py (prints the sourced wavex-os run metrics)
+plateau/bridge/ the receipt graph (0.3): receipt, snapshot, inject, lift, handoff, the selector,
+                  and carry.py — the 0.4 carry rule (what a request descends from)
+plateau/lab/    ledger, holdout, shadow probes, fit / propose / promote (the private ring's aggregates)
+docs/           harness-0.3/ (the 0.3 plan and contracts), d038/ (report), toy/ (the continuum toy)
 examples/       bare_loop.py (host-free proof) + the continuum story
 demo/           pre-registered demos (recall + real-code C6), sealed raw, verdicts, FINDINGS.md
 adapters/       claude_code/ — installable Claude Code plugin (plugin.json, skill, hooks, commands)

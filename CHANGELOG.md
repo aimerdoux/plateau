@@ -4,7 +4,7 @@ All notable changes to Plateau are recorded here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project
 adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.4.0] — Unreleased
+## [0.4.0] — 2026-09-18
 
 The continuum (`docs/toy/continuum-toy.html`): a context window holds the last few requests,
 and a compaction evicts the rest. The toy's claim is that what should cross a compaction is
@@ -20,7 +20,10 @@ the legacy path never lifts and never carries.
 - **The `because` arrow** (`plateau/bridge/common.py`, `lift.py`, `receipt.py`) --
   `receipts.tool_use_id` (the PostToolUse payload's id, so a call's receipt can be found
   again from the transcript's `tool_use` block), a `reasons` table (`rid`, `session_id`,
-  `tool_use_id`, `text`), `common.KNOWLEDGE_KINDS` (`read`, `decided`, `error`, `symbol`:
+  `tool_use_id`, `text`; both added in place to an existing 0.3 store on first open -- a
+  guarded `ALTER TABLE receipts ADD COLUMN` plus `CREATE TABLE IF NOT EXISTS`, no rebuild,
+  `meta.schema` stays `1`, and 0.3 readers never select the column -- the legacy `.d037/`
+  store included), `common.KNOWLEDGE_KINDS` (`read`, `decided`, `error`, `symbol`:
   what an arrow may start from and what the continuum carries), `common.record_reason` /
   `common._link_because` (the reason row plus a `(key, "because", r<rid>, rid)` edge from
   every earlier knowledge node sharing at least `REASON_MIN_OVERLAP` non-stopword tokens
@@ -46,12 +49,16 @@ the legacy path never lifts and never carries.
   gains a ` carried=<m>` suffix counting the carried lines that made it. A lift that raises is rolled back, so a reasons row
   never lands without its arrows. `[continuum] carry` in `bridge.toml` (and
   `bridge.default.toml`, kept byte-identical) is the kill switch; `bridge.toml` is now
-  version `2.1`, so 2.0 and 2.1 injections stay distinguishable in the ledger.
+  version `2.1`, so 2.0 and 2.1 injections stay distinguishable in the ledger -- with one
+  upgrade caveat: the ledger's label is the *resolved* `version`, and a `~/.plateau/bridge.toml`
+  seeded by 0.3's `plateau init --global` still says `version = "2.0"` with no `[continuum]`
+  table, so such an install carries (the default is on) while labelling its injections `2.0`.
+  Refresh it with `plateau init --global --force`, or set `version = "2.1"` in it.
 - **The continuum toy** (`docs/toy/continuum-toy.html`) and its exported fixture
   (`tests/fixtures/continuum_toy.json`: 21 nodes, 24 edges, the expected answer for every
   request in both arms).
 - Tests, as pytest collects them: `tests/test_reason.py` (14), `tests/test_carry.py`
-  (30, the pure rule against the fixture, both arms at every request),
+  (31, the pure rule against the fixture, both arms at every request),
   `tests/test_carry_store.py` (40, the toy session replayed through the real store API),
   `tests/test_continuum_inject.py` (20, the hook as a subprocess), and one
   `last_user_prompt` case in `tests/test_selector.py`.
@@ -355,7 +362,7 @@ Initial release of the bounded-context core.
 - Pre-registered, sealed demos under `demo/` (recall + real-code efficiency) with
   recompute-verifiable verdicts; results in `RESULTS.md`.
 
-[0.4.0]: https://github.com/aimerdoux/plateau/compare/v0.3.0...HEAD
+[0.4.0]: https://github.com/aimerdoux/plateau/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/aimerdoux/plateau/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/aimerdoux/plateau/releases/tag/v0.2.0
 [0.1.0]: https://github.com/aimerdoux/plateau/releases/tag/v0.1.0
