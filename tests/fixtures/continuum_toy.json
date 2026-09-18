@@ -1,0 +1,422 @@
+{
+ "name": "continuum_toy",
+ "source": "docs/toy/continuum-toy.html (same data, exported)",
+ "window_requests": 4,
+ "knowledge_kinds": [
+  "fact",
+  "dec",
+  "err"
+ ],
+ "carry_rule": "knowledge ancestors of the current request via because+provenance edges, older than the window cutoff; actions are never carried",
+ "nodes": [
+  {
+   "id": "q1",
+   "kind": "req",
+   "label": "checkout test is flaky",
+   "turn": 1,
+   "truncated_only": false
+  },
+  {
+   "id": "a1",
+   "kind": "act",
+   "label": "run tests",
+   "turn": 1,
+   "truncated_only": false
+  },
+  {
+   "id": "e1",
+   "kind": "err",
+   "label": "TimeoutError in payment.charge",
+   "turn": 1,
+   "truncated_only": false
+  },
+  {
+   "id": "a2",
+   "kind": "act",
+   "label": "read payment/client.py",
+   "turn": 2,
+   "truncated_only": false
+  },
+  {
+   "id": "f1",
+   "kind": "fact",
+   "label": "charge(): retries=0, timeout=2s",
+   "turn": 2,
+   "truncated_only": false
+  },
+  {
+   "id": "a3",
+   "kind": "act",
+   "label": "grep \"charge(\"",
+   "turn": 3,
+   "truncated_only": false
+  },
+  {
+   "id": "f2",
+   "kind": "fact",
+   "label": "charge() runs inside a db transaction",
+   "turn": 3,
+   "truncated_only": false
+  },
+  {
+   "id": "d1",
+   "kind": "dec",
+   "label": "idempotency key + retries=2",
+   "turn": 4,
+   "truncated_only": false
+  },
+  {
+   "id": "a4",
+   "kind": "act",
+   "label": "edit payment/client.py",
+   "turn": 4,
+   "truncated_only": false
+  },
+  {
+   "id": "a5",
+   "kind": "act",
+   "label": "run tests",
+   "turn": 5,
+   "truncated_only": false
+  },
+  {
+   "id": "e2",
+   "kind": "err",
+   "label": "test_refund: KeyError idempotency_key",
+   "turn": 5,
+   "truncated_only": false
+  },
+  {
+   "id": "a6",
+   "kind": "act",
+   "label": "read payment/refund.py",
+   "turn": 6,
+   "truncated_only": false
+  },
+  {
+   "id": "f3",
+   "kind": "fact",
+   "label": "refund builds the request without the key",
+   "turn": 6,
+   "truncated_only": false
+  },
+  {
+   "id": "a7",
+   "kind": "act",
+   "label": "edit payment/refund.py",
+   "turn": 7,
+   "truncated_only": false
+  },
+  {
+   "id": "a8",
+   "kind": "act",
+   "label": "run tests",
+   "turn": 7,
+   "truncated_only": false
+  },
+  {
+   "id": "p1",
+   "kind": "pass",
+   "label": "all tests pass",
+   "turn": 7,
+   "truncated_only": false
+  },
+  {
+   "id": "q2",
+   "kind": "req",
+   "label": "do the same for subscriptions",
+   "turn": 8,
+   "truncated_only": false
+  },
+  {
+   "id": "a9",
+   "kind": "act",
+   "label": "edit billing/subscriptions.py",
+   "turn": 8,
+   "truncated_only": false
+  },
+  {
+   "id": "r1",
+   "kind": "act",
+   "label": "run tests again",
+   "turn": 8,
+   "truncated_only": true
+  },
+  {
+   "id": "r2",
+   "kind": "act",
+   "label": "re-read client.py",
+   "turn": 8,
+   "truncated_only": true
+  },
+  {
+   "id": "r3",
+   "kind": "act",
+   "label": "re-grep \"charge(\"",
+   "turn": 8,
+   "truncated_only": true
+  }
+ ],
+ "edges": [
+  {
+   "src": "q1",
+   "dst": "a1",
+   "rel": "because",
+   "because": "start from the failure"
+  },
+  {
+   "src": "a1",
+   "dst": "e1",
+   "rel": "provenance",
+   "because": null
+  },
+  {
+   "src": "e1",
+   "dst": "a2",
+   "rel": "because",
+   "because": "the timeout points at the payment client"
+  },
+  {
+   "src": "a2",
+   "dst": "f1",
+   "rel": "provenance",
+   "because": null
+  },
+  {
+   "src": "f1",
+   "dst": "a3",
+   "rel": "because",
+   "because": "2s with no retry flakes under load: who calls it?"
+  },
+  {
+   "src": "a3",
+   "dst": "f2",
+   "rel": "provenance",
+   "because": null
+  },
+  {
+   "src": "f1",
+   "dst": "d1",
+   "rel": "because",
+   "because": "retries alone are not safe"
+  },
+  {
+   "src": "f2",
+   "dst": "d1",
+   "rel": "because",
+   "because": "a retry inside a transaction would double-charge"
+  },
+  {
+   "src": "d1",
+   "dst": "a4",
+   "rel": "because",
+   "because": "apply the decision"
+  },
+  {
+   "src": "a4",
+   "dst": "a5",
+   "rel": "because",
+   "because": "verify the edit"
+  },
+  {
+   "src": "a5",
+   "dst": "e2",
+   "rel": "provenance",
+   "because": null
+  },
+  {
+   "src": "e2",
+   "dst": "a6",
+   "rel": "because",
+   "because": "refund shares the request builder"
+  },
+  {
+   "src": "d1",
+   "dst": "a6",
+   "rel": "because",
+   "because": "the key I added is what broke it"
+  },
+  {
+   "src": "a6",
+   "dst": "f3",
+   "rel": "provenance",
+   "because": null
+  },
+  {
+   "src": "f3",
+   "dst": "a7",
+   "rel": "because",
+   "because": "make the key optional there"
+  },
+  {
+   "src": "a7",
+   "dst": "a8",
+   "rel": "because",
+   "because": "verify"
+  },
+  {
+   "src": "a8",
+   "dst": "p1",
+   "rel": "provenance",
+   "because": null
+  },
+  {
+   "src": "q2",
+   "dst": "a9",
+   "rel": "because",
+   "because": "same fix"
+  },
+  {
+   "src": "d1",
+   "dst": "a9",
+   "rel": "because",
+   "because": "same decision applies: key + retries"
+  },
+  {
+   "src": "f2",
+   "dst": "a9",
+   "rel": "because",
+   "because": "subscriptions also charge inside a transaction"
+  },
+  {
+   "src": "q2",
+   "dst": "r1",
+   "rel": "because",
+   "because": "no reason in reach: start over"
+  },
+  {
+   "src": "r1",
+   "dst": "r2",
+   "rel": "because",
+   "because": "the timeout again"
+  },
+  {
+   "src": "r2",
+   "dst": "r3",
+   "rel": "because",
+   "because": "who calls it?"
+  },
+  {
+   "src": "r3",
+   "dst": "a9",
+   "rel": "because",
+   "because": "re-derived the same decision"
+  }
+ ],
+ "expected": {
+  "truncated": {
+   "1": {
+    "reachable": "—",
+    "rederived_actions": 0,
+    "carried": [],
+    "window_cutoff": 1
+   },
+   "2": {
+    "reachable": "all",
+    "rederived_actions": 0,
+    "carried": [],
+    "window_cutoff": 1
+   },
+   "3": {
+    "reachable": "all",
+    "rederived_actions": 0,
+    "carried": [],
+    "window_cutoff": 1
+   },
+   "4": {
+    "reachable": "all",
+    "rederived_actions": 0,
+    "carried": [],
+    "window_cutoff": 1
+   },
+   "5": {
+    "reachable": "0/1",
+    "rederived_actions": 0,
+    "carried": [],
+    "window_cutoff": 2
+   },
+   "6": {
+    "reachable": "0/2",
+    "rederived_actions": 0,
+    "carried": [],
+    "window_cutoff": 3
+   },
+   "7": {
+    "reachable": "0/3",
+    "rederived_actions": 0,
+    "carried": [],
+    "window_cutoff": 4
+   },
+   "8": {
+    "reachable": "0/4",
+    "rederived_actions": 3,
+    "carried": [],
+    "window_cutoff": 5
+   }
+  },
+  "continuum": {
+   "1": {
+    "reachable": "—",
+    "rederived_actions": 0,
+    "carried": [],
+    "window_cutoff": 1
+   },
+   "2": {
+    "reachable": "all",
+    "rederived_actions": 0,
+    "carried": [],
+    "window_cutoff": 1
+   },
+   "3": {
+    "reachable": "all",
+    "rederived_actions": 0,
+    "carried": [],
+    "window_cutoff": 1
+   },
+   "4": {
+    "reachable": "all",
+    "rederived_actions": 0,
+    "carried": [],
+    "window_cutoff": 1
+   },
+   "5": {
+    "reachable": "1/1",
+    "rederived_actions": 0,
+    "carried": [
+     "e1"
+    ],
+    "window_cutoff": 2
+   },
+   "6": {
+    "reachable": "2/2",
+    "rederived_actions": 0,
+    "carried": [
+     "e1",
+     "f1"
+    ],
+    "window_cutoff": 3
+   },
+   "7": {
+    "reachable": "3/3",
+    "rederived_actions": 0,
+    "carried": [
+     "e1",
+     "f1",
+     "f2"
+    ],
+    "window_cutoff": 4
+   },
+   "8": {
+    "reachable": "4/4",
+    "rederived_actions": 0,
+    "carried": [
+     "d1",
+     "e1",
+     "f1",
+     "f2"
+    ],
+    "window_cutoff": 5
+   }
+  }
+ }
+}
