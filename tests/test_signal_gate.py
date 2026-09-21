@@ -153,3 +153,37 @@ def test_apply_gate_does_not_fold_a_carried_claim_in_twice(tmp_path):
     th2, _ = _grounded_thought(tmp_path, claim="total=6")
     batch = apply_gate(SelfState(signal=once, thoughts=[th2, th2]))
     assert [vf["claim"] for vf in batch.verified_facts] == ["total=5", "total=6"]
+
+
+# ---------------------------------------------------------------------------
+# 0.4.2: a claim that only restates its own measurement is refused
+# ---------------------------------------------------------------------------
+
+def test_contentless_present_claim_is_dropped_even_when_it_reverifies(tmp_path):
+    """"<path> present (sha256:…)" -- the exact shape `plateau:run` asked for until
+    0.4.2 -- re-verifies (the file is there and hashes) and says nothing the pointer
+    does not. The gate drops it as `contentless`; the same file with a claim about
+    what it establishes is admitted."""
+    th, _ = _grounded_thought(tmp_path, claim="fact.txt present (sha256:240b7bc1...)")
+    res = gate([th])
+    assert res.admitted == []
+    assert res.dropped[0]["reason"].startswith("contentless")
+    assert "fact.txt" in res.dropped[0]["reason"]
+
+    th2, _ = _grounded_thought(tmp_path, claim="fact.txt: the counter starts at 1")
+    res2 = gate([th2])
+    assert [a["claim"] for a in res2.admitted] == ["fact.txt: the counter starts at 1"]
+
+
+def test_is_contentless_predicate():
+    from plateau.signal import is_contentless
+    src = ".plateau/mission/SLICES.md"
+    assert is_contentless(".plateau/mission/SLICES.md present", src)
+    assert is_contentless(".plateau/mission/SLICES.md present (sha256:240b7bc1...)", src)
+    assert is_contentless("SLICES.md exists on disk", src)
+    assert is_contentless("file written", src)
+    assert is_contentless("", src)
+    assert not is_contentless(".plateau/mission/SLICES.md: S1 maps the feature into 5 slices", src)
+    assert not is_contentless("tests pass: 38/38 in tests/security/referral-award.test.ts",
+                              "tests/security/referral-award.test.ts")
+    assert not is_contentless("build passes", "build.ok")

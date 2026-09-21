@@ -285,3 +285,39 @@ def test_main_never_raises_on_missing_transcript(tmp_path, monkeypatch):
     root = str(tmp_path)
     payload = {"cwd": root, "session_id": "s1", "transcript_path": os.path.join(root, "nope.jsonl")}
     _run_lift_main(monkeypatch, payload)  # must not raise
+
+
+# ---------------------------------------------------------------------------
+# 0.4.2: the payload's last_assistant_message outruns the transcript
+# ---------------------------------------------------------------------------
+
+def test_payload_message_is_lifted_when_the_transcript_is_behind(tmp_path):
+    """Claude Code appends the transcript asynchronously; at SubagentStop the file can
+    hold the subagent's calls but not yet its final report. The payload's
+    `last_assistant_message` is lifted then, with line 0 (no line yet)."""
+    t = tmp_path / "agent-abc.jsonl"
+    _write_transcript(str(t), [("assistant", _assistant_text_blocks("running the tests now"))])
+    found = lift.lift_decisions(str(t), "FACT: the tests pass\nDECISION: ship it")
+    assert found == [("FACT", "the tests pass", 0), ("DECISION", "ship it", 0)]
+
+
+def test_payload_message_defers_to_the_transcript_once_it_has_landed(tmp_path):
+    t = tmp_path / "agent-abc.jsonl"
+    _write_transcript(str(t), [("assistant", _assistant_text_blocks("running the tests now")),
+                               ("assistant", _assistant_text_blocks("FACT: the tests pass"))])
+    assert lift.lift_decisions(str(t), "FACT: the tests pass") == [("FACT", "the tests pass", 2)]
+    # no payload text: the transcript alone, as before
+    assert lift.lift_decisions(str(t)) == [("FACT", "the tests pass", 2)]
+    assert lift.lift_decisions(str(t), "") == [("FACT", "the tests pass", 2)]
+
+
+def test_main_records_a_payload_lifted_decision_with_tail_provenance(tmp_path, monkeypatch):
+    root = str(tmp_path)
+    t = tmp_path / "t.jsonl"
+    _write_transcript(str(t), [("assistant", _assistant_text_blocks("working"))])
+    payload = {"cwd": root, "session_id": "s1", "transcript_path": str(t),
+               "hook_event_name": "Stop", "last_assistant_message": "DECISION: use sqlite WAL"}
+    monkeypatch.setattr(sys, "stdin", io.StringIO(json.dumps(payload)))
+    lift.main([])
+    conn = sqlite3.connect(os.path.join(root, common.DB_REL))
+    assert conn.execute("SELECT text, provenance FROM decisions").fetchall() == [("use sqlite WAL", "t.jsonl:tail")]

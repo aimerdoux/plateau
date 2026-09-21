@@ -516,10 +516,25 @@ def main(argv: Optional[List[str]] = None) -> None:
     # explicit rule ("only treat a payload as a subagent when agent_type is present;
     # with only agent_id, log ... and write nothing"), skip the write/print entirely
     # rather than guess at a fallback identity for it.
-    if payload.get("agent_id") and not payload.get("agent_type"):
+    #
+    # 0.4.2: `agent_type` may also be EMPTY on a real subagent's Stop (Claude Code
+    # 2.1.27x fills it as `w ?? session.agent_type ?? ""`), and `common.agent_of` now
+    # resolves that from the `.meta.json` beside `agent_transcript_path`; only a payload
+    # it still cannot place is skipped. The skip line names what the payload carried --
+    # the first non-Claude run logged 44 of the old "(compaction summarizer?)" lines in a
+    # session with three real subagents and no compaction at all, and nothing in the log
+    # said which it was.
+    if payload.get("agent_id") and not payload.get("agent_type") and \
+            not _resolve_agent(None, payload).startswith("subagent:"):
         try:
             from . import common as _common
-            _common.log(root, "handoff skip: no agent_type (compaction summarizer?)")
+            atp = str(payload.get("agent_transcript_path") or "")
+            _common.log(root, "handoff skip: unplaceable {} agent_id={} agent_type={!r} "
+                              "agent_transcript_path={} stop_hook_active={}".format(
+                payload.get("hook_event_name") or "?", payload.get("agent_id"),
+                payload.get("agent_type"),
+                ("present" if os.path.isfile(atp) else "missing") if atp else "absent",
+                payload.get("stop_hook_active")))
         except Exception:
             pass
         return

@@ -236,3 +236,140 @@ def test_stop_ignores_receipts_of_other_sessions(tmp_path, monkeypatch):
 
     conn = sqlite3.connect(os.path.join(root, common.DB_REL))
     assert conn.execute("SELECT COUNT(*) FROM reasons").fetchone() == (0,)
+
+
+# ---------------------------------------------------------------------------
+# 0.4.2: parallel calls share a boundary; the subagent's Stop lifts its own transcript
+# ---------------------------------------------------------------------------
+
+def test_parallel_calls_link_against_the_store_before_the_batch(tmp_path):
+    """Two calls issued from one message share one reason, written before either ran.
+    The second call's reason must not descend from the FIRST call's result: before
+    0.4.2 `before_rid` was each call's own rid, so r2's reason cited r1's read."""
+    root = str(tmp_path)
+    conn = common.db(root)
+    r1 = _record(conn, root, "Read", {"file_path": "payment/client.py"},
+                 {"file": {"content": "def charge(amount, retries=0):\n    pass\n"}}, uid="tu1")
+    r2 = _record(conn, root, "Read", {"file_path": "payment/refund.py"}, {"file": {"content": ""}}, uid="tu2")
+    transcript = tmp_path / "t.jsonl"
+    _write_lines(str(transcript), [
+        ("m1", [_text("look at charge retries in the payment client and the refund path"),
+                _use("tu1", "Read"), _use("tu2", "Read")]),
+    ])
+
+    assert lift.lift_reasons(conn, "s1", str(transcript)) == 2
+    # r1's read produced `read:payment/client.py:charge` (first_rid == r1); the batch
+    # reason overlaps it ("charge", "payment", "client") but the edge is NOT drawn for r2
+    assert _edges(conn) == []
+    assert conn.execute("SELECT COUNT(*) FROM reasons").fetchone() == (2,)
+
+    # a later message CAN descend from that read
+    _write_lines(str(transcript), [
+        ("m1", [_text("look at charge retries in the payment client and the refund path"),
+                _use("tu1", "Read"), _use("tu2", "Read")]),
+        ("m2", [_text("charge retries in the payment client: change the default"), _use("tu3", "Edit")]),
+    ])
+    r3 = _record(conn, root, "Edit", {"file_path": "payment/client.py", "old_string": "a", "new_string": "b"},
+                 {"ok": True}, uid="tu3")
+    assert lift.lift_reasons(conn, "s1", str(transcript)) == 1
+    assert ("read:payment/client.py:charge", "because", f"r{r3}", r3) in _edges(conn)
+    assert r1 < r2 < r3
+
+
+def test_record_reason_never_raises_the_boundary_above_the_receipt(tmp_path):
+    root = str(tmp_path)
+    conn = common.db(root)
+    r1 = _record(conn, root, "Read", {"file_path": "payment/client.py"},
+                 {"file": {"content": "def charge():\n    pass\n"}}, uid="tu1")
+    r2 = _record(conn, root, "Bash", {"command": "pytest"}, {"stdout": "", "exitCode": 0}, uid="tu2")
+    # before_rid past r2 must still exclude r2's own nodes and anything newer
+    linked = common.record_reason(conn, r1, "s1", "tu1", "payment client charge", before_rid=r2 + 5)
+    assert linked == []
+
+
+def _subagent_fixture(tmp_path):
+    """A parent session with one main call and one subagent (its own transcript +
+    sidecar), the shape Claude Code 2.1.27x writes."""
+    root = str(tmp_path)
+    conn = common.db(root)
+    _record(conn, root, "Bash", {"command": "pytest"},
+            {"stdout": "TimeoutError in payment.charge", "exitCode": 1}, uid="tu-main")
+    r_sub = common.record(conn, "Read", {"file_path": "payment/client.py"}, {"file": {"content": ""}},
+                          session_id="s1", agent="subagent:general-purpose", bridge_version="v",
+                          bridge_sha="sha", root=root, tool_use_id="tu-sub")
+    conn.close()
+    main_t = tmp_path / "main.jsonl"
+    _write_lines(str(main_t), [
+        ("m1", [_text("run the tests"), _use("tu-main", "Bash")]),
+        ("m2", [_text("DECISION: the parent decides nothing yet")]),
+    ])
+    sub_dir = tmp_path / "subagents"
+    sub_dir.mkdir()
+    sub_t = sub_dir / "agent-abc.jsonl"
+    _write_lines(str(sub_t), [
+        ("sm1", [_text("The timeout points at the payment client."), _use("tu-sub", "Read")]),
+        ("sm2", [_text("FACT: payment.charge has no retry budget")]),
+    ])
+    (sub_dir / "agent-abc.meta.json").write_text(json.dumps({"agentType": "general-purpose"}), encoding="utf-8")
+    return root, r_sub, main_t, sub_t
+
+
+def test_subagentstop_lifts_the_subagents_reasons_and_decisions_from_its_own_transcript(tmp_path, monkeypatch):
+    root, r_sub, main_t, sub_t = _subagent_fixture(tmp_path)
+    payload = {"cwd": root, "session_id": "s1", "hook_event_name": "SubagentStop",
+               "transcript_path": str(main_t), "agent_transcript_path": str(sub_t),
+               "agent_id": "abc", "agent_type": ""}
+    _run_lift_main(monkeypatch, payload)
+    _run_lift_main(monkeypatch, payload)  # idempotent
+
+    conn = sqlite3.connect(os.path.join(root, common.DB_REL))
+    assert conn.execute("SELECT rid, tool_use_id FROM reasons").fetchall() == [(r_sub, "tu-sub")]
+    # the subagent's read descends from the parent's error, and so does its FACT
+    assert sorted(_edges(conn)) == [
+        ("TimeoutError in payment.charge", "because", "decided:1", r_sub),
+        ("TimeoutError in payment.charge", "because", f"r{r_sub}", r_sub),
+    ]
+    assert conn.execute("SELECT agent, text, provenance FROM decisions").fetchall() == [
+        ("subagent:general-purpose", "payment.charge has no retry budget", "agent-abc.jsonl:3"),
+    ]
+    # the parent's transcript was NOT read under the subagent's name, and no turn was marked
+    assert conn.execute("SELECT COUNT(*) FROM turns").fetchone() == (0,)
+
+
+def test_subagentstop_without_a_readable_transcript_lifts_nothing_and_says_so(tmp_path, monkeypatch):
+    root, _r_sub, main_t, sub_t = _subagent_fixture(tmp_path)
+    os.remove(sub_t)
+    payload = {"cwd": root, "session_id": "s1", "hook_event_name": "SubagentStop",
+               "transcript_path": str(main_t), "agent_transcript_path": str(sub_t),
+               "agent_id": "abc", "agent_type": "general-purpose"}
+    _run_lift_main(monkeypatch, payload)
+    conn = sqlite3.connect(os.path.join(root, common.DB_REL))
+    assert conn.execute("SELECT COUNT(*) FROM reasons").fetchone() == (0,)
+    assert conn.execute("SELECT COUNT(*) FROM decisions").fetchone() == (0,)
+    with open(os.path.join(root, ".plateau", "hooks.log"), encoding="utf-8") as f:
+        assert "lift subagent skip: agent_transcript_path=missing agent=subagent:general-purpose agent_id=abc" in f.read()
+
+
+def test_agent_flag_alone_keeps_a_typeless_subagent_off_the_main_turn(tmp_path, monkeypatch):
+    """`hooks.json` passes `--agent subagent` at SubagentStop; a payload with no type and
+    no sidecar is still lifted from its transcript as a subagent, never as a main Stop."""
+    root, r_sub, main_t, sub_t = _subagent_fixture(tmp_path)
+    os.remove(os.path.join(root, "subagents", "agent-abc.meta.json"))
+    payload = {"cwd": root, "session_id": "s1", "transcript_path": str(main_t),
+               "agent_transcript_path": str(sub_t), "agent_id": "abc"}
+    monkeypatch.setattr(sys, "stdin", io.StringIO(json.dumps(payload)))
+    lift.main(["--agent", "subagent"])
+    conn = sqlite3.connect(os.path.join(root, common.DB_REL))
+    assert conn.execute("SELECT agent FROM decisions").fetchall() == [("subagent:abc",)]
+    assert conn.execute("SELECT rid FROM reasons").fetchall() == [(r_sub,)]
+    assert conn.execute("SELECT COUNT(*) FROM turns").fetchone() == (0,)
+
+
+def test_main_stop_still_marks_the_turn_and_reads_the_parent_transcript(tmp_path, monkeypatch):
+    root, _r_sub, main_t, _sub_t = _subagent_fixture(tmp_path)
+    _run_lift_main(monkeypatch, {"cwd": root, "session_id": "s1", "hook_event_name": "Stop",
+                                 "transcript_path": str(main_t)})
+    conn = sqlite3.connect(os.path.join(root, common.DB_REL))
+    assert conn.execute("SELECT COUNT(*) FROM turns").fetchone() == (1,)
+    assert conn.execute("SELECT agent, text FROM decisions").fetchall() == [("main", "the parent decides nothing yet")]
+    assert conn.execute("SELECT tool_use_id FROM reasons").fetchall() == [("tu-main",)]

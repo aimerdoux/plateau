@@ -1006,7 +1006,48 @@ def test_compaction_summarizer_subagentstop_writes_nothing(scratch_root):
     log_path = os.path.join(root, ".plateau", "hooks.log")
     assert os.path.isfile(log_path)
     with open(log_path, encoding="utf-8") as f:
-        assert "handoff skip: no agent_type" in f.read()
+        line = f.read()
+    # 0.4.2: the skip line names what the payload carried instead of guessing at it
+    assert "handoff skip: unplaceable SubagentStop" in line
+    assert "agent_id=a393962501cde927b" in line
+    assert "agent_type=None" in line
+    assert "agent_transcript_path=absent" in line
+
+
+def test_subagentstop_with_empty_agent_type_resolves_from_the_transcript_sidecar(scratch_root):
+    """0.4.2: Claude Code 2.1.27x can fire a real subagent's SubagentStop with
+    `agent_type: ""` (`w ?? session.agent_type ?? ""` in the binary). The payload still
+    names `agent_transcript_path`, and its `.meta.json` sidecar names the type, so the
+    handoff lands at the subagent's own path -- not skipped, not the main file."""
+    root = scratch_root
+    session_id = "sess-empty-agent-type"
+    sub_dir = os.path.join(root, "subagents")
+    os.makedirs(sub_dir)
+    transcript = os.path.join(sub_dir, "agent-a6ddf7fc97cfefed5.jsonl")
+    with open(transcript, "w", encoding="utf-8") as f:
+        f.write("{}\n")
+    with open(os.path.join(sub_dir, "agent-a6ddf7fc97cfefed5.meta.json"), "w", encoding="utf-8") as f:
+        json.dump({"agentType": "general-purpose", "description": "S2", "spawnDepth": 1}, f)
+
+    payload = {
+        "cwd": root, "session_id": session_id, "hook_event_name": "SubagentStop",
+        "agent_id": "a6ddf7fc97cfefed5", "agent_type": "", "agent_transcript_path": transcript,
+    }
+    out, err, rc = run_hook("plateau.bridge.handoff", payload, root,
+                            argv=["--write", "--agent", "subagent"])
+    assert rc == 0, err
+
+    sub_path = os.path.join(root, ".plateau", "handoff", session_id + ".subagent-a6ddf7fc97cfefed5.json")
+    assert os.path.isfile(sub_path), out
+    assert not os.path.isfile(os.path.join(root, ".plateau", "handoff", session_id + ".json"))
+    with open(sub_path, encoding="utf-8") as f:
+        block = json.load(f)
+    assert block["agent"] == "subagent:general-purpose"
+    assert block["agent_id"] == "a6ddf7fc97cfefed5"
+    log_path = os.path.join(root, ".plateau", "hooks.log")
+    if os.path.isfile(log_path):
+        with open(log_path, encoding="utf-8") as f:
+            assert "handoff skip" not in f.read()
 
 
 def test_handoff_last_prefers_main_file_over_newer_subagent_file(scratch_root):
@@ -1074,6 +1115,8 @@ def test_agent_of_s3a3_fallback_order():
     assert common.agent_of({"agent_type": "t", "agent_id": "i", "agent_name": "n"}) == "subagent:t"
     # agent_name still applies when agent_type is absent (agent_id no longer competes)
     assert common.agent_of({"agent_id": "i", "agent_name": "n"}) == "subagent:n"
+    # 0.4.2: an EMPTY agent_type (Claude Code 2.1.27x's `?? ""`) is "absent" too
+    assert common.agent_of({"agent_id": "i", "agent_type": ""}) == "main"
     old = os.environ.get("PLATEAU_AGENT")
     try:
         os.environ["PLATEAU_AGENT"] = "p"
@@ -1087,6 +1130,27 @@ def test_agent_of_s3a3_fallback_order():
             os.environ.pop("PLATEAU_AGENT", None)
         else:
             os.environ["PLATEAU_AGENT"] = old
+
+
+def test_agent_of_reads_the_subagent_transcript_sidecar(tmp_path):
+    """0.4.2: `agent_transcript_path` + `.meta.json` sidecar (`agentType`) names the
+    subagent when the payload's own `agent_type` is empty or missing; `agent_type` on
+    the payload still wins; no sidecar / unreadable sidecar / not a .jsonl path falls
+    through to the old order."""
+    sub = tmp_path / "subagents"
+    sub.mkdir()
+    transcript = sub / "agent-abc.jsonl"
+    transcript.write_text("{}\n", encoding="utf-8")
+    assert common.agent_of({"agent_id": "abc", "agent_type": "", "agent_transcript_path": str(transcript)}) == "main"
+    (sub / "agent-abc.meta.json").write_text(json.dumps({"agentType": "Explore"}), encoding="utf-8")
+    assert common.agent_of({"agent_id": "abc", "agent_type": "", "agent_transcript_path": str(transcript)}) == "subagent:Explore"
+    assert common.agent_of({"agent_id": "abc", "agent_transcript_path": str(transcript)}) == "subagent:Explore"
+    assert common.agent_of({"agent_id": "abc", "agent_type": "general-purpose",
+                            "agent_transcript_path": str(transcript)}) == "subagent:general-purpose"
+    (sub / "agent-abc.meta.json").write_text("not json", encoding="utf-8")
+    assert common.agent_of({"agent_id": "abc", "agent_transcript_path": str(transcript)}) == "main"
+    assert common.subagent_type_from_sidecar(None) == ""
+    assert common.subagent_type_from_sidecar(str(sub / "nope.jsonl")) == ""
 
 
 # ============================================================================

@@ -30,6 +30,7 @@ never raises: an unavailable target module degrades to a no-op with one line in
 | `Stop` | `hook.py handoff --cc --print` | Emits the session's `<plateau_handoff v=1>` block as the turn's `systemMessage`. |
 | `SessionEnd` | `hook.py ledger --cc` | Writes one ledger row per (session, agent) -- receipts, compactions, injections, probes, re-derivations, cost -- to `.plateau/ledger.sqlite`. |
 | `SessionEnd` | `hook.py handoff --cc --write` | Writes the handoff block to `.plateau/handoff/<session_id>.json`. |
+| `SubagentStop` | `hook.py lift --cc --agent subagent` | The same lift over the subagent's OWN transcript (`agent_transcript_path`): its report's `DECISION:`/`FACT:` lines and the reason before each of its calls, attributed `subagent:<type>` (0.4.2). |
 | `SubagentStop` | `hook.py handoff --cc --write --agent subagent` | Same, tagged `agent: subagent:<name>` for parent pickup. |
 
 Dry-run the legacy modes without `--cc` to see the raw decision dict; the step-3 modes

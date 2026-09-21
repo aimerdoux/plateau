@@ -58,6 +58,10 @@ that is the whole point.
 [{"claim": "build passes", "source": "build.ok", "value": "sha256:<hash>"}]
 ```
 
+The claim says what the file establishes. One that only restates its own measurement
+(`"build.ok present"`) re-verifies but is dropped as `contentless` (0.4.2): the next step
+already has the pointer; it needs the fact.
+
 ## Manual / dry use (no plugin)
 
 ```bash

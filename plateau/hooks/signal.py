@@ -44,6 +44,7 @@ from plateau import (
     Measurement, Thought, RelationalState, SelfState,
     emit, inflate, apply_gate, set_ground_root,
 )
+from plateau.signal import LESSON_CHARS, clip_lesson  # noqa: F401  (re-exported for callers/tests)
 
 PLATEAU_DIR = os.environ.get("PLATEAU_DIR", ".plateau")
 SIGNAL = os.path.join(PLATEAU_DIR, "signal.json")
@@ -112,7 +113,7 @@ def post() -> dict:
     carried = []
     if os.path.exists(PENDING_CARRY):
         for les in json.load(open(PENDING_CARRY)):
-            les = str(les).strip()[:200]
+            les = clip_lesson(les)
             if les and les not in new_signal.lessons:
                 new_signal.lessons = (new_signal.lessons + [les])[-LESS_CAP:]
                 carried.append(les)

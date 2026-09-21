@@ -24,6 +24,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 from dataclasses import dataclass, field
 from typing import Literal, Optional
 
@@ -149,10 +150,69 @@ class GateResult:
     dropped: list[dict]    # {claim, reason}
 
 
+# One carried lesson is at most this long. 0.4.2: the hook and the driver each capped a
+# CARRY line with a bare `[:200]`, which cut the first non-Claude run's lessons mid-word
+# ("... the award SQL was never committ") and handed the next step a sentence that ended
+# in a fragment. `clip_lesson` cuts on the last whitespace before the cap and says so.
+LESSON_CHARS = 280
+
+
+def clip_lesson(lesson: object) -> str:
+    """One carried lesson, bounded to LESSON_CHARS at a word boundary: a lesson longer
+    than the cap keeps its first words up to the last whitespace before the cap and
+    ends in "…", never in half a word."""
+    text = " ".join(str(lesson).split())
+    if len(text) <= LESSON_CHARS:
+        return text
+    head = text[:LESSON_CHARS - 1]
+    cut = head.rfind(" ")
+    if cut > LESSON_CHARS // 2:
+        head = head[:cut]
+    return head.rstrip(" ,;:—-") + "…"
+
+
+# Words a claim may be made of and still say nothing beyond "the measured file exists".
+# `is_contentless` strips the measurement's own source path and any hash from the
+# claim; if what is left is only these, the claim restates its grounding and carries
+# no fact for the next step.
+_EXISTENCE_WORDS = frozenset((
+    "present", "exists", "exist", "existing", "is", "are", "was", "on", "disk", "file",
+    "written", "created", "added", "there", "available", "found", "ok", "done", "the",
+    "a", "an", "now", "in", "at", "repo", "and", "path", "sha256", "hash", "with",
+))
+_HASH_RE = re.compile(r"\(?\b(?:sha256|sha1|md5)\b[:=]?\s*[0-9a-f]{6,}(?:\.{3}|…)?\)?", re.I)
+_HEX_RE = re.compile(r"\b[0-9a-f]{12,}\b", re.I)
+
+
+def is_contentless(claim: str, source: str) -> bool:
+    """True when `claim` says nothing a `file_hash` measurement of `source` does not
+    already say: after removing the source path (and its basename), any hash, and
+    punctuation, every remaining word is an existence word. `"<path> present"` -- the
+    exact shape `plateau:run` asked for until 0.4.2 -- is contentless; `"<path> holds
+    the S2 slice: award_referral_credit pays first_booking at award time"` is not."""
+    text = claim or ""
+    src = (source or "").strip()
+    if src:
+        text = text.replace(src, " ")
+        base = os.path.basename(src.rstrip("/"))
+        if base:
+            text = text.replace(base, " ")
+    text = _HASH_RE.sub(" ", text)
+    text = _HEX_RE.sub(" ", text)
+    words = [w for w in re.split(r"[^A-Za-z0-9_]+", text.lower()) if w]
+    return all(w in _EXISTENCE_WORDS for w in words)
+
+
 def gate(thoughts: list[Thought]) -> GateResult:
     """Admit ONLY thoughts whose grounding re-verifies against reality NOW. Every drop
     is logged with its reason. This is the measurement-vs-chatter line; do not relax
-    it. A bounded context is only trustworthy because of what this function refuses."""
+    it. A bounded context is only trustworthy because of what this function refuses.
+
+    0.4.2: a claim that only restates its own measurement (`is_contentless`: "<path>
+    present (sha256:…)") is refused too, with reason `contentless`. It re-verifies --
+    the file is there and hashes -- but a signal is what the next step needs to know,
+    and "the file exists" is already the pointer; the first non-Claude run carried
+    three such facts and nothing about what the files established."""
     admitted, dropped = [], []
     for th in thoughts:
         if th.grounding is None:
@@ -162,6 +222,11 @@ def gate(thoughts: list[Thought]) -> GateResult:
             dropped.append({"claim": th.claim,
                             "reason": f"grounding did not re-verify "
                                       f"({th.grounding.kind}:{th.grounding.source})"})
+            continue
+        if is_contentless(th.claim, th.grounding.source):
+            dropped.append({"claim": th.claim,
+                            "reason": "contentless (the claim only restates that "
+                                      f"{th.grounding.source} exists; state what it establishes)"})
             continue
         admitted.append({"claim": th.claim,
                          "grounding_kind": th.grounding.kind,

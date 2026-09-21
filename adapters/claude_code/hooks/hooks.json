@@ -115,6 +115,11 @@
         "hooks": [
           {
             "type": "command",
+            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/hook.py lift --cc --agent subagent",
+            "timeout": 10
+          },
+          {
+            "type": "command",
             "command": "python3 ${CLAUDE_PLUGIN_ROOT}/hook.py handoff --cc --write --agent subagent",
             "timeout": 10
           }

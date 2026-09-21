@@ -293,3 +293,44 @@ def test_hook_py_cc_signal_modes_emit_valid_hook_json(tmp_path):
         assert r.returncode == 0, "{}: stderr={}".format(mode, r.stderr)
         out = json.loads(r.stdout)
         assert isinstance(out, dict) and out, "{}: empty/invalid hook JSON: {!r}".format(mode, r.stdout)
+
+
+# ---------------------------------------------------------------------------
+# 0.4.2: a carried lesson is cut at a word boundary, and says it was cut
+# ---------------------------------------------------------------------------
+
+def test_clip_lesson_cuts_at_a_word_boundary_and_marks_it():
+    clip = hooks_signal.clip_lesson
+    cap = hooks_signal.LESSON_CHARS
+    short = "The final suite is cut from origin/main"
+    assert clip(short) == short
+    assert clip("  spaced   out\n lesson ") == "spaced out lesson"
+    long = ("The final suite is cut from origin/main — nothing on the old feature branch comes "
+            "for free; port the referral-capture changes explicitly or attribution silently "
+            "no-ops (the award SQL was never committed there, only on the abandoned branch, "
+            "and the picker gate depends on it too) so the next step must re-port before QA")
+    assert len(long) > cap
+    out = clip(long)
+    assert len(out) <= cap
+    assert out.endswith("…")
+    body = out[:-1]
+    assert long.startswith(body)
+    # cut on whitespace: the next character of the original is a space, never mid-word
+    assert long[len(body)] == " "
+    assert not body.endswith((" ", ",", ";"))
+
+
+def test_signal_post_carries_a_long_lesson_whole_words_only(tmp_path, monkeypatch, capsys):
+    pd = tmp_path / ".plateau"
+    pd.mkdir()
+    (pd / "signal.json").write_text(json.dumps(_SIG))
+    lesson = "word " * 80 + "tailword"
+    (pd / "pending_carry.json").write_text(json.dumps([lesson]))
+
+    _call_signal_in_process("post", tmp_path, monkeypatch, capsys)
+
+    blob = json.loads((pd / "signal.json").read_text())
+    (carried,) = blob["lessons"]
+    assert carried.endswith("word…")
+    assert len(carried) <= hooks_signal.LESSON_CHARS
+    assert "wor…" not in carried
