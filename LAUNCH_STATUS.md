@@ -1,7 +1,7 @@
 # LAUNCH_STATUS.md
 
 Ops dashboard for the Plateau OSS launch. Updated each ops cycle.
-Last cycle: 2026-09-18 (0.4.1). All claims grounded in sealed demo artifacts.
+Last cycle: 2026-09-21 (0.4.2). All claims grounded in sealed demo artifacts.
 
 ---
 
@@ -197,5 +197,5 @@ pip install git+https://github.com/aimerdoux/plateau.git
   rebases after 0.4)
 - Latest GitHub Release: none — 0.2.0 and 0.3.0 are git tags (`v0.2.0`, `v0.3.0`); `v0.4.0` is cut
   on the 0.4 merge; the plugin marketplace serves `main`
-- pyproject version: 0.4.1
+- pyproject version: 0.4.2
 - PyPI published version: not published, and cannot be under this name (see the table above)

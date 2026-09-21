@@ -21,8 +21,18 @@ def test_mock_plumbing_bounds_context_and_wins():
 def test_gate_admits_real_drops_bogus(tmp_path):
     (tmp_path / "a.py").write_text("# a\n")
     reply = (f"CARRY: did a\n"
-             f"GATE: a.py :: {file_hash(str(tmp_path / 'a.py'))}\n"
-             f"GATE: b.py :: sha256:{'0' * 64}")
+             f"GATE: a.py :: {file_hash(str(tmp_path / 'a.py'))} :: defines a()\n"
+             f"GATE: b.py :: sha256:{'0' * 64} :: defines b()")
     _, rep = gate_reply(RelationalState(), reply, str(tmp_path))
-    assert rep["admitted"] == ["a.py present"]          # real file, hash re-verifies
-    assert rep["dropped_ungrounded"] == ["b.py present"]  # fabricated hash → dropped
+    assert rep["admitted"] == ["a.py: defines a()"]          # real file, hash re-verifies
+    assert rep["dropped_ungrounded"] == ["b.py: defines b()"]  # fabricated hash → dropped
+
+
+def test_gate_refuses_a_bare_present_claim_even_when_the_hash_verifies(tmp_path):
+    """0.4.2: a GATE line with no clause yields "<path> present" -- it re-verifies, but
+    it says nothing the pointer does not, so the gate drops it as contentless."""
+    (tmp_path / "a.py").write_text("# a\n")
+    reply = f"CARRY: did a\nGATE: a.py :: {file_hash(str(tmp_path / 'a.py'))}"
+    _, rep = gate_reply(RelationalState(), reply, str(tmp_path))
+    assert rep["admitted"] == []
+    assert rep["dropped_ungrounded"] == ["a.py present"]

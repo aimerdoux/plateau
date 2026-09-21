@@ -24,8 +24,9 @@ import os
 import re
 import subprocess
 from dataclasses import dataclass, field
+from typing import Optional
 
-from .signal import (Measurement, Thought, RelationalState, SelfState,
+from .signal import (Measurement, Thought, RelationalState, SelfState, clip_lesson,
                      apply_gate, set_ground_root)
 from .continuum import emit, inflate
 from .metrics import ArmCurve, decide
@@ -55,8 +56,10 @@ HEADER = ("CONTEXT CARRIED INTO THIS STEP (read it, do ONLY this step's sub-task
 EMIT_RULES = (
     "\n\nWhen done, end your reply with two sections, nothing after them:\n"
     "CARRY: <one short lesson/decision the next step must know>\n"
-    "GATE: <repo-relative-path> :: sha256:<hash of that file you just wrote>   (one per fact; "
-    "omit if you wrote no file). Only facts whose hash re-verifies will be carried.")
+    "GATE: <repo-relative-path> :: sha256:<hash of that file you just wrote> :: <what the file "
+    "establishes, one clause>   (one per fact; omit if you wrote no file). Only facts whose hash "
+    "re-verifies will be carried, and only when the clause says what the file establishes -- "
+    "\"<path> present\" carries nothing.")
 
 
 def _render(sig: RelationalState) -> str:
@@ -87,15 +90,23 @@ def inflate_render(signal_blob: str) -> str:
 
 
 # ---------------------------------------------------------------- the gate (between steps)
-_GATE = re.compile(r"GATE:\s*(?P<src>[^\s:][^:]*?)\s*::\s*(?P<val>sha256:[0-9a-f]{64})", re.I)
+# `:: <clause>` after the hash is what the file establishes (0.4.2); without it the claim
+# is "<path> present", which the gate now refuses as contentless (`signal.is_contentless`).
+_GATE = re.compile(r"GATE:\s*(?P<src>[^\s:][^:]*?)\s*::\s*(?P<val>sha256:[0-9a-f]{64})"
+                   r"(?:\s*::\s*(?P<what>[^\n]+))?", re.I)
 _CARRY = re.compile(r"CARRY:\s*(?P<c>.+)")
+
+
+def _claim(src: str, what: Optional[str]) -> str:
+    what = " ".join((what or "").split())
+    return f"{src}: {what}" if what else f"{src} present"
 
 
 def gate_reply(signal: RelationalState, reply: str, cwd: str) -> tuple[RelationalState, dict]:
     """Fold the worker's reply into the signal: admit ONLY GATE facts whose file-hash
     re-verifies in `cwd` now; append the CARRY lesson (capped). Returns (new_signal, report)."""
     set_ground_root(cwd)
-    thoughts = [Thought(claim=f"{m.group('src').strip()} present",
+    thoughts = [Thought(claim=_claim(m.group("src").strip(), m.group("what")),
                         grounding=Measurement("file_hash", m.group("src").strip(), m.group("val")))
                 for m in _GATE.finditer(reply)]
     before = {vf["claim"] for vf in signal.verified_facts}
@@ -104,7 +115,7 @@ def gate_reply(signal: RelationalState, reply: str, cwd: str) -> tuple[Relationa
     dropped = [t.claim for t in thoughts if t.claim not in {vf["claim"] for vf in new.verified_facts}]
     cm = _CARRY.search(reply)
     if cm:
-        les = cm.group("c").strip()[:200]
+        les = clip_lesson(cm.group("c"))
         if les and les not in new.lessons:
             new.lessons = (new.lessons + [les])[-LESS_CAP:]
     return new, {"admitted": admitted, "dropped_ungrounded": dropped}
@@ -141,8 +152,8 @@ def make_mock_worker():
             os.makedirs(os.path.dirname(p) or cwd, exist_ok=True)
             with open(p, "w") as f:
                 f.write(f"# {sub}\n")
-            out += f"\nGATE: {rel} :: {file_hash(p)}"
-            out += f"\nGATE: nonexistent_{rel} :: sha256:{'0'*64}"  # bogus -> must be DROPPED
+            out += f"\nGATE: {rel} :: {file_hash(p)} :: holds the layer for '{sub[:60]}'"
+            out += f"\nGATE: nonexistent_{rel} :: sha256:{'0'*64} :: never written"  # bogus -> must be DROPPED
         return out
     return w
 
@@ -208,7 +219,8 @@ def run_mock_plumbing(work_root: str | None = None) -> dict:
     probe = _t.mkdtemp()
     open(os.path.join(probe, "x.py"), "w").write("# x\n")
     sig0 = RelationalState()
-    reply = f"CARRY: did x\nGATE: x.py :: {file_hash(os.path.join(probe,'x.py'))}\nGATE: y.py :: sha256:{'0'*64}"
+    reply = (f"CARRY: did x\nGATE: x.py :: {file_hash(os.path.join(probe,'x.py'))} :: holds x\n"
+             f"GATE: y.py :: sha256:{'0'*64} :: never written")
     _, rep = gate_reply(sig0, reply, probe)
     return {"LABEL": "MOCK PLUMBING — deterministic mock worker, NOT a continuity result",
             "signal_context_per_step": sc, "control_context_per_step": cc,

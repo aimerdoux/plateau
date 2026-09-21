@@ -28,6 +28,20 @@ stores the reason and draws the `because` edges. Receipts that already carry a r
 skipped, so a Stop that fires twice, or a later Stop over the same transcript, records
 nothing twice.
 
+0.4.2: the same pass runs at SubagentStop (`hooks.json` fires `lift --cc --agent subagent`
+before `handoff --write`). A subagent's receipts live in the parent's session (Claude
+Code mints no separate `session_id` for a subagent's hook events) under `agent =
+subagent:<type>`, its calls are in its OWN transcript (`agent_transcript_path` on the
+SubagentStop payload; `transcript_path` there is still the parent's), and its last
+assistant message is its report to the parent. `main()` reads that transcript: the
+report's DECISION/FACT lines become decisions attributed to the subagent, and its calls
+get their reasons and `because` edges exactly as the parent's do. Before 0.4.2 only the
+parent's Stop lifted, so in a session that delegates (the manual's whole discipline) the
+0.4 layer covered a dozen receipts out of two hundred: the first Plateau run on a
+non-Claude model had 12 main receipts with reasons and 135 subagent receipts with none.
+A SubagentStop is not a turn of the session (`mark_turn` stays main-only) and never
+fires the shadow probes.
+
 This is also THE Stop-path turn boundary (docs/harness-0.3/target-run-wavex.md finding #4):
 `common.mark_turn()` was defined but never called from anywhere in the shipped hook
 pipeline, so the `turns` table was always empty and `receipts_per_turn()`/the selector's
@@ -45,6 +59,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import sys
 from os.path import basename
@@ -101,11 +116,23 @@ def _last_assistant_text_blocks(transcript_path: str) -> List[Tuple[int, str]]:
     return blocks
 
 
-def lift_decisions(transcript_path: str) -> List[Tuple[str, str, int]]:
+def lift_decisions(transcript_path: str, last_assistant_message: Optional[str] = None) -> List[Tuple[str, str, int]]:
     """`[(marker, text, line_no), ...]` lifted from the last assistant message, in the
-    order the lines appear (one message can carry several marker lines)."""
+    order the lines appear (one message can carry several marker lines).
+
+    `last_assistant_message` is the Stop/SubagentStop payload's own copy of that message
+    (Claude Code provides it so a hook need not depend on the transcript, which is
+    appended asynchronously). When it is given and the transcript's last assistant
+    message does not yet contain it, the file is behind the payload and the payload's
+    text is lifted instead, with `line_no` 0 -- the message has no line yet. 0.4.2: the
+    first live SubagentStop lift found the subagent's three calls in its transcript but
+    not its final `FACT:`/`DECISION:` report, which the payload carried."""
+    blocks = _last_assistant_text_blocks(transcript_path)
+    payload_text = last_assistant_message.strip() if isinstance(last_assistant_message, str) else ""
+    if payload_text and payload_text not in "\n".join(t for _, t in blocks):
+        blocks = [(0, payload_text)]
     found: List[Tuple[str, str, int]] = []
-    for line_no, text in _last_assistant_text_blocks(transcript_path):
+    for line_no, text in blocks:
         for raw_line in text.splitlines():
             m = MARKER_RE.match(raw_line.strip())
             if m:
@@ -129,7 +156,17 @@ def reasons_from_transcript(transcript_path: str) -> Dict[str, str]:
     sentence share it, and `thinking` blocks are ignored. `{}` on any read trouble; a
     tail cut inside a multibyte sequence (the file is being appended while a hook reads
     it) is replaced, not raised, and that half line is skipped like any garbage line."""
-    out: Dict[str, str] = {}
+    return {uid: text for uid, (text, _group) in reason_groups_from_transcript(transcript_path).items()}
+
+
+def reason_groups_from_transcript(transcript_path: str) -> Dict[str, Tuple[str, str]]:
+    """`{tool_use_id: (reason_text, group)}` -- `reasons_from_transcript` plus the
+    assistant message each call came from (`group` is the message id, or a per-entry
+    key when there is none). Parallel calls issued from one message share a group: the
+    text was written before ANY of them ran, so none of them can descend from a
+    sibling's result -- `lift_reasons` links the whole group against the store as it
+    stood before the group's first call."""
+    out: Dict[str, Tuple[str, str]] = {}
     current_id: Optional[str] = None
     text_acc: List[str] = []
     try:
@@ -147,7 +184,7 @@ def reasons_from_transcript(transcript_path: str) -> Dict[str, str]:
                 msg = entry.get("message")
                 if not isinstance(msg, dict) or msg.get("role") != "assistant":
                     continue
-                mid = msg.get("id") or entry.get("uuid") or id(entry)
+                mid = str(msg.get("id") or entry.get("uuid") or id(entry))
                 if mid != current_id:
                     current_id, text_acc = mid, []
                 content = msg.get("content")
@@ -158,7 +195,7 @@ def reasons_from_transcript(transcript_path: str) -> Dict[str, str]:
                     if block.get("type") == "text" and isinstance(block.get("text"), str) and block["text"].strip():
                         text_acc.append(block["text"].strip())
                     elif block.get("type") == "tool_use" and block.get("id") and text_acc:
-                        out[str(block["id"])] = "\n".join(text_acc)
+                        out[str(block["id"])] = ("\n".join(text_acc), mid)
     except OSError:
         return {}
     return out
@@ -167,36 +204,91 @@ def reasons_from_transcript(transcript_path: str) -> Dict[str, str]:
 def lift_reasons(conn, session_id: str, transcript_path: str) -> int:
     """Record a reason for every receipt of `session_id` whose `tool_use_id` the
     transcript pairs with preceding text and that has no `reasons` row yet. Returns how
-    many were recorded."""
-    reasons = reasons_from_transcript(transcript_path)
-    if not reasons:
+    many were recorded.
+
+    The receipts of one subagent carry the parent's `session_id` (Claude Code mints no
+    separate id for a subagent's hook events) and their own `tool_use_id`s, so the same
+    query serves a Stop over the main transcript and a SubagentStop over the subagent's
+    (`agent_transcript_path`): each transcript pairs only its own calls.
+
+    Parallel calls from one assistant message share one reason (`reason_groups_from_
+    transcript`), and their `because` edges are drawn against the store as it stood
+    before the FIRST of them: a reason written before a batch cannot descend from a
+    fact a sibling call in that batch produced. Before 0.4.2 each call in the batch
+    linked with `before_rid` = its own rid, so the second Read's reason could cite the
+    first Read's result as its cause."""
+    groups = reason_groups_from_transcript(transcript_path)
+    if not groups:
         return 0
     rows = conn.execute(
         "SELECT id, tool_use_id FROM receipts WHERE session_id=? AND tool_use_id IS NOT NULL "
         "AND id NOT IN (SELECT rid FROM reasons) ORDER BY id",
         (session_id,),
     ).fetchall()
+    # The store's earliest receipt per group -- including receipts that already carry a
+    # reason (a second Stop over the same transcript), so the boundary is stable.
+    first_rid: Dict[str, int] = {}
+    for rid, uid in conn.execute(
+        "SELECT id, tool_use_id FROM receipts WHERE session_id=? AND tool_use_id IS NOT NULL ORDER BY id",
+        (session_id,),
+    ).fetchall():
+        pair = groups.get(uid)
+        if pair is not None:
+            first_rid.setdefault(pair[1], rid)
     n = 0
     for rid, uid in rows:
-        text = reasons.get(uid)
-        if text:
-            common.record_reason(conn, rid, session_id, uid, text)
+        pair = groups.get(uid)
+        if pair and pair[0]:
+            text, group = pair
+            common.record_reason(conn, rid, session_id, uid, text,
+                                 before_rid=min(rid, first_rid.get(group, rid)))
             n += 1
     return n
 
 
+def transcript_for(payload: Dict[str, Any], agent: str) -> Tuple[str, bool]:
+    """`(transcript_path, is_subagent)`: which transcript this lift reads. A SubagentStop
+    payload names the subagent's own transcript as `agent_transcript_path` (Claude Code
+    2.1.27x; its `transcript_path` is still the PARENT's), and that is the only file
+    whose last assistant message and `tool_use` blocks are the subagent's. A subagent
+    payload WITHOUT one yields `""`: lifting the parent's transcript under the
+    subagent's name would stamp the parent's decisions on it."""
+    is_sub = agent.startswith("subagent:") or payload.get("hook_event_name") == "SubagentStop"
+    if is_sub:
+        return str(payload.get("agent_transcript_path") or ""), True
+    return str(payload.get("transcript_path") or ""), False
+
+
 def main(argv: Optional[List[str]] = None) -> None:
     argv = sys.argv[1:] if argv is None else argv
-    argparse.ArgumentParser(add_help=False).parse_known_args(argv)  # lift takes no flags
+    ap = argparse.ArgumentParser(add_help=False)
+    # `--agent subagent` mirrors `handoff --agent`: hooks.json's SubagentStop entry
+    # passes it so a payload that lost its `agent_type` (see `common.agent_of`) is still
+    # lifted as a subagent, never as a main-agent turn.
+    ap.add_argument("--agent", default=None)
+    args, _rest = ap.parse_known_args(argv)
 
     payload = common.read_payload()
     root = common.root(payload)
     session_id = payload.get("session_id", "")
-    transcript_path = payload.get("transcript_path", "")
 
     try:
         cfg = config.load(root, session_id)
         if cfg.role == "off":
+            return
+
+        agent = common.agent_of(payload)
+        if args.agent == "subagent" and not agent.startswith("subagent:"):
+            agent = "subagent:" + str(
+                payload.get("agent_id") or os.path.basename(str(payload.get("agent_transcript_path") or ""))
+                or "unknown"
+            )
+        transcript_path, is_sub = transcript_for(payload, agent)
+        if is_sub and not (transcript_path and os.path.isfile(transcript_path)):
+            # Nothing of the subagent's to read: log what the payload did carry (the
+            # first non-Claude run logged 44 opaque skips; see `common.agent_of`).
+            common.log(root, "lift subagent skip: agent_transcript_path={} agent={} agent_id={}".format(
+                "missing" if transcript_path else "absent", agent, payload.get("agent_id")))
             return
 
         conn = common.db(root)
@@ -204,29 +296,34 @@ def main(argv: Optional[List[str]] = None) -> None:
             # One turn boundary per Stop, unconditionally (see module docstring finding
             # #4) -- this must happen even when this turn lifts no decisions at all, so
             # it runs before the decided_facts / transcript / lifted-lines early-outs
-            # below rather than after them.
-            common.mark_turn(conn, session_id)
+            # below rather than after them. A SubagentStop is not a turn of the session:
+            # the parent's turn is still open while its subagents finish.
+            if not is_sub:
+                common.mark_turn(conn, session_id)
 
             if cfg.nodes.get("decided_facts", True) and transcript_path:
-                lifted = lift_decisions(transcript_path)
+                lifted = lift_decisions(transcript_path, payload.get("last_assistant_message"))
                 if lifted:
-                    agent = common.agent_of(payload)
                     lifted_n = 0
                     for _marker, text, line_no in lifted:
                         if not text or _already_recorded(conn, session_id, text):
                             continue
-                        provenance = "{}:{}".format(basename(transcript_path), line_no)
+                        # line 0: lifted from the payload ahead of the transcript's tail
+                        provenance = "{}:{}".format(basename(transcript_path), line_no or "tail")
                         common.record_decision(conn, session_id, agent, text, provenance)
                         lifted_n += 1
                     if lifted_n:
-                        common.log(root, "lift session={} n={}".format(session_id, lifted_n))
+                        common.log(root, "lift session={} agent={} n={}".format(session_id, agent, lifted_n))
 
             if transcript_path:
                 reasons_n = lift_reasons(conn, session_id, transcript_path)
                 if reasons_n:
-                    common.log(root, "reason session={} n={}".format(session_id, reasons_n))
+                    common.log(root, "reason session={} agent={} n={}".format(session_id, agent, reasons_n))
         finally:
             conn.close()
+
+        if is_sub:
+            return
 
         # Shadow probes (docs/harness-0.3/PLAN-step4.md "Shadow probes"; see module
         # docstring finding #7): wired into the Stop dispatch right after lift's own

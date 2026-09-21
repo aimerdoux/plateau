@@ -25,15 +25,20 @@ plan unless I ask — just run it).
 
 2. **Spawn ONE subagent (Task)** whose prompt is **only**: the inflated `carried_self_state`
    (paste it) + this step's sub-task. **Do NOT paste prior steps' output or the conversation.**
-   Instruct the subagent to do the sub-task and end its reply with exactly:
+   Instruct the subagent to do the sub-task, to say in one sentence before each tool call what
+   the call is for and which file or symbol it concerns (that sentence is recorded as the call's
+   reason; "running the gate" records nothing usable), and to end its reply with exactly:
    ```
    CARRY: <one short lesson/decision the next step must know>
-   GATE: <repo-relative-path> :: sha256:<sha256 of a file it created>   (one line per fact; omit if it wrote no file)
+   GATE: <repo-relative-path> :: sha256:<sha256 of a file it created> :: <what the file establishes, one clause>   (one line per fact; omit if it wrote no file)
    ```
 
 3. **Gate the result** (admit only re-verifiable facts). Write the subagent's GATE lines to
-   `.plateau/pending_facts.json` as `[{"claim":"<path> present","source":"<path>","value":"sha256:<hash>"}]`,
-   and its CARRY line to `.plateau/pending_carry.json` as `["<the carry lesson>"]`. Then run:
+   `.plateau/pending_facts.json` as
+   `[{"claim":"<path>: <what the file establishes>","source":"<path>","value":"sha256:<hash>"}]`
+   — the claim must say what the file establishes, not that it exists; the gate refuses a claim
+   that only restates its own measurement ("<path> present") as `contentless` — and its CARRY
+   line to `.plateau/pending_carry.json` as `["<the carry lesson>"]`. Then run:
    ```bash
    python3 "${CLAUDE_PLUGIN_ROOT}/hook.py" post
    ```

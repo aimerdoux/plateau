@@ -208,7 +208,18 @@ def agent_of(payload: Dict[str, Any]) -> str:
     plateau.agency for its own "p" worker role, outside Claude Code hooks entirely),
     else "main". This same rule governs receipts' agent attribution (every caller of
     `agent_of` — `receipt.py`, `lift.py`, `ledger.py`, `probes.py`, `handoff.py`) gets
-    it for free from this one function."""
+    it for free from this one function.
+
+    0.4.2: one more source between `agent_name` and the env. Claude Code 2.1.27x builds
+    the SubagentStop payload as `agent_type: w ?? session.agent_type ?? ""` (read out of
+    the 2.1.278 binary), so a real subagent's Stop can arrive with `agent_type` EMPTY --
+    the first Plateau run on a non-Claude model saw 44 such payloads in one session, 3
+    real subagents, every one logged as "no agent_type (compaction summarizer?)" and
+    written nowhere. The same payload always carries `agent_transcript_path`, and Claude
+    Code writes a `<transcript>.meta.json` sidecar next to every subagent transcript
+    (`{"agentType": "general-purpose", "toolUseId": ..., "spawnDepth": 1, ...}`); when the
+    payload names a transcript but no type, the sidecar's `agentType` is the type. A
+    payload with neither (an `agent_id` alone) is still the main agent."""
     payload = payload or {}
     agent_type = payload.get("agent_type")
     if agent_type:
@@ -216,10 +227,33 @@ def agent_of(payload: Dict[str, Any]) -> str:
     agent_name = payload.get("agent_name")
     if agent_name:
         return f"subagent:{agent_name}"
+    sidecar_type = subagent_type_from_sidecar(payload.get("agent_transcript_path"))
+    if sidecar_type:
+        return f"subagent:{sidecar_type}"
     env = os.environ.get("PLATEAU_AGENT")
     if env:
         return env
     return "main"
+
+
+def subagent_type_from_sidecar(agent_transcript_path: Any) -> str:
+    """`agentType` from the `.meta.json` Claude Code writes beside a subagent transcript
+    (`.../subagents/agent-<id>.jsonl` -> `.../subagents/agent-<id>.meta.json`), or ""
+    when there is no path, no sidecar, or nothing readable in it. Never raises: this
+    runs inside hooks."""
+    if not agent_transcript_path or not isinstance(agent_transcript_path, str):
+        return ""
+    base, ext = os.path.splitext(agent_transcript_path)
+    sidecar = base + ".meta.json" if ext == ".jsonl" else agent_transcript_path + ".meta.json"
+    try:
+        with open(sidecar, encoding="utf-8") as f:
+            meta = json.load(f)
+    except (OSError, ValueError):
+        return ""
+    if not isinstance(meta, dict):
+        return ""
+    agent_type = meta.get("agentType") or meta.get("agent_type")
+    return str(agent_type).strip() if agent_type else ""
 
 
 _CHILD_ENV_STRIP = (
@@ -636,11 +670,16 @@ def _reason_tail(text: str) -> str:
 
 
 def record_reason(conn: sqlite3.Connection, rid: int, session_id: str, tool_use_id: Optional[str],
-                  text: str) -> List[str]:
+                  text: str, *, before_rid: Optional[int] = None) -> List[str]:
     """Store the reason the assistant stated for receipt `rid` and draw its `because`
     edges `(key, "because", r<rid>, rid)` from the knowledge nodes that existed before
     the call and share tokens with the reason (`_link_because`). A second call for the
-    same rid is a no-op. Returns the keys linked."""
+    same rid is a no-op. Returns the keys linked.
+
+    `before_rid` (default: `rid` itself) is where "before the call" ends: a knowledge
+    node counts only with `first_rid < before_rid`. A caller passes the first rid of a
+    batch of parallel calls that share one reason (`lift.lift_reasons`), so no call in
+    the batch descends from a sibling's result; it is never raised above `rid`."""
     exists = conn.execute("SELECT 1 FROM reasons WHERE rid=?", (rid,)).fetchone()
     if exists:
         return []
@@ -649,6 +688,7 @@ def record_reason(conn: sqlite3.Connection, rid: int, session_id: str, tool_use_
         "INSERT INTO reasons(rid,session_id,tool_use_id,text) VALUES(?,?,?,?)",
         (rid, session_id, tool_use_id, reason),
     )
-    linked = _link_because(conn, f"r{rid}", rid, reason, before_rid=rid)
+    boundary = rid if before_rid is None else min(rid, before_rid)
+    linked = _link_because(conn, f"r{rid}", rid, reason, before_rid=boundary)
     conn.commit()
     return linked

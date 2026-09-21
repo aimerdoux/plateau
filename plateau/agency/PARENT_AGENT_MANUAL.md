@@ -155,6 +155,11 @@ entire discipline is to do the FEWEST turns possible. Obey these laws:
     never escalate a prohibited action.
 15. Stay quiet until done. Then return a single tight roll-up: per-agent status, the verified
     artifacts (PR URLs, deliverable paths), and any logged safe-choice decisions.
+16. Before every tool call, say in one sentence what the call is for and NAME the file, symbol,
+    or error it concerns ("reading payment/client.py: charge() raised TimeoutError"). That
+    sentence is recorded as the call's reason and is what links the call to the facts it
+    descends from; a sentence about the protocol ("gating now", "spawning S2") links to nothing.
+    Put the same rule in every orchestrator prompt.
 ```
 
 ---

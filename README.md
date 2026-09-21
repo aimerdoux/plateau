@@ -429,7 +429,9 @@ recall-by-lag and by-compactions-crossed tables, and the raw tarball's SHA-256 a
 **The continuum (0.4).** The store gains the toy's second arrow ([`docs/toy/continuum-toy.html`](docs/toy/continuum-toy.html)):
 a `because` edge from the fact, error, decision, or symbol the assistant stated as its reason before
 a tool call, lifted from the assistant's own text at `Stop` (`plateau/bridge/lift.py`) and, for the
-open turn, at compaction, since `Stop` has not run for that turn yet.
+open turn, at compaction, since `Stop` has not run for that turn yet. Since 0.4.2 the same lift runs
+at every `SubagentStop`, over the subagent's own transcript: in a session that delegates (the
+parent discipline), most receipts are a subagent's, and until then none of them had an arrow.
 
 At a compaction the bridge then forces in the knowledge the current request descends from: walk the
 arrows back from the open turn's calls and keep the facts, errors, decisions, and symbols on that

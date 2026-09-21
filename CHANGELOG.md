@@ -4,6 +4,75 @@ All notable changes to Plateau are recorded here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project
 adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.2] — 2026-09-21
+
+The first Plateau run on a non-Claude model (GLM-5.3 through Claude Code, a delegating
+`plateau:run` session: 3 subagents, 210 receipts, 3 turns) was read back from its store and
+log. It followed the protocol faithfully, and the protocol let it down in six places -- all
+of them visible in the store, none of them model-specific.
+
+### Fixed
+
+- **The 0.4 layer stopped at the main agent.** `lift` ran only at `Stop`, so the parent's 12
+  receipts had reasons and the subagents' 198 had none: in a session whose whole discipline is
+  to delegate, the continuum covered the part that did the least. `hooks.json` (and `plateau
+  init`'s table) now fire `lift --cc --agent subagent` at `SubagentStop`, before the handoff
+  write. The lift reads the subagent's OWN transcript (`agent_transcript_path`; the payload's
+  `transcript_path` is still the parent's), records its report's `DECISION:`/`FACT:` lines as
+  decisions attributed `subagent:<type>` with provenance in that file, and pairs its calls
+  with the reason stated before each (`because` edges, same rule as the parent's). A
+  SubagentStop is not a turn of the session (`mark_turn` stays main-only) and never fires the
+  shadow probes; a subagent payload without a readable transcript lifts nothing and logs what
+  it did carry (`tests/test_reason.py`). Verified live (Claude Code 2.1.278, one haiku
+  subagent): its three calls got reasons, its `FACT:`/`DECISION:` report became two
+  decisions under `subagent:general-purpose`, and its handoff block counted them.
+- **The report was not in the transcript yet.** That live run also showed the SubagentStop
+  transcript holding the subagent's calls but not its final message -- Claude Code appends
+  the file asynchronously, which is why the Stop and SubagentStop payloads carry
+  `last_assistant_message`. `lift_decisions` now lifts from that payload text whenever the
+  transcript's last assistant message does not contain it yet (provenance
+  `<transcript>:tail`), and from the transcript as before once it has landed
+  (`tests/test_lift.py`).
+- **44 "handoff skip: no agent_type (compaction summarizer?)" lines in a session with no
+  compaction.** Claude Code 2.1.27x builds the SubagentStop payload with `agent_type: w ??
+  session.agent_type ?? ""` (read out of the 2.1.278 binary), so a real subagent's Stop can
+  arrive with the type empty; the old check treated that as the summarizer quirk, wrote
+  nothing, and logged nothing that could tell the two apart. `common.agent_of` now resolves
+  a missing or empty type from the `.meta.json` sidecar Claude Code writes beside every
+  subagent transcript (`agentType`), so both `lift` and `handoff` place the payload; only one
+  it still cannot place is skipped, and that line now names the event, `agent_id`, the
+  `agent_type` value, whether the transcript is present, and `stop_hook_active`
+  (`tests/test_bridge.py`).
+- **Parallel calls descended from each other.** Several calls issued from one assistant
+  message share the reason written before any of them ran, but each was linked against the
+  store as it stood before its OWN receipt, so the second Read's reason could cite the first
+  Read's result as its cause. `lift_reasons` now links a message's batch against the store
+  before the batch's first receipt (`record_reason(before_rid=...)`, never raised above the
+  receipt itself).
+- **The gate admitted a fact that said nothing.** `plateau:run` told the orchestrator to
+  queue every gated file as `"<path> present"`, so the carried signal held three pointers
+  and no facts. `signal.gate` now refuses a claim that only restates its own measurement
+  (`is_contentless`: the source path, its basename, any hash and the existence vocabulary
+  removed, nothing is left) with reason `contentless`; `run.md`, `gate.md`, the skill and
+  the driver's `GATE:` line ask for `:: <what the file establishes>` and build the claim
+  from it (`tests/test_signal_gate.py`, `tests/test_driver.py`).
+- **A carried lesson was cut mid-word.** `post` and the driver's `gate_reply` each capped a
+  CARRY line with a bare `[:200]` ("... the award SQL was never committ"). `signal.clip_lesson`
+  (used by both) allows 280 characters, cuts on the last whitespace before the cap, and ends
+  the cut in "…" (`tests/test_hooks_signal.py`).
+
+### Changed
+
+- The Parent Agent Manual's system-prompt block gains law 16: say in one sentence, before
+  every tool call, what the call is for and name the file, symbol, or error it concerns --
+  that sentence is the call's reason, and a sentence about the protocol ("gating now") links
+  to nothing. Of the run's 12 reasons, 6 drew an arrow; the rest named nothing in the store.
+
+### Findings
+
+- `injections` had no rows because the session never compacted, so the carry rule and the
+  drift measurement did not run; nothing in this release changes that.
+
 ## [0.4.1] — 2026-09-18
 
 ### Fixed

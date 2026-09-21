@@ -5,7 +5,9 @@ description: Gate facts this session produced into Plateau's bounded signal. Onl
 For each fact this session established, write an entry to `.plateau/pending_facts.json` as a
 JSON list of `{claim, source, value}` — `source` is a repo-relative path and `value` is its
 expected `sha256:` hash (the gate re-hashes `source` and admits the fact only if it matches).
-Then gate + persist:
+`claim` states what the file establishes ("<path>: award_referral_credit pays first_booking at
+award time"), not that it exists — a claim that only restates its own measurement ("<path>
+present") is dropped as `contentless`. Then gate + persist:
 
 ```bash
 python3 "${CLAUDE_PLUGIN_ROOT}/hook.py" post
