@@ -38,7 +38,7 @@ import json
 import os
 import re
 import sys
-from typing import List, Tuple
+from typing import List, Optional, Tuple
 
 from plateau import (
     Measurement, Thought, RelationalState, SelfState,
@@ -76,17 +76,35 @@ def _save_blob(blob: str) -> None:
         f.write(blob)
 
 
-def pre() -> dict:
-    """Inflate + ground the carried signal for the next step."""
+FACT_MIN_OVERLAP = 2  # distinct non-stopword tokens a verified fact must share with the prompt
+
+
+def _relevant(claim: str, prompt: str) -> bool:
+    """0.4.3: a verified fact rides a prompt only when it shares FACT_MIN_OVERLAP distinct
+    non-stopword tokens with it -- the same overlap rule the because arrow uses
+    (`plateau.bridge.common._link_because`). Measured 2026-09-22: one research session's
+    gated facts were injected on 1,127 prompts of unrelated work in the same root."""
+    from plateau.bridge.common import _STOPWORDS
+    from plateau.bridge.query import toks
+    return len((toks(claim) - _STOPWORDS) & (toks(prompt) - _STOPWORDS)) >= FACT_MIN_OVERLAP
+
+
+def pre(prompt: Optional[str] = None) -> dict:
+    """Inflate + ground the carried signal for the next step. With a `prompt` (the
+    UserPromptSubmit payload's), verified facts are filtered to the ones relevant to it;
+    goals, stance, lessons and pointers always ride. `prompt=None` keeps every fact."""
     set_ground_root(os.getcwd())
     inf = inflate(_load_blob(), fresh=True)
     s = inf.state
+    facts = [vf["claim"] for vf in s.verified_facts]
+    kept = facts if prompt is None else [c for c in facts if _relevant(c, prompt)]
     return {
         "carried_self_state": {
             "open_goals": s.open_goals, "stance": s.stance,
             "lessons": s.lessons, "pointers": s.pointers,
-            "verified_facts": [vf["claim"] for vf in s.verified_facts],
+            "verified_facts": kept,
         },
+        "facts_withheld_irrelevant": len(facts) - len(kept),
         "stale_dropped_at_inflate": inf.stale_claims(),
         "note": "surface carried_self_state into the next step; stale facts were dropped "
                 "because reality no longer supports them",
@@ -203,13 +221,17 @@ def main(mode: str, argv: List[str]) -> None:
     followed the mode on the command line (only `--cc` is recognized here — same as the
     original `adapters/claude_code/hook.py`). `--cc` emits Claude-Code-hook JSON:
     SessionStart (parent) injects the parent-agent discipline as standing context;
-    UserPromptSubmit (pre) injects the carried signal as additionalContext; Stop (post)
+    UserPromptSubmit (pre) injects the carried signal as additionalContext (verified facts
+    filtered to the prompt; nothing at all when nothing is left); Stop (post)
     gates+persists and returns a one-line systemMessage only when it admitted, dropped or carried something. Without `--cc`, prints the raw
     dict (manual/dry use). The decision logic is unchanged either way."""
     cc = "--cc" in argv
+    prompt: Optional[str] = None
     if cc:
         try:
-            sys.stdin.read()  # drain the hook's stdin JSON; we ground via cwd, not stdin
+            raw = sys.stdin.read()  # we ground via cwd; only `pre` reads the prompt from it
+            p = json.loads(raw).get("prompt") if raw.strip() else None
+            prompt = p if isinstance(p, str) else None
         except Exception:
             pass
     if mode == "parent":
@@ -217,7 +239,7 @@ def main(mode: str, argv: List[str]) -> None:
     elif mode == "post":
         out = post()
     else:
-        out = pre()
+        out = pre(prompt)
     if not cc:
         print(json.dumps(out, indent=2))
         return
@@ -231,7 +253,13 @@ def main(mode: str, argv: List[str]) -> None:
             payload["suppressOutput"] = True
         print(json.dumps(payload))
     elif mode == "pre":
-        ctx = _render_carried(out["carried_self_state"], out["stale_dropped_at_inflate"])
+        cs, stale = out["carried_self_state"], out["stale_dropped_at_inflate"]
+        if not (any(cs.values()) or stale):
+            # 0.4.3: nothing to carry for this prompt -> inject nothing, not an
+            # "(empty ...)" placeholder on every turn.
+            print(json.dumps({"suppressOutput": True}))
+            return
+        ctx = _render_carried(cs, stale)
         print(json.dumps({"hookSpecificOutput": {
             "hookEventName": "UserPromptSubmit", "additionalContext": ctx}}))
     else:

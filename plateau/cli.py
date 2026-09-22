@@ -36,7 +36,7 @@ from typing import List, Optional
 
 COMMANDS = (
     "init", "doctor", "lookup", "handoff", "resume", "hook",
-    "report", "fit", "propose", "learn", "sync", "version", "absorb",
+    "report", "fit", "propose", "learn", "sync", "version", "absorb", "usage",
 )
 
 # `plateau hook <mode>` -- the console-script twin of `hook.py <mode> --cc`
@@ -70,6 +70,8 @@ _LAB_ENTRY_POINTS = {
     # docs/harness-0.3/PLAN-absorb.md (owner D1): `plateau absorb` is a thin delegation
     # to `plateau.absorb.main`, the same S4-A4 pattern every other subcommand here uses.
     "absorb": ("plateau.absorb", "main"),
+    # 0.4.3: zero-spend "is the bridge used, and does it help?" report.
+    "usage": ("plateau.lab.usage", "main"),
 }
 
 DEFAULT_RESUME_PROMPT = (
