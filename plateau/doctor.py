@@ -379,6 +379,27 @@ def _check_private_ring_status(root: str) -> Check:
     return ("PASS", "private ring status", detail)
 
 
+def _check_core_matches_plugin() -> Check:
+    """0.4.3: the plugin shim imports whichever `plateau` resolves first, so a stale pip
+    core can silently shadow a newer plugin (found on the operator machine: plugin 0.4.1
+    running a 0.2.0 core). Compare the core's `__version__` with the installed plugin."""
+    from . import __version__ as core
+    path = os.path.join(os.path.expanduser("~"), ".claude", "plugins", "installed_plugins.json")
+    try:
+        with open(path, encoding="utf-8") as f:
+            data = json.load(f)
+    except (OSError, ValueError):
+        return ("SKIP", "core matches the installed plugin", "no {}".format(path))
+    plugins = data.get("plugins", data) if isinstance(data, dict) else {}
+    installed = [e.get("version") for k, v in plugins.items() if k.split("@")[0] == "plateau"
+                 for e in (v if isinstance(v, list) else [v]) if isinstance(e, dict)]
+    if not installed:
+        return ("SKIP", "core matches the installed plugin", "plateau plugin not installed")
+    ok = core in installed
+    return ("PASS" if ok else "FAIL", "core matches the installed plugin",
+            "core {} ({}), plugin {}".format(core, os.path.dirname(os.path.abspath(__file__)), ", ".join(map(str, installed))))
+
+
 # --- main ------------------------------------------------------------------------------
 
 
@@ -393,6 +414,7 @@ def main(argv: Optional[List[str]] = None) -> int:
     checks.append(_check_ledger_writable(real_root))
     checks.append(_check_config_resolves(real_root))
     checks.append(_check_private_ring_status(real_root))
+    checks.append(_check_core_matches_plugin())
 
     exit_code = 0
     for status, label, detail in checks:

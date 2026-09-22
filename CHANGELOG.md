@@ -4,6 +4,53 @@ All notable changes to Plateau are recorded here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project
 adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.3] — 2026-09-22
+
+A usage audit of the operator machine (2026-09-22: 13 stores, 15,436 receipts, 39
+transcripts, 17,661 tool calls since 0.4 installed) found the bridge working mechanically
+-- every injection landed at its budget -- and almost none of it being used: no model cited
+an injected receipt id back (0 over 70,262 assistant messages), no `plateau lookup` was
+invoked, 1 of 24 injected paths was touched after a compaction, 60% of Reads after a
+compaction re-read a file already read before it, and the lab's recall probes had never run.
+This release trims what was never used and makes the question measurable without spend.
+
+### Added
+
+- **`plateau usage`** (`plateau/lab/usage.py`): read-only, zero-spend report per store --
+  receipts, reasons per receipt, injections by event and arm, and after each compaction the
+  injected-key touch rate and the re-read rate, injected arm vs holdout arm (flagged "too few
+  to conclude" under 10 compactions per arm), plus `[rN]` citations and invoked `plateau
+  lookup` calls found in the sessions' transcripts. `--scan DIR` finds every store under DIR.
+- **`plateau doctor`: "core matches the installed plugin".** FAILs when the imported core's
+  `__version__` differs from the installed plugin's (the shim imports whichever `plateau`
+  resolves first; a stale pip 0.2.0 core once shadowed a 0.4.1 plugin).
+
+### Fixed
+
+- **The carried signal rode every prompt of every session in the root.** `pre` now reads the
+  UserPromptSubmit `prompt` and carries a verified fact only when it shares 2 distinct
+  non-stopword tokens with it (the because arrow's own overlap rule); goals, stance, lessons
+  and pointers always ride. With nothing left it injects nothing (`suppressOutput`) instead
+  of an "(empty ...)" placeholder. Measured: one research session's gated facts were injected
+  on 1,127 prompts of unrelated work in `~`. Without a prompt (`pre` called by hand) every
+  fact is kept, as before.
+- **A session starting where no store exists created one.** SessionStart `inject` now
+  returns before opening the store when `.plateau/index.sqlite` is absent; the first receipt
+  creates it when work actually happens there. ~215 stores existed, 12 held a receipt.
+- **The startup index said "from earlier in this session".** At startup every line comes
+  from earlier sessions in the project; the head now says so (compaction and legacy heads
+  unchanged).
+- **`tool` nodes filled the index.** "mcp__x__y → ok ×58" lines carry no fact. A kind whose
+  weight is exactly 0 is now left out of the ranking, and the default weights set `tool = 0.0`
+  (`bridge.toml` and the packaged default stay byte-identical).
+
+### Not changed, on purpose
+
+- Shadow probes stay opt-in: each one forks a paid `claude -p --resume` session.
+- `holdout_rate` stays 0.10 in the packaged default. To get a comparison worth concluding
+  from, raise it in `~/.plateau/bridge.toml` (`[lab] holdout_rate`) for a measurement window
+  and read `plateau usage --scan ~ --since <start>`.
+
 ## [0.4.2] — 2026-09-21
 
 The first Plateau run on a non-Claude model (GLM-5.3 through Claude Code, a delegating

@@ -6,7 +6,7 @@ prompt_chars = 0            # per-prompt injection off; D-037 measured ρ̂ ≈ 
 [selector]
 tau_turns = 3               # τ = tau_turns × measured receipts-per-turn; default 90 receipts
 degree_cap = 3              # ln(1 + min(degree, degree_cap))
-weights = { symbol = 1.4, error = 1.3, decided = 1.4, read = 1.2, test = 1.2, file = 0.7, command = 0.6, search = 0.3 }
+weights = { symbol = 1.4, error = 1.3, decided = 1.4, read = 1.2, test = 1.2, file = 0.7, command = 0.6, search = 0.3, tool = 0.0 }   # 0 = kind never indexed
 bridge_quota = 0.40         # share of lines reserved for nodes older than the previous compaction
 sticky = true               # a line injected at k is re-injected at k+1 unless its file was edited or its error resolved
 lexical = true               # query-aware: last user prompt from the transcript is the query at compaction

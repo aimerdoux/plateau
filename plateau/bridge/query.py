@@ -81,6 +81,7 @@ def score_nodes(conn: sqlite3.Connection, query: str, cfg: Any, session_id: str)
     struct = W[kind] * (0.6*exp(-(last - last_rid)/tau) + 0.4*log1p(min(degree, degree_cap)))
     lex    = BM25-lite (IDF-only) over toks(key) | toks(detail), squashed to [0,1) via x/(1+x)
     score  = struct + 2*lex, when cfg.selector["lexical"]; else struct alone.
+    A kind whose weight is exactly 0 is left out of the ranking altogether.
     """
     weights = cfg.selector["weights"]
     degree_cap = cfg.selector["degree_cap"]
@@ -109,6 +110,11 @@ def score_nodes(conn: sqlite3.Connection, query: str, cfg: Any, session_id: str)
 
     out: List[Dict[str, Any]] = []
     for (key, kind, first_rid, last_rid, degree, outcome, detail), d in zip(rows, docs):
+        if weights.get(kind, DEFAULT_KIND_WEIGHT) == 0:
+            # 0.4.3: an explicit 0 weight opts a kind out of the index entirely (the
+            # default config does this for `tool`: "mcp__x__y → ok ×58" lines carry no
+            # fact, and no injected receipt id was ever cited back -- 0 of 17,661 calls).
+            continue
         recency = math.exp(-(last - last_rid) / tau)
         capped_degree = min(degree, degree_cap)
         struct = weights.get(kind, DEFAULT_KIND_WEIGHT) * (
