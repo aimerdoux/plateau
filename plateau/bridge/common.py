@@ -66,6 +66,8 @@ CREATE TABLE IF NOT EXISTS decisions(id INTEGER PRIMARY KEY, ts REAL, session_id
 CREATE TABLE IF NOT EXISTS turns(session_id TEXT, n INTEGER, ts REAL, rid_at INTEGER, PRIMARY KEY(session_id, n));
 CREATE TABLE IF NOT EXISTS meta(k TEXT PRIMARY KEY, v TEXT);
 CREATE TABLE IF NOT EXISTS reasons(rid INTEGER PRIMARY KEY, session_id TEXT, tool_use_id TEXT, text TEXT);
+CREATE TABLE IF NOT EXISTS pressure(ts REAL, session_id TEXT, k INTEGER, rid_at INTEGER, event TEXT,
+  tokens INTEGER, window INTEGER, detail TEXT);
 """
 
 # The toy's knowledge kinds (fact / dec / err) in store terms: what a `because` edge may

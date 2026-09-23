@@ -1,6 +1,6 @@
 [project]
 name = "plateau"
-version = "0.4.3"
+version = "0.5.0"
 description = "Bounded, predictable context for long-horizon agents — emit a small re-grounded signal instead of carrying full history."
 readme = "README.md"
 requires-python = ">=3.9"   # core is stdlib-only + defers annotations (from __future__); the suite passes on 3.9.6 (macOS system python3)
