@@ -4,6 +4,57 @@ All notable changes to Plateau are recorded here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project
 adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0] — 2026-09-22
+
+Compaction as a Plateau procedure. An audit found no session was ever bounded: every
+compaction fired at 653k-997k tokens (median 768k, `autoCompactWindow: 800000`), 334k of
+each session was MCP tool definitions (tool search was off because
+`CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS=1` sat in the user's settings), and the 72k line in
+the D-038 diagram had been the experiment driver's `CLAUDE_AUTOCOMPACT_PCT_OVERRIDE`, never
+Plateau's. Plateau cannot run the summarizer and no hook can start it, so 0.5 owns the parts
+it can, each verified live against Claude Code 2.1.280:
+
+| lever | measured |
+|---|---|
+| `CLAUDE_AUTOCOMPACT_PCT_OVERRIDE` (settings `env`) | fires native compaction early; at 50% of a 200k window it fired at 87-104k, not 100k |
+| PreCompact JSON `customInstructions` | **ignored** (a canary token never reached the summary) |
+| PreCompact plain-text stdout | appended to the summary instructions (canary found) |
+| PreCompact exit 2 | blocks the compaction (not used) |
+| PostToolUse `additionalContext` | reaches the model (canary recalled) |
+| asking the working model to crystallize mid-task | **ignored** in three live runs, as context and as a `block` correction |
+| asking the summarizer to crystallize | followed: a `Crystallized` block of DECISION/FACT/OPEN lines, and the model answered from it afterwards without re-reading |
+
+### Added
+
+- **`plateau.bridge.pressure`.** Context size from the transcript tail (hooks carry no token
+  counts), projected by the size of the tool result the hook fires on. PreCompact prints
+  plain-text summary instructions: keep requests, point at files instead of restating them,
+  write a `Crystallized` block, end with the `plateau lookup` line. After the compaction the
+  first main-agent hook lifts that block into the graph as decisions (provenance
+  `#compact-summary`). A `pressure` table records every cycle: below / soft / remind /
+  crystallized / floor / compact / observed / summary.
+- **Self-calibration.** The real compaction point (`compact_boundary` preTokens) becomes the
+  project's hard line (`meta compaction.hard_tokens`); the project's largest single step is
+  remembered (`compaction.step_tokens`, 2% decay) and the soft line kept at least 1.5 steps
+  below the hard one; a cycle that compacted before crystallizing widens the margin
+  (`compaction.margin_tokens`), capped at half the hard line.
+- **Guards.** A subagent's compaction (it fires PreCompact under the parent's session id)
+  does not advance the parent's cycle; a reading older than the last compaction is not a
+  reading; a post-compaction floor above the soft line is logged once, not nagged every call.
+- **`plateau compaction [--apply HARD [--soft SOFT] | --off]`**: shows the window and both
+  lines; `--apply` writes `CLAUDE_AUTOCOMPACT_PCT_OVERRIDE` into `~/.claude/settings.json`
+  `env` and turns the procedure on in `~/.plateau/bridge.toml` (both backed up once).
+- `[compaction]` config table: `enabled` (default **false**), `soft_pct`, `hard_pct`, `window`,
+  `steer_summary`, `mid_task` (default false), `deliver`.
+- `plateau usage` reports compactions, summaries lifted and their marker count.
+
+### Fixed
+
+- PreCompact printed JSON `customInstructions` since 0.3; Claude Code never used them. It now
+  prints plain text (whenever the store exists, procedure on or off).
+- The test suite read the developer's real `~/.plateau/bridge.toml` (a raised holdout rate
+  failed `test_sticky_across_two_compactions` on `main`); `tests/conftest.py` isolates HOME.
+
 ## [0.4.3] — 2026-09-22
 
 A usage audit of the operator machine (2026-09-22: 13 stores, 15,436 receipts, 39

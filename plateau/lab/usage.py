@@ -146,6 +146,16 @@ def store_usage(root: str, since: float = 0.0, window: int = WINDOW,
                 "GROUP BY event, holdout", (since,)):
             inj[event + (" holdout" if hold else "")] = {"n": n, "mean_chars": round(chars or 0), "budget": round(budget or 0)}
         comps = _compactions(conn, since, window)
+        try:  # 0.5: the compaction procedure's own events (absent from pre-0.5 stores)
+            press = dict(conn.execute(
+                "SELECT event, COUNT(*) FROM pressure WHERE ts>=? GROUP BY event", (since,)).fetchall())
+            press["summary_markers"] = conn.execute(
+                "SELECT COALESCE(SUM(tokens),0) FROM pressure WHERE event='summary' AND ts>=?", (since,)).fetchone()[0]
+            crystallized_at_compact = conn.execute(
+                "SELECT COUNT(*) FROM pressure WHERE event='compact' AND detail LIKE '%crystallized=yes%' AND ts>=?",
+                (since,)).fetchone()[0]
+        except sqlite3.Error:
+            press, crystallized_at_compact = {}, 0
         sids = [s for (s,) in conn.execute("SELECT DISTINCT session_id FROM receipts WHERE ts>=?", (since,))]
     finally:
         conn.close()
@@ -154,6 +164,7 @@ def store_usage(root: str, since: float = 0.0, window: int = WINDOW,
         "root": root, "receipts": receipts, "sessions": sessions,
         "reasons_per_receipt": round(reasons / receipts, 3) if receipts else None,
         "injections": inj,
+        "pressure": dict(press, compact_crystallized=crystallized_at_compact) if press else {},
         "compaction": {"inject": _arm(comps, False), "holdout": _arm(comps, True)},
         "citations": _citations(sids, projects) if os.path.isdir(projects) else None,
     }
@@ -172,6 +183,12 @@ def _render(rows: List[Dict[str, Any]]) -> str:
             if a["n"]:
                 lines.append("  after compaction [{}] n={} reread={} touch={}{}".format(
                     arm, a["n"], a["reread_rate"], a["touch_rate"], "" if a["enough"] else "  (too few to conclude)"))
+        p = r.get("pressure") or {}
+        if p:
+            lines.append("  compaction: {} (summaries lifted {} with {} DECISION/FACT/OPEN lines; soft line {}x, "
+                         "mid-task crystallized {}x; floor above soft {}x)".format(
+                p.get("compact", 0), p.get("summary", 0), p.get("summary_markers", 0), p.get("soft", 0),
+                p.get("crystallized", 0), p.get("floor", 0)))
         c = r["citations"]
         if c:
             lines.append("  transcripts={} [rN] citations={} lookup calls={}".format(

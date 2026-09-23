@@ -3,8 +3,9 @@
 tool call, online.
 
 Reads the hook payload from stdin, records it via `common.record`, logs
-`receipt r<id> <Tool>`, and always exits 0 printing nothing (neither event consumes
-stdout). Skipped entirely when the resolved bridge role is "off".
+`receipt r<id> <Tool>`, and always exits 0. It prints nothing, except (0.5) when
+`plateau.bridge.pressure.check` says the context crossed the soft compaction line: then
+it prints the crystallize procedure as `additionalContext`. Skipped entirely when the resolved bridge role is "off".
 
 docs/harness-0.3/target-run-wavex.md finding #9 (item 8): a real target run showed 38
 Bash/Read/Write `tool_use` blocks in the transcript but only 36 receipts, with no
@@ -23,10 +24,12 @@ BOTH events (`adapters/claude_code/hooks/hooks.json` / `plateau.bridge.install`)
 
 from __future__ import annotations
 
+import json
 import sys
 
 from . import common
 from . import config
+from . import pressure
 
 
 def _tool_response_for(payload) -> object:
@@ -59,8 +62,22 @@ def main(argv=None) -> None:
                 root=root,
                 tool_use_id=payload.get("tool_use_id"),
             )
-            conn.close()
             common.log(root, f"receipt r{rid} {payload.get('tool_name')}")
+            # 0.5: context pressure -> the crystallize procedure (plateau.bridge.pressure)
+            try:
+                text = pressure.check(conn, root, payload, cfg)
+            except Exception as e:
+                text = None
+                common.log(root, f"pressure ERROR {e!r}")
+            conn.close()
+            if text:
+                event = payload.get("hook_event_name") or "PostToolUse"
+                out = {"hookSpecificOutput": {"hookEventName": event, "additionalContext": text}}
+                if (cfg.compaction or {}).get("deliver", "context") == "block":
+                    # Fed back to the model as a correction on this tool result, not as
+                    # background context (measured: context alone was ignored).
+                    out = {"decision": "block", "reason": text}
+                print(json.dumps(out))
     except Exception as e:
         common.log(root, f"receipt ERROR {e!r}")
     sys.exit(0)

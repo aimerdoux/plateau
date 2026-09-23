@@ -19,3 +19,12 @@ carry = true                # at a compaction, force in the knowledge the curren
 holdout_rate = 0.10
 shadow_probe_every_turns = 4
 canary_share = 0.20
+[compaction]
+enabled = false             # 0.5: compaction as a Plateau procedure (plateau.bridge.pressure); opt in per user or project
+soft_pct = 0                # inject the crystallize procedure here; 0 = hard_pct - 5
+hard_pct = 0                # native compaction point; 0 = live CLAUDE_AUTOCOMPACT_PCT_OVERRIDE, else 95
+window = 0                  # tokens; 0 = Claude Code's autoCompactWindow setting, else 200000
+steer_summary = true        # PreCompact prints plain-text summary instructions (JSON customInstructions is ignored);
+                            # the summarizer writes DECISION:/FACT:/OPEN: lines, lifted into the graph after compaction
+mid_task = false            # also ask the working model to crystallize at the soft line (ignored in 3 live runs; opt in)
+deliver = "context"         # mid_task delivery: "context" (additionalContext) or "block" (PostToolUse correction)

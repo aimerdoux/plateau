@@ -36,7 +36,7 @@ from typing import List, Optional
 
 COMMANDS = (
     "init", "doctor", "lookup", "handoff", "resume", "hook",
-    "report", "fit", "propose", "learn", "sync", "version", "absorb", "usage",
+    "report", "fit", "propose", "learn", "sync", "version", "absorb", "usage", "compaction",
 )
 
 # `plateau hook <mode>` -- the console-script twin of `hook.py <mode> --cc`
@@ -72,6 +72,8 @@ _LAB_ENTRY_POINTS = {
     "absorb": ("plateau.absorb", "main"),
     # 0.4.3: zero-spend "is the bridge used, and does it help?" report.
     "usage": ("plateau.lab.usage", "main"),
+    # 0.5: see and set the compaction procedure (plateau.bridge.pressure).
+    "compaction": ("plateau.bridge.compaction", "main"),
 }
 
 DEFAULT_RESUME_PROMPT = (

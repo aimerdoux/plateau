@@ -20,7 +20,7 @@ from __future__ import annotations
 
 import hashlib
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, Dict
 
 try:
@@ -68,6 +68,7 @@ class BridgeConfig:
     sha: str
     path: str
     role: str  # "incumbent" | "canary" | "off"
+    compaction: dict = field(default_factory=dict)  # 0.5: plateau.bridge.pressure
 
 
 def load(root: str, session_id: str = "") -> BridgeConfig:
@@ -120,4 +121,5 @@ def load(root: str, session_id: str = "") -> BridgeConfig:
         sha=sha,
         path=winning_path,
         role=role,
+        compaction=dict(cfg.get("compaction") or {}),
     )
