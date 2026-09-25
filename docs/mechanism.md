@@ -131,20 +131,36 @@ These are new; the nine found by the target runs are already fixed.
    handoff write fire every turn (five times in the 5-turn run). "Session" in the ledger means process. The ledger
    upserts, so the counts stay right, but per-session metrics need to group by session id, not by row.
 
-## What this means for 0.4
+## Status against 0.4 as released
 
-- **Carry knowledge, not actions.** The evidence for the 0.4 thesis is direct: native compaction already keeps the
-  file-level picture, and it kept the facts in these runs too. The bridge's marginal value is in what native
-  compaction drops, which D-038 locates at two or more compactions crossed (native recall 0.333 there, run 1).
-- **The path selector depends on the classifier fixes.** Excluding action nodes is right, but in every store before
-  the target-run fixes there was nothing else to carry. The D-038 bridge arm would have injected an empty path.
-  D-039 is only meaningful on stores that contain read, symbol, test, error and decided nodes; the preregistration
-  should require a minimum knowledge-node share per session before a session counts.
-- **The budget should bind by content, not by count.** At adapter-run scale the budget never bound, so any selector
-  would have injected the same block. D-039's comparison will only show a difference in sessions long enough for the
-  budget to bind, which argues for measuring budget pressure per session and reporting it beside the verdict.
-- **Fix defect 1 before D-039 starts.** The path selector seeds from the lexical query; a query that is the model's
-  own summary would seed from whatever the summary mentions.
+Everything above describes the 0.3 mechanism, which is what ran in every session so far. 0.4.0 (released on
+`feat/path-0.4`, not yet on `main`) changes the compaction injection: `plateau.bridge.carry` walks `because` and
+provenance arrows back from the current request's own nodes and carries only knowledge kinds
+(`read`, `decided`, `error`, `symbol`), walking through actions without carrying them. Checked against that code:
+
+| finding | status in 0.4.0 |
+|---|---|
+| injections are action logs | **Addressed** by the carry rule: actions are footprints, never carried. |
+| carry has nothing to carry without knowledge nodes | **Still a precondition.** The carry is empty on a store like D-038's bridge arm (only `command` and `file` nodes). The 0.3 classifier fixes make knowledge nodes possible; nothing yet guarantees a session produces enough of them. |
+| 1. query can be the model's own summary | **Partly addressed.** The carry seeds from the request's nodes by turn boundaries, not from the query, so the carry is unaffected. The score-based fill after the carry still takes `last_user_prompt`, which still does not skip `isCompactSummary` messages. |
+| 2. ★ uninformative | **Unchanged** in the fill. 0.4 adds a separate ◉ mark for carried lines. |
+| 3. empty block on a fresh store | **Unchanged.** Verified: a startup injection on an empty store still emits the 218-char header with no lines. |
+| 4. unscoped carryover across sessions | **Addressed for the carry**, which treats other sessions' nodes as turn-0 ancestry, reachable only when the request descends from them. **Unchanged for the startup injection**, which does not use the carry and still scores the whole store. |
+| 5. pull channel never used | **Unchanged.** |
+| 6. every headless turn is a session end | **Unchanged.** |
+| `test` results as knowledge | 0.4's knowledge kinds omit `test`, where the 0.4 brief listed it. A test outcome reached on the path is walked through but not carried. Deliberate or not, it should be stated in the D-039 preregistration. |
+
+What remains true for 0.4:
+
+- **The carry has never run on real data.** The only real store on this machine has zero `because` edges; every 0.4
+  result so far is against the toy fixture and unit tests. The first real evidence is the operator's own sessions.
+- **The bridge's marginal value is in what native compaction drops.** Native compaction kept the facts in every run
+  here; D-038 locates native loss at two or more compactions crossed (native recall 0.333 there, run 1). A carry
+  that duplicates what the summary already holds adds context without adding recall.
+- **D-039 is not yet preregistered** (no `docs/d039/`). When it is, two conditions follow from this report: count a
+  session only when its store holds a minimum share of knowledge nodes, and report per-session budget pressure beside
+  the verdict, since at adapter-run scale no selector choice changed what was injected.
+- **Fix defect 1 before D-039 starts.** The carry is safe from it; the fill that shares the same block is not.
 
 ## Evidence
 
