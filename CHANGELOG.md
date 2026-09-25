@@ -4,6 +4,17 @@ All notable changes to Plateau are recorded here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project
 adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- The compaction injection's query skipped nothing Claude Code writes on the user side of
+  the transcript, so when two compactions fell in one turn the second queried with the
+  first one's summary (25 583 chars in the 5-turn adapter run; mechanism report, defect 1).
+  `query.last_user_prompt` now skips `isCompactSummary` and `isMeta` entries and falls back
+  to the prompt the person typed, which the append-only transcript still holds. The carry
+  was never affected; the score-based fill that shares its block was.
+
 ## [0.5.0] — 2026-09-22
 
 Compaction as a Plateau procedure. An audit found no session was ever bounded: every
