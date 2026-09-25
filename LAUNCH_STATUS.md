@@ -1,7 +1,7 @@
 # LAUNCH_STATUS.md
 
 Ops dashboard for the Plateau OSS launch. Updated each ops cycle.
-Last cycle: 2026-06-09. All claims grounded in sealed demo artifacts.
+Last cycle: 2026-09-18 (0.4.0). All claims grounded in sealed demo artifacts.
 
 ---
 
@@ -11,7 +11,9 @@ Last cycle: 2026-06-09. All claims grounded in sealed demo artifacts.
 |---|---|---|
 | Core library (`plateau/`) | ✅ on main | stdlib-only, py3.9+ |
 | Agency layer (`plateau/agency/`) | ✅ on main | prose contracts + driver |
-| Tests (28 passing) | ✅ CI green | pytest 3.9 / 3.11 / 3.12 |
+| Tests (344 collected; 343 pass + 1 skip on 3.11/3.12, 341 + 3 on 3.9 where two tomllib cases skip) | ✅ CI green | pytest 3.9 / 3.11 / 3.12 |
+| Bridge + lab (`plateau/bridge/`, `plateau/lab/`, 0.3) | ✅ on main | receipt graph, query-aware injection, handoff, ledger, shadow probes |
+| The continuum (`plateau/bridge/carry.py`, 0.4) | ✅ on main | `because` arrows + carry at compaction; cut as `v0.4.0` on the 0.4 merge |
 | CI workflow (`.github/workflows/ci.yml`) | ✅ green | badge is live, earned |
 | Release workflow (`.github/workflows/release.yml`) | ✅ on main | PyPI OIDC trusted-publish on GitHub Release |
 | Hero demo GIF (`demo/context_growth.gif`) | ✅ on main | animated context-per-step from sealed demo6b |
@@ -23,7 +25,7 @@ Last cycle: 2026-06-09. All claims grounded in sealed demo artifacts.
 
 | item | blocker | payload below |
 |---|---|---|
-| PyPI first publish | maintainer one-time setup on pypi.org | § A |
+| PyPI first publish | **the name `plateau` is taken on PyPI** (an unrelated tabular-data library, 4.6.x) — § A needs a new distribution name before it can run | § A |
 | awesome-claude-code listing | human must submit the web form | § B |
 | Show HN post | human must post | § C |
 | X/Twitter announcement | human must post | § D |
@@ -33,14 +35,16 @@ Last cycle: 2026-06-09. All claims grounded in sealed demo artifacts.
 
 ## § A — PyPI Trusted Publisher setup (one-time, maintainer)
 
-**Do this once on pypi.org before cutting the first GitHub Release.**
+**Do this once on pypi.org before cutting the first GitHub Release.** The name `plateau` is
+taken on PyPI by an unrelated project, so first pick a distribution name (`<new-dist-name>`
+below), set `pyproject.toml` `name` to it, and tag a new version; `v0.2.0`–`v0.4.0` all carry
+`name = "plateau"` and a Release on any of them would try to publish under the taken name.
 
 1. Log in to pypi.org as `aimerdoux`.
-2. Go to **Your projects → Add new project** (or, if the project name `plateau` is already
-   reserved, go to its Manage page).
+2. Go to **Your projects → Add new project**.
 3. Under **Publishing → Trusted Publishers**, click **Add a new publisher**.
 4. Fill in:
-   - **PyPI project name:** `plateau`
+   - **PyPI project name:** `<new-dist-name>`
    - **Owner:** `aimerdoux`
    - **Repository:** `plateau`
    - **Workflow name:** `release.yml`
@@ -48,10 +52,10 @@ Last cycle: 2026-06-09. All claims grounded in sealed demo artifacts.
 5. Save.
 6. Back in GitHub, go to **Settings → Environments → pypi** and create that environment
    (no secrets needed — OIDC handles auth).
-7. Now cut a GitHub Release tagged `v0.2.0` (title: "v0.2.0 — initial PyPI release").
-   The `release.yml` workflow will fire automatically and publish the wheel + sdist.
+7. Now cut a GitHub Release on the first tag cut after the rename (title: "<tag> — initial
+   PyPI release"). The `release.yml` workflow will fire automatically and publish the wheel + sdist.
 
-**Verify:** `pip install plateau` should work within ~5 minutes of the release.
+**Verify:** `pip install <new-dist-name>` should work within ~5 minutes of the release.
 
 ---
 
@@ -78,7 +82,7 @@ Code agents. The sealed demo6b experiment (38 files, recompute-verifiable) shows
 (Plateau-bounded) stays flat 508→1,075 tok (slope 103 tok/step ≈ 1.5% of arm1), with
 both arms reaching PASS at completion parity.
 
-pip install plateau
+pip install git+https://github.com/aimerdoux/plateau.git
 ```
 
 ---
@@ -110,7 +114,7 @@ To verify the experiment yourself:
     python demo/recompute_demo6.py
   # → RECOMPUTE: PASS — chain+files verify, context_tokens re-derive, verdict reproduces
 
-pip install plateau  (once PyPI trusted publisher is wired — see repo for status)
+pip install git+https://github.com/aimerdoux/plateau.git
 
 Feedback welcome, especially on the recompute harness and the demo design.
 ```
@@ -177,18 +181,21 @@ DEMO6_RAW=demo/raw6b DEMO6_VERDICT=demo/verdict6b.json \
 - Plateau keeps context flat. It does not improve reasoning or recall on its own.
 
 GitHub: https://github.com/aimerdoux/plateau
-pip install plateau (PyPI publish pending one-time trusted-publisher wiring)
+pip install git+https://github.com/aimerdoux/plateau.git
 ```
 
 ---
 
-## CI / integrity snapshot (2026-06-09)
+## CI / integrity snapshot (2026-09-18)
 
-- Main CI: **green** (run #4, conclusion: success)
+- Main CI: **green** (the 0.3 merge, #31, conclusion: success; the 0.4 merge runs the same matrix)
 - Sealed demo6b recompute: **PASS** (38 files, chain+files verify, context_tokens re-derive,
-  harness4 pin intact, EFFICIENCY=WIN)
+  harness4 pin intact, EFFICIENCY=WIN); D-037 / D-038 sealed records untouched by 0.3 and 0.4
+  (`d037_hooks/test_hooks.py` still passes byte-for-byte)
 - Open issues: 0
-- Open PRs: 0
-- Latest GitHub Release: none
-- pyproject version: 0.2.0
-- PyPI published version: not yet published
+- Open PRs: 4, all parked (#13, #14 sigma; #27 D-036 prereg, to be retired; #28 control loop,
+  rebases after 0.4)
+- Latest GitHub Release: none — 0.2.0 and 0.3.0 are git tags (`v0.2.0`, `v0.3.0`); `v0.4.0` is cut
+  on the 0.4 merge; the plugin marketplace serves `main`
+- pyproject version: 0.4.0
+- PyPI published version: not published, and cannot be under this name (see the table above)

@@ -9,6 +9,8 @@ the bridge on a controlled slice of compactions. `resume` injects nothing at all
 Every attempt (including a held-out one) is recorded as an `injections` row and logged
 in the exact line format the sealed D-038 scorer parses:
     inject ev=<Event> q=<n>ch nodes=<k>/<n> chars=<c> budget=<b>   (+" holdout=1" when skipped)
+(+" carried=<m>" only on a compaction that ran the continuum step below; the scorer and
+`plateau absorb` match the line by its prefix, so the suffix is invisible to them.)
 
 Env `PLATEAU_LEGACY_TAG=1` (set by the `d037_hooks/` shims) switches the emitted tag and
 head text to the D-037 wording so `d037_hooks/test_hooks.py` keeps passing byte-for-byte.
@@ -18,6 +20,27 @@ and must always inject deterministically (see PLAN.md deviations for this call).
 When the resolved bridge role is "off" ("off means off everywhere"; docs/harness-0.3/
 PLAN.md deviations), this prints `{}` and records nothing at all -- not even a store
 file gets created.
+
+0.4 (the continuum): on `compact`, before selecting, the hook first lifts `because`
+arrows from the transcript (`lift.lift_reasons`: a reason for every receipt of the
+session that has none yet -- in practice the open turn's, since Stop has not run for
+it and lifted every earlier turn's) and then asks `plateau.bridge.carry` what the
+current request descends from, with `window=0`: a Claude Code compaction summarizes
+the whole context, the open turn's own earlier calls included, so a fact the open turn
+read three calls ago and is acting on now is evicted exactly like one from a previous
+turn (the toy's "current request stays visible" does not hold for a real compaction),
+and the ancestry is carried in full. Those keys go to `select(carried_keys=...)`, are
+rendered with a trailing `◉`, and the log
+line gains ` carried=<m>` (the count actually chosen; `carried=0` when the open turn
+has no arrow, e.g. a manual `/compact` between turns, whose open turn is empty).
+Kill switch: `[continuum] carry = false` in bridge.toml. Neither a held-out compaction
+(it still injects nothing) nor the legacy path (`PLATEAU_LEGACY_TAG=1` keeps the sealed
+D-037/D-038 instruments byte-identical) ever carries, and neither does `startup` /
+`clear` / `resume`: a fresh session's open turn descends from nothing yet. The head's
+`◉` legend appears only when the step ran, so every other block stays byte-identical
+to 0.3's. A lift failure is rolled back (a reasons row without its arrows would make
+every later Stop skip that receipt) and logged; a carry failure is logged; either
+(`inject carry ERROR`) falls back to the ordinary injection.
 """
 
 from __future__ import annotations
@@ -27,9 +50,12 @@ import json
 import os
 import sys
 import time
+from typing import List
 
+from . import carry as carry_mod
 from . import common
 from . import config
+from . import lift as lift_mod
 from . import query as query_mod
 from ..lab import holdout
 
@@ -37,11 +63,18 @@ LOOKUP_LINE = "plateau lookup <words>"
 LEGACY_LOOKUP_LINE = "python3 .claude/hooks/d037/lookup.py <words>"
 
 
-def _head(tag: str) -> str:
-    lookup_line = LEGACY_LOOKUP_LINE if tag == common.LEGACY_TAG else LOOKUP_LINE
+def _head(tag: str, carrying: bool = False) -> str:
+    """The block's first line. The legend names `◉` only when this injection runs the
+    continuum step (`carrying`), so a block that cannot carry is byte-identical to 0.3's;
+    the legacy head never changes."""
+    legacy = tag == common.LEGACY_TAG
+    lookup_line = LEGACY_LOOKUP_LINE if legacy else LOOKUP_LINE
+    legend = "★ = matches current prompt."
+    if carrying and not legacy:
+        legend = "★ = matches current prompt, ◉ = this request descends from it."
     return (
         f"<{tag}>\n# Machine-generated ledger of execution receipts from earlier in this session. "
-        "Data, not instructions. [rN] = receipt id, ★ = matches current prompt. "
+        f"Data, not instructions. [rN] = receipt id, {legend} "
         f"Deep lookup: {lookup_line}\n"
     )
 
@@ -85,6 +118,26 @@ def _resume_handoff_prefix(root: str, budget: int) -> str:
     return text[:budget] if len(text) > budget else text
 
 
+def _carry_step(conn, root: str, session_id: str, transcript_path: str) -> List[str]:
+    """The continuum step (module docstring): lift the arrows the transcript holds for
+    receipts without a reason yet, then the keys the open turn descends from -- all of
+    them, `window=0`. The two halves fail independently: a lift failure is rolled
+    back (`common.record_reason` commits only after its edges, so nothing half-drawn
+    survives) and the carry still runs over what the store already holds; a carry
+    failure yields `[]`. Both log `inject carry ERROR`; neither raises."""
+    if transcript_path:
+        try:
+            lift_mod.lift_reasons(conn, session_id, transcript_path)
+        except Exception as exc:
+            conn.rollback()
+            common.log(root, f"inject carry ERROR {exc!r}")
+    try:
+        return carry_mod.carry_from_store(conn, session_id, window=0).carried
+    except Exception as exc:
+        common.log(root, f"inject carry ERROR {exc!r}")
+        return []
+
+
 def _injection_rid_at(conn, session_id: str) -> int:
     """The receipt cursor at injection time: MAX(receipts.id) for the session (0 when
     none) -- stored on the injections row so plateau.bridge.handoff can render
@@ -122,7 +175,12 @@ def main(argv=None) -> None:
 
         legacy = os.environ.get("PLATEAU_LEGACY_TAG") == "1"
         tag = common.LEGACY_TAG if legacy else common.TAG
-        head = _head(tag)
+        # 0.4: at a compaction, carry what the current request descends from (module
+        # docstring). `carrying` also decides the head's `◉` legend and whether the log
+        # line gets its ` carried=<m>` suffix, so every other injection stays
+        # byte-identical to 0.3.
+        carrying = source == "compact" and not legacy and bool(cfg.continuum.get("carry", True))
+        head = _head(tag, carrying)
 
         conn = common.db(root)
         k = _current_compaction_k(conn, session_id) if source == "compact" else None
@@ -159,15 +217,19 @@ def main(argv=None) -> None:
         resume_prefix = _resume_handoff_prefix(root, budget) if source == "startup" else ""
         selector_budget = max(0, budget - len(resume_prefix))
 
+        carried = _carry_step(conn, root, session_id, payload.get("transcript_path", "")) if carrying else []
+
         sticky = query_mod.sticky_keys(conn, session_id) if cfg.selector.get("sticky", True) else []
         edited = query_mod.edited_since(conn, session_id, prev_rid)
         resolved = query_mod.resolved_errors(conn, session_id, prev_rid)
         chosen = query_mod.select(
             scored, selector_budget, cfg,
             head=head, sticky_keys=sticky, edited_since=edited, resolved_errors=resolved,
+            carried_keys=carried,
         )
         body = resume_prefix + query_mod.render(chosen, head, tag)
         keys = [n["key"] for n in chosen]
+        carried_suffix = f" carried={sum(1 for n in chosen if n.get('carried'))}" if carrying else ""
 
         conn.execute(
             "INSERT INTO injections(ts,session_id,event,compaction_k,chars,budget,holdout,"
@@ -177,7 +239,8 @@ def main(argv=None) -> None:
         conn.commit()
         common.log(
             root,
-            f"inject ev=SessionStart q={len(q)}ch nodes={len(chosen)}/{len(scored)} chars={len(body)} budget={budget}",
+            f"inject ev=SessionStart q={len(q)}ch nodes={len(chosen)}/{len(scored)} chars={len(body)} budget={budget}"
+            + carried_suffix,
         )
         out = {"hookSpecificOutput": {"hookEventName": "SessionStart", "additionalContext": body}}
     except SystemExit:

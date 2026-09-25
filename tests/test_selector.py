@@ -544,3 +544,13 @@ def test_last_user_prompt_reads_last_genuine_prompt(tmp_path):
 
 def test_last_user_prompt_missing_file_returns_empty(tmp_path):
     assert q.last_user_prompt(str(tmp_path / "nope.jsonl")) == ""
+
+
+def test_last_user_prompt_tail_cut_inside_a_multibyte_sequence_is_skipped(tmp_path):
+    """Claude Code appends the transcript while the hook reads it; a tail that ends
+    inside a UTF-8 sequence used to raise UnicodeDecodeError out of the file iteration
+    (only OSError was caught) and abort the whole injection."""
+    p = tmp_path / "transcript.jsonl"
+    p.write_bytes(json.dumps({"type": "user", "message": {"role": "user", "content": "real prompt"}}).encode()
+                  + b'\n{"type":"user","message":{"role":"user","content":"caf\xc3')
+    assert q.last_user_prompt(str(p)) == "real prompt"

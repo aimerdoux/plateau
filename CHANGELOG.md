@@ -4,6 +4,113 @@ All notable changes to Plateau are recorded here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project
 adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] — 2026-09-18
+
+The continuum (`docs/toy/continuum-toy.html`): a context window holds the last few requests,
+and a compaction evicts the rest. The toy's claim is that what should cross a compaction is
+not "everything old" but exactly the knowledge the current request descends from -- walk
+the arrows back from the request's own calls, keep the facts, errors, and decisions on that
+path. 0.4 gives the receipt store that second arrow (`because`: the reason the assistant
+stated before a tool call, lifted from its own text) and the carry rule over it, and wires
+the rule into the `compact` injection. The sealed D-037/D-038 instruments are untouched:
+the legacy path never lifts and never carries.
+
+### Added
+
+- **The `because` arrow** (`plateau/bridge/common.py`, `lift.py`, `receipt.py`) --
+  `receipts.tool_use_id` (the PostToolUse payload's id, so a call's receipt can be found
+  again from the transcript's `tool_use` block), a `reasons` table (`rid`, `session_id`,
+  `tool_use_id`, `text`; both added in place to an existing 0.3 store on first open -- a
+  guarded `ALTER TABLE receipts ADD COLUMN` plus `CREATE TABLE IF NOT EXISTS`, no rebuild,
+  `meta.schema` stays `1`, and 0.3 readers never select the column -- the legacy `.d037/`
+  store included), `common.KNOWLEDGE_KINDS` (`read`, `decided`, `error`, `symbol`:
+  what an arrow may start from and what the continuum carries), `common.record_reason` /
+  `common._link_because` (the reason row plus a `(key, "because", r<rid>, rid)` edge from
+  every earlier knowledge node sharing at least `REASON_MIN_OVERLAP` non-stopword tokens
+  with the reason -- the selector's own overlap, pointed at the call instead of the
+  prompt), `lift.reasons_from_transcript` / `lift.lift_reasons` (pairs each `tool_use`
+  with the `text` blocks before it in the same `message.id`, never a `thinking` block;
+  idempotent per receipt), and the `reason session=<id> n=<k>` hook-log line at `Stop`.
+- **`plateau.bridge.carry`** -- the toy's `compute()` transliterated: the pure rule
+  (`Node`, `Carry`, `cutoff`, `ancestors`, `carry`) over any node map and edge list,
+  asserted verbatim against the exported fixture, and the store adapter
+  (`turn_of_rid`, `graph_from_store`, `carry_from_store`) that builds the graph from the
+  whole store as one session sees it -- its own receipts dated by `turns.rid_at`, the
+  knowledge they produced at the turn of the first receipt that did, its decisions at the
+  turn whose `Stop` lifted them, the open turn as the current request, and everything
+  another session did at turn 0: walkable ancestry, never `now`, never inside the window.
+- **Compaction carry** (`plateau/bridge/inject.py`, `query.py`) -- on `compact`, the hook
+  lifts the open turn's reasons from the transcript, asks `carry_from_store(...,
+  window=0)` -- nothing stays: a Claude Code compaction summarizes the open turn's own
+  earlier calls too, so what they produced is evicted like a previous turn's -- and
+  passes the carried keys as `select(carried_keys=...)`; carried lines
+  are rendered with a trailing `◉` ahead of sticky, quota, and fill, budget permitting
+  (a carried line that does not fit is skipped, never squeezed in), and the log line
+  gains a ` carried=<m>` suffix counting the carried lines that made it. A lift that raises is rolled back, so a reasons row
+  never lands without its arrows. `[continuum] carry` in `bridge.toml` (and
+  `bridge.default.toml`, kept byte-identical) is the kill switch; `bridge.toml` is now
+  version `2.1`, so 2.0 and 2.1 injections stay distinguishable in the ledger -- with one
+  upgrade caveat: the ledger's label is the *resolved* `version`, and a `~/.plateau/bridge.toml`
+  seeded by 0.3's `plateau init --global` still says `version = "2.0"` with no `[continuum]`
+  table, so such an install carries (the default is on) while labelling its injections `2.0`.
+  Refresh it with `plateau init --global --force`, or set `version = "2.1"` in it.
+- **The continuum toy** (`docs/toy/continuum-toy.html`) and its exported fixture
+  (`tests/fixtures/continuum_toy.json`: 21 nodes, 24 edges, the expected answer for every
+  request in both arms).
+- Tests, as pytest collects them: `tests/test_reason.py` (14), `tests/test_carry.py`
+  (31, the pure rule against the fixture, both arms at every request),
+  `tests/test_carry_store.py` (40, the toy session replayed through the real store API),
+  `tests/test_continuum_inject.py` (20, the hook as a subprocess), and one
+  `last_user_prompt` case in `tests/test_selector.py`.
+
+### Changed
+
+- `common.record_decision` now draws `because` edges from the knowledge nodes a decision
+  descends from (the toy's `f1 -> d1`).
+- `query.select()` takes a keyword-only `carried_keys`; `render_line()` appends ` ◉` after
+  the ` ★` lexical marker. Without `carried_keys` both are unchanged.
+- The `<plateau_index>` head legend reads `★ = matches current prompt, ◉ = this request
+  descends from it.` on a compaction that ran the carry step; every other block keeps
+  the 0.3 head byte-for-byte, and the `<d037_index>` legacy head is unchanged.
+- `query.last_user_prompt`, `lift.reasons_from_transcript` and the Stop hook's
+  `lift._last_assistant_text_blocks` decode the transcript with `errors="replace"`: a
+  tail cut inside a multibyte sequence (Claude Code appends the JSONL while the hook
+  reads it) is skipped like any garbage line instead of raising `UnicodeDecodeError` out
+  of the hook -- `inject` injecting nothing, or `Stop` losing the last message's
+  `DECISION:`/`FACT:` lines for good and lifting no reasons that turn.
+- `bridge.toml` / `bridge.default.toml`: `version = "2.1"`, new `[continuum]` table;
+  `BridgeConfig` gains `continuum`.
+
+### Findings
+
+- Replaying the toy session through the real store reproduces 9 of its 18 `because`
+  arrows (`tests/test_carry_store.py::test_store_reproduces_exactly_these_toy_because_edges`).
+  The 9 it cannot draw are structural: the store has no request node, `_link_because`
+  starts an edge only at a knowledge node (no action-to-action "verify the edit"
+  arrow), and a decision lifted at `Stop` cannot be the cause of the same-turn call that
+  applied it. So at request 5 the store carries nothing where the toy carries one node,
+  the error `e1` (`test_request_5_honest_store_value_vs_toy`).
+- Reasons are only lifted at `Stop`, so a compaction taken mid-turn would see the open
+  turn's calls with no arrow at all and carry nothing
+  (`test_open_turn_before_its_stop_has_no_reasons`); this is why `inject` lifts the open
+  turn's reasons itself before it carries (`tests/test_continuum_inject.py`).
+- The toy's window keeps the current request visible, so a window of one request
+  leaves knowledge the open turn produced itself out of `carried` even when the open
+  turn descends from it (a read three calls ago, acted on now). A real compaction
+  summarizes the open turn as well, which is why the hook asks with `window=0` (the
+  cutoff past the turn, so the ancestry is carried in full;
+  `test_same_turn_ancestry_is_carried_because_a_compaction_evicts_the_open_turn_too`).
+- `plateau absorb` is unchanged: it matches the inject log line by its 0.3 prefix and
+  reads only the columns it always did, so the ` carried=<m>` suffix, the `reasons`
+  table and the `because` edges are not yet emitted as primitives (`--check` still
+  passes over a 2.1 store; nothing is absorbed from the continuum either).
+- A decision recorded mid-turn before any receipt of that turn is indistinguishable from
+  one recorded at the previous `Stop` and is placed there: its cursor is the previous
+  boundary and no later Stop precedes it (documented on `carry.graph_from_store`; the
+  placement rule itself is pinned by
+  `test_decision_at_the_stop_of_an_empty_turn_lands_in_that_turn` and
+  `test_decision_in_the_open_turn_after_a_receipt_stays_in_the_open_turn`).
+
 ## [0.3.0] — 2026-09-18
 
 The harness refactor (`docs/harness-0.3/PLAN.md`): the sealed D-037 Ω hook bundle becomes
@@ -140,7 +247,7 @@ sealed D-037/D-038 instruments are never edited and never change behavior.
   conclusion (online loop unsupported on that chain — λ̂ = 0 in 3/3 runs, no arm lost a
   k−3 fact).
 
-## [Unreleased]
+## Docs-only pass, shipped in [0.3.0]
 
 Docs-only pass — no core or agency logic changed. Adopts the polish of a strong
 per-payload-compression README (crisp tagline, badges, time-boxed quickstart sections, an
@@ -255,6 +362,7 @@ Initial release of the bounded-context core.
 - Pre-registered, sealed demos under `demo/` (recall + real-code efficiency) with
   recompute-verifiable verdicts; results in `RESULTS.md`.
 
-[Unreleased]: https://github.com/aimerdoux/plateau/compare/v0.2.0...HEAD
+[0.4.0]: https://github.com/aimerdoux/plateau/compare/v0.3.0...v0.4.0
+[0.3.0]: https://github.com/aimerdoux/plateau/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/aimerdoux/plateau/releases/tag/v0.2.0
 [0.1.0]: https://github.com/aimerdoux/plateau/releases/tag/v0.1.0

@@ -1,4 +1,4 @@
-version = "2.0"
+version = "2.1"
 [budget]
 compaction_chars = 12000
 startup_chars = 6000
@@ -13,6 +13,8 @@ lexical = true               # query-aware: last user prompt from the transcript
 [nodes]
 read_facts = true           # signatures / config keys / file:line from Read results (regex: def|function|export|class|KEY=)
 decided_facts = true        # DECISION: / FACT: marker lines lifted at Stop
+[continuum]
+carry = true                # at a compaction, force in the knowledge the current request descends from (0.4)
 [lab]
 holdout_rate = 0.10
 shadow_probe_every_turns = 4

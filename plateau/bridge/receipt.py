@@ -57,6 +57,7 @@ def main(argv=None) -> None:
                 bridge_version=cfg.version,
                 bridge_sha=cfg.sha,
                 root=root,
+                tool_use_id=payload.get("tool_use_id"),
             )
             conn.close()
             common.log(root, f"receipt r{rid} {payload.get('tool_name')}")

@@ -64,6 +64,7 @@ class BridgeConfig:
     selector: dict
     nodes: dict
     lab: dict
+    continuum: dict
     sha: str
     path: str
     role: str  # "incumbent" | "canary" | "off"
@@ -115,6 +116,7 @@ def load(root: str, session_id: str = "") -> BridgeConfig:
         selector=dict(cfg.get("selector") or {}),
         nodes=dict(cfg.get("nodes") or {}),
         lab=dict(cfg.get("lab") or {}),
+        continuum=dict(cfg.get("continuum") or {}),
         sha=sha,
         path=winning_path,
         role=role,
