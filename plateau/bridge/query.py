@@ -297,7 +297,12 @@ def last_user_prompt(transcript_path: str) -> str:
 
     Skips "user" turns whose content is tool-result feedback (a list whose first block is
     `{"type": "tool_result", ...}`); those are the model's own tool output relayed back on
-    the user side of the transcript, not something a person typed. Returns "" if the file
+    the user side of the transcript, not something a person typed. Also skips turns Claude
+    Code itself wrote on the user side: the compaction summary (`isCompactSummary`) and meta
+    turns such as local-command caveats (`isMeta`). Without this, a second compaction in one
+    turn queried with the first compaction's summary (mechanism report, defect 1). The
+    transcript is append-only, so the prompt typed before the summary is still found.
+    Returns "" if the file
     is missing/unreadable or no genuine prompt is found; never raises. Claude Code appends
     the JSONL while this hook reads it, so the tail may end inside a multibyte sequence:
     undecodable bytes are replaced, and that half line then fails to parse like any other
@@ -315,6 +320,8 @@ def last_user_prompt(transcript_path: str) -> str:
                 except ValueError:
                     continue
                 if not isinstance(entry, dict) or entry.get("type") != "user":
+                    continue
+                if entry.get("isCompactSummary") or entry.get("isMeta"):
                     continue
                 message = entry.get("message") or {}
                 content = message.get("content")
