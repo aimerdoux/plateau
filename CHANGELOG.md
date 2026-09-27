@@ -8,6 +8,17 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- Hooks registered twice at once (the Claude Code plugin AND `plateau init --global`,
+  which Claude Code treats as two independent commands) ran every event twice within
+  milliseconds of an identical payload, doubling injected context and raising
+  `IntegrityError` in `mark_compaction`/`mark_turn`/the `reasons` table. `plateau
+  hook`/`hook.py` now dedupe an identical invocation within a short window
+  (`plateau.bridge.dedupe`); `mark_compaction`/`mark_turn` serialize their
+  SELECT-then-INSERT under `BEGIN IMMEDIATE` and the `reasons` insert is `INSERT OR
+  IGNORE`; and `plateau doctor` gained a "hooks registered once" check (`plateau init
+  --global` also warns on install) so the double registration itself gets caught, not
+  just its symptoms.
+
 - The compaction injection's query skipped nothing Claude Code writes on the user side of
   the transcript, so when two compactions fell in one turn the second queried with the
   first one's summary (25 583 chars in the 5-turn adapter run; mechanism report, defect 1).
