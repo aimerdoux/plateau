@@ -4,6 +4,25 @@ All notable changes to Plateau are recorded here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project
 adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.1] — 2026-10-05
+
+The Stop hook no longer writes into the session transcript. Claude Code records whatever a
+hook prints: Stop ran `handoff --print`, whose `{"systemMessage": <block>}` was stored once
+as the hook's stdout (`hook_success`) and again as `hook_system_message`, and shown at the
+end of every turn. One operator transcript carried 26 such entries from 13 turns, and with
+the plugin and `plateau init --global` both installed every block was written twice.
+
+### Changed
+- `plateau handoff --quiet`: write or render as asked, print nothing.
+- The plugin's Stop hook is now `handoff --write --quiet`. The block goes to
+  `.plateau/handoff/<session_id>.json`, where `plateau handoff --last` and resume read it.
+  SessionEnd and SubagentStop also pass `--quiet`, so their written path is no longer printed.
+- `plateau init --global` installs the same arguments.
+- `plateau doctor`'s Stop check passes when the block was written to disk, not only when
+  it was printed.
+
+`plateau handoff --print` is unchanged for manual use and for the agency driver's footer.
+
 ## [0.5.0] — 2026-09-22
 
 Compaction as a Plateau procedure. An audit found no session was ever bounded: every

@@ -88,7 +88,7 @@
           },
           {
             "type": "command",
-            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/hook.py handoff --cc --print",
+            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/hook.py handoff --cc --write --quiet",
             "timeout": 10
           }
         ]
@@ -104,7 +104,7 @@
           },
           {
             "type": "command",
-            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/hook.py handoff --cc --write",
+            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/hook.py handoff --cc --write --quiet",
             "timeout": 10
           }
         ]
@@ -120,7 +120,7 @@
           },
           {
             "type": "command",
-            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/hook.py handoff --cc --write --agent subagent",
+            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/hook.py handoff --cc --write --quiet --agent subagent",
             "timeout": 10
           }
         ]

@@ -7,7 +7,7 @@ absorbs the step-2 bridge checks that used to live directly in `plateau/cli.py`
 repo, never a real `.plateau/`) and extends them per the step-4 contract:
 
   1. Resolve the INSTALLED hook commands for four events (PostToolUse -> receipt,
-     PreCompact -> snapshot, SessionStart[compact] -> inject, Stop -> handoff --print)
+     PreCompact -> snapshot, SessionStart[compact] -> inject, Stop -> handoff)
      from the project's `.claude/settings.json`, else the user's global
      `~/.claude/settings.json`, else fall back to running the package module directly
      (`python -m plateau.bridge.<name>`) when neither settings.json installs that mode
@@ -281,6 +281,15 @@ def _check_stop_handoff(settings_root: str, run_root: str, session_id: str, env:
         ok = bool(text) and text.startswith("<plateau_handoff")
     except Exception:
         ok = False
+    if not ok:
+        # 0.5.1: the installed Stop hook runs `handoff --write --quiet` and prints
+        # nothing, so the block is checked where it was written.
+        try:
+            from .bridge import handoff as bridge_handoff
+            block = bridge_handoff.last(run_root)
+            ok = block is not None and bridge_handoff.render(block).startswith("<plateau_handoff")
+        except Exception:
+            ok = False
     label = "a handoff block renders (Stop -> handoff, via {})".format(source)
     return ("PASS" if ok else "FAIL", label, "")
 

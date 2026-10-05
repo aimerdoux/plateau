@@ -495,6 +495,11 @@ def main(argv: Optional[List[str]] = None) -> None:
     ap.add_argument("--print", action="store_true", dest="do_print")
     ap.add_argument("--write", action="store_true", dest="do_write")
     ap.add_argument("--last", action="store_true", dest="do_last")
+    # 0.5.1: hooks pass `--write --quiet`. Anything a hook prints is recorded in the
+    # session transcript (Stop stdout as `hook_success`, a systemMessage a second time
+    # as `hook_system_message`), so a block printed at every Stop accumulated in the
+    # transcript turn after turn. The block on disk is what resume reads.
+    ap.add_argument("--quiet", action="store_true", dest="quiet")
     ap.add_argument("--agent", default=None)
     ap.add_argument("--parent", default=None)
     args = ap.parse_args(argv)
@@ -547,6 +552,8 @@ def main(argv: Optional[List[str]] = None) -> None:
 
     wrote_path = write(root, block) if args.do_write else None
 
+    if args.quiet:
+        return
     if args.do_print:
         # Stop's hook contract (PLAN-step3.md "hooks.json (plugin)"): the handoff block
         # is the systemMessage, so it is the LAST thing shown in the turn.
