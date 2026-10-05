@@ -79,13 +79,13 @@ def hook_table() -> Dict[str, List[Dict[str, Any]]]:
         _group("PreCompact", None, "snapshot", None, 30),
         _group("Stop", None, "post", None, 15),
         _group("Stop", None, "lift", None, 10),
-        _group("Stop", None, "handoff", ["--print"], 10),
+        _group("Stop", None, "handoff", ["--write", "--quiet"], 10),
         _group("SessionEnd", None, "ledger", None, 20),
-        _group("SessionEnd", None, "handoff", ["--write"], 10),
+        _group("SessionEnd", None, "handoff", ["--write", "--quiet"], 10),
         # 0.4.2: the subagent's own Stop lifts its decisions and reasons from ITS
         # transcript before the handoff is written, so the block already counts them.
         _group("SubagentStop", None, "lift", ["--agent", "subagent"], 10),
-        _group("SubagentStop", None, "handoff", ["--write", "--agent", "subagent"], 10),
+        _group("SubagentStop", None, "handoff", ["--write", "--quiet", "--agent", "subagent"], 10),
     ]
     table: Dict[str, List[Dict[str, Any]]] = {}
     for spec in specs:

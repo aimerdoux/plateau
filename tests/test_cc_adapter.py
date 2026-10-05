@@ -165,3 +165,27 @@ def test_cc_handoff_print_returns_systemmessage_with_handoff_block(tmp_path):
     # last thing shown in the turn) -- not the block re-wrapped as a JSON string.
     assert msg.startswith("<plateau_handoff v=1>")
     assert msg.rstrip("\n").endswith("</plateau_handoff>")
+
+
+def test_stop_handoff_hook_writes_the_block_and_prints_nothing(tmp_path):
+    """0.5.1: whatever a hook prints is recorded in the session transcript, so the Stop
+    handoff printed at every turn accumulated there. The registered Stop command must
+    print nothing and leave the block on disk for resume."""
+    with open(os.path.join(ROOT, "adapters", "claude_code", "hooks", "hooks.json")) as f:
+        hooks = json.load(f)["hooks"]
+    commands = [h["command"] for ev in hooks.values() for g in ev for h in g["hooks"]]
+    assert not [c for c in commands if "--print" in c]
+    stop = [h["command"] for g in hooks["Stop"] for h in g["hooks"] if " handoff " in h["command"]]
+    assert stop == ["python3 ${CLAUDE_PLUGIN_ROOT}/hook.py handoff --cc --write --quiet"]
+
+    root = str(tmp_path)
+    payload = {"cwd": root, "session_id": "cc-quiet-sess", "hook_event_name": "Stop"}
+    env = dict(os.environ, PYTHONPATH=ROOT, PLATEAU_NO_DEDUPE="1")
+    r = subprocess.run([sys.executable, HOOK, "handoff", "--cc", "--write", "--quiet"], cwd=root,
+                       input=json.dumps(payload), capture_output=True, text=True, env=env)
+    assert r.returncode == 0, r.stderr
+    assert r.stdout == ""
+    written = os.path.join(root, ".plateau", "handoff", "cc-quiet-sess.json")
+    assert os.path.isfile(written)
+    with open(written) as f:
+        assert json.load(f)["session"] == "cc-quiet-sess"
