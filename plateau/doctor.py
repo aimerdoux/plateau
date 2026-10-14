@@ -400,6 +400,104 @@ def _check_core_matches_plugin() -> Check:
             "core {} ({}), plugin {}".format(core, os.path.dirname(os.path.abspath(__file__)), ", ".join(map(str, installed))))
 
 
+# --- double registration: the plugin AND `plateau init` both installing the same hooks --
+
+def _plugin_keys(home: str) -> List[str]:
+    """Every key of `~/.claude/plugins/installed_plugins.json` whose name before `@` is
+    `plateau` (mirrors `_check_core_matches_plugin`'s own reading of that file, kept
+    separate since that check wants versions and this one wants enabled/disabled)."""
+    path = os.path.join(home, ".claude", "plugins", "installed_plugins.json")
+    try:
+        with open(path, encoding="utf-8") as f:
+            data = json.load(f)
+    except (OSError, ValueError):
+        return []
+    plugins = data.get("plugins", data) if isinstance(data, dict) else {}
+    if not isinstance(plugins, dict):
+        return []
+    return [k for k in plugins if isinstance(k, str) and k.split("@")[0] == "plateau"]
+
+
+def _plugin_installed_and_enabled(home: str) -> bool:
+    """True iff the Plateau plugin is present in `installed_plugins.json` AND not
+    explicitly turned off via `"enabledPlugins": {"<key>": false}` in
+    `~/.claude/settings.json` — a plugin absent from that map at all is enabled by
+    default (only an explicit `false` disables it)."""
+    keys = _plugin_keys(home)
+    if not keys:
+        return False
+    settings = _load_json_settings(os.path.join(home, ".claude", "settings.json"))
+    enabled_map = settings.get("enabledPlugins") if isinstance(settings, dict) else None
+    if not isinstance(enabled_map, dict):
+        return True
+    return not any(enabled_map.get(k) is False for k in keys)
+
+
+def _settings_hooks_contain(path: str, needle: str) -> bool:
+    """True iff `path`'s `hooks` table, serialized back to text, contains `needle`
+    anywhere in a command string. Serializing and substring-matching (rather than
+    walking event/matcher/hooks by hand) is deliberately loose: this is a diagnostic,
+    not an installer, so it does not need to (and should not) mirror `install.py`'s own
+    hook-table shape byte for byte."""
+    settings = _load_json_settings(path)
+    hooks = settings.get("hooks") if isinstance(settings, dict) else None
+    if not hooks:
+        return False
+    try:
+        return needle in json.dumps(hooks)
+    except (TypeError, ValueError):
+        return False
+
+
+def hook_registration_places(real_root: str, home: Optional[str] = None) -> List[str]:
+    """The distinct places Plateau's hooks are ACTUALLY registered from right now, as
+    human-readable names -- shared by `_check_hooks_registered_once` below and
+    `plateau init --global`'s post-install warning (`plateau.cli._cmd_init`), so the two
+    never disagree about what counts as "registered". `home` defaults to
+    `os.path.expanduser("~")` (kept as a parameter so a test can point it at a tmp dir
+    without needing `monkeypatch.setenv("HOME", ...)`, though that works too since
+    `os.path.expanduser` already honours `$HOME`).
+
+    Three places, matching the real bug (see `plateau.bridge.dedupe`'s module
+    docstring): the Claude Code plugin (enabled), `plateau init --global`'s hooks in the
+    user's global settings.json, and `plateau init`'s (project-scoped) hooks in this
+    project's own `.claude/settings.json` / `.claude/settings.local.json`."""
+    home = home or os.path.expanduser("~")
+    places: List[str] = []
+    if _plugin_installed_and_enabled(home):
+        places.append("the Claude Code plugin (enabled)")
+    try:
+        from .bridge import install as bridge_install
+        global_settings = bridge_install.settings_path(real_root, is_global=True)
+    except Exception:
+        global_settings = os.path.join(home, ".claude", "settings.json")
+    if _settings_hooks_contain(global_settings, "plateau hook"):
+        places.append("{} (`plateau init --global`)".format(global_settings))
+    for name in ("settings.json", "settings.local.json"):
+        path = os.path.join(real_root, ".claude", name)
+        if _settings_hooks_contain(path, "plateau"):
+            places.append("{} (`plateau init`)".format(path))
+    return places
+
+
+def _check_hooks_registered_once(real_root: str) -> Check:
+    """FAIL when Plateau's hooks are registered from more than one of
+    `hook_registration_places`' three places -- the exact double-registration bug this
+    checks for: Claude Code treats two differently-worded hook commands as independent,
+    so it runs BOTH on every event, doubling every side effect and racing the store's
+    unique keys (`plateau.bridge.dedupe` softens the resulting collision, but the fix is
+    to only ever have one registration)."""
+    places = hook_registration_places(real_root)
+    if len(places) <= 1:
+        return ("PASS", "hooks registered once", places[0] if places else "not registered anywhere")
+    detail = (
+        "registered in {} places: {} -- keep exactly one: `plateau init --global "
+        "--uninstall` (drop the settings.json copy) or uninstall the plugin via "
+        "`/plugin` (drop the plugin copy)"
+    ).format(len(places), "; ".join(places))
+    return ("FAIL", "hooks registered once", detail)
+
+
 # --- main ------------------------------------------------------------------------------
 
 
@@ -415,6 +513,7 @@ def main(argv: Optional[List[str]] = None) -> int:
     checks.append(_check_config_resolves(real_root))
     checks.append(_check_private_ring_status(real_root))
     checks.append(_check_core_matches_plugin())
+    checks.append(_check_hooks_registered_once(real_root))
 
     exit_code = 0
     for status, label, detail in checks:

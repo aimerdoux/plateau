@@ -28,6 +28,7 @@ from __future__ import annotations
 
 import argparse
 import importlib
+import io
 import json
 import os
 import subprocess
@@ -154,11 +155,49 @@ def _hook_log(msg: str) -> None:
         pass
 
 
+def _hook_log_dup(mode: str, raw: str) -> None:
+    """Best-effort `.plateau/hooks.log` line for an invocation this process skipped as
+    a duplicate (see `plateau.bridge.dedupe`) -- the console-script twin of
+    `adapters/claude_code/hook.py`'s `_log_dup`. Takes the raw payload directly rather
+    than reading it again from stdin, which the dedupe read already drained."""
+    try:
+        from .bridge import common as bridge_common
+        try:
+            payload = json.loads(raw) if raw else {}
+        except Exception:
+            payload = {}
+        if not isinstance(payload, dict):
+            payload = {}
+        bridge_common.log(bridge_common.root(payload), "dup {} skipped".format(mode))
+    except Exception:
+        pass
+
+
 def _cmd_hook(rest: List[str]) -> int:
     if not rest:
         print("usage: plateau hook <mode> [args...]", file=sys.stderr)
         return 2
     mode, mode_args = rest[0], rest[1:]
+
+    # Guard against this exact invocation having already been handled a moment ago by
+    # the OTHER dispatch entry point (`adapters/claude_code/hook.py <mode> --cc`), when
+    # both the plugin and `plateau init --global` have registered the same hooks (see
+    # `plateau.bridge.dedupe`). Stdin is read here, ONCE, for that claim; on a first
+    # claim it is replayed back onto `sys.stdin` so every mode's own payload read sees
+    # the exact same bytes it would have read directly.
+    try:
+        from .bridge import dedupe as bridge_dedupe
+        raw = bridge_dedupe.read_for_dedupe()
+        if raw is not None:
+            dedupe_argv = [a for a in mode_args if a != "--cc"]
+            if not bridge_dedupe.claim(mode, dedupe_argv, raw):
+                _hook_log_dup(mode, raw)
+                if bridge_dedupe.emits_json(mode, dedupe_argv):
+                    print(json.dumps({}))
+                return 0
+            sys.stdin = io.StringIO(raw)
+    except Exception:
+        pass  # dedupe trouble must never block a real hook -- proceed as if first.
 
     if mode in _SIGNAL_MODES:
         # parent/pre/post -> plateau.hooks.signal.main(mode, argv) (S4-A1). `plateau
@@ -232,6 +271,24 @@ def _cmd_init(rest: List[str]) -> int:
         dest = bridge_install.copy_global_bridge_toml(force=args.force)
         if dest:
             print("bridge.toml -> {}".format(dest))
+        # `plateau init --global` and the Claude Code plugin can both end up
+        # registering the same nine hooks (see `plateau.bridge.dedupe`'s module
+        # docstring) -- if the plugin is installed and enabled, this install just made
+        # that true, so warn about it right here rather than only at the next `plateau
+        # doctor` run. Reuses `plateau.doctor`'s own detection (`hook_registration_places`)
+        # so the two never disagree about what counts as "registered".
+        try:
+            from . import doctor as plateau_doctor
+            places = plateau_doctor.hook_registration_places(root)
+            if len(places) > 1:
+                print(
+                    "WARNING: hooks are now registered in {} places ({}) -- Claude Code "
+                    "will run every hook event once per registration. Keep exactly one: "
+                    "`plateau init --global --uninstall`, or uninstall the plugin via "
+                    "`/plugin`.".format(len(places), "; ".join(places))
+                )
+        except Exception:
+            pass
     return 0
 
 

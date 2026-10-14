@@ -29,7 +29,13 @@ def _run(mode, tmp_path, signal=None, pending=None):
     (pd / "signal.json").write_text(json.dumps(signal or _SIG))
     if pending is not None:
         (pd / "pending_facts.json").write_text(json.dumps(pending))
-    env = dict(os.environ, PYTHONPATH=ROOT)  # ensure `import plateau` resolves
+    # PLATEAU_NO_DEDUPE=1: several tests below call the same mode with the exact same
+    # literal `input="{}"` more than once in a row (a real Stop's payload always differs
+    # -- session_id, transcript_path, ... -- this dummy one deliberately does not, since
+    # these tests are about the adapter's JSON *shape*, not about two logically distinct
+    # events). Without it, plateau.bridge.dedupe (see its module docstring) would see
+    # the second call as a duplicate of the first and skip it.
+    env = dict(os.environ, PYTHONPATH=ROOT, PLATEAU_NO_DEDUPE="1")  # ensure `import plateau` resolves
     r = subprocess.run([sys.executable, HOOK, mode, "--cc"], cwd=str(tmp_path),
                        input="{}", capture_output=True, text=True, env=env)
     assert r.returncode == 0, r.stderr

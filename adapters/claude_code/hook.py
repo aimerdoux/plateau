@@ -22,6 +22,8 @@ Run directly for a dry run:
 from __future__ import annotations
 
 import importlib
+import io
+import json
 import os
 import sys
 
@@ -101,6 +103,24 @@ def _dispatch_signal_mode(mode: str, rest: list) -> None:
         _log_fallback(mode, f"ERROR {exc!r}")
 
 
+def _log_dup(mode: str, raw: str) -> None:
+    """Best-effort `.plateau/hooks.log` line for an invocation this process skipped as
+    a duplicate (see `plateau.bridge.dedupe`). Mirrors `_log_fallback`, but takes the
+    raw payload directly rather than reading it again from stdin: the dedupe read
+    already drained the real pipe, so `common.read_payload()` would just see EOF."""
+    try:
+        from plateau.bridge import common as bridge_common
+        try:
+            payload = json.loads(raw) if raw else {}
+        except Exception:
+            payload = {}
+        if not isinstance(payload, dict):
+            payload = {}
+        bridge_common.log(bridge_common.root(payload), f"dup {mode} skipped")
+    except Exception:
+        pass
+
+
 def main() -> None:
     """CLI + Claude Code hook entry, dispatching all nine modes into the package (see
     module docstring). `--cc` is stripped from argv up front (as the pre-step-4
@@ -110,11 +130,33 @@ def main() -> None:
     (default `pre`, matching the pre-step-4 default); everything after it (`--print`,
     `--write`, `--agent subagent`, ...) is passed straight through to the target's own
     `main`. For the three signal modes, `--cc` IS meaningful (it selects Claude-Code
-    hook JSON vs. a plain dict) and is passed back in explicitly."""
+    hook JSON vs. a plain dict) and is passed back in explicitly.
+
+    Before any of that: `plateau.bridge.dedupe.claim()` guards against this exact
+    invocation having already been handled a moment ago by the OTHER dispatch entry
+    point (`plateau hook <mode>`, when both the plugin and `plateau init --global` have
+    registered the same hooks -- see that module's docstring). Stdin is read here, ONCE,
+    for that claim; on a first claim it is replayed back onto `sys.stdin` so
+    `common.read_payload()` / `handoff.py` / `signal.py` see the exact same bytes they
+    would have read directly."""
     cc = "--cc" in sys.argv[1:]
     args = [a for a in sys.argv[1:] if a != "--cc"]
     mode = args[0] if args else "pre"
     rest = args[1:]
+
+    try:
+        from plateau.bridge import dedupe as bridge_dedupe
+        raw = bridge_dedupe.read_for_dedupe()
+        if raw is not None:
+            if not bridge_dedupe.claim(mode, rest, raw):
+                _log_dup(mode, raw)
+                if bridge_dedupe.emits_json(mode, rest):
+                    print(json.dumps({}))
+                return
+            sys.stdin = io.StringIO(raw)
+    except Exception:
+        pass  # dedupe trouble must never block a real hook -- proceed as if first.
+
     if mode in SIGNAL_MODES:
         _dispatch_signal_mode(mode, (["--cc"] if cc else []) + rest)
     elif mode in MODULE_MODES:

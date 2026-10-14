@@ -548,16 +548,39 @@ def measurements(conn: sqlite3.Connection, session_id: str) -> List[Tuple[str, M
 
 
 def mark_compaction(conn: sqlite3.Connection, session_id: str, snapshot_path: str) -> int:
-    """Record a new compaction event for the session (0-indexed). Returns its k."""
-    row = conn.execute("SELECT MAX(k) FROM compactions WHERE session_id=?", (session_id,)).fetchone()
-    k = (row[0] + 1) if row and row[0] is not None else 0
-    rid_at = conn.execute("SELECT COALESCE(MAX(id),0) FROM receipts").fetchone()[0]
-    conn.execute(
-        "INSERT INTO compactions(session_id,k,ts,rid_at,snapshot) VALUES(?,?,?,?,?)",
-        (session_id, k, time.time(), rid_at, snapshot_path),
-    )
-    conn.commit()
-    return k
+    """Record a new compaction event for the session (0-indexed). Returns its k.
+
+    The SELECT MAX(k) + INSERT runs inside `BEGIN IMMEDIATE` so two callers racing the
+    same session (a hook fired twice -- see plateau/bridge/dedupe.py) serialize on the
+    write lock instead of both reading the same MAX(k) and colliding on the
+    UNIQUE(session_id, k) primary key. On top of that: two REAL compactions cannot
+    happen within 5s of each other, so if the session's latest compaction row is that
+    recent, THIS call is itself the straggler of a duplicate pair -- return that row's k
+    rather than inserting a new one (which would otherwise inflate k by 2 for one real
+    compaction)."""
+    now = time.time()
+    if conn.in_transaction:  # BEGIN inside an open implicit transaction would raise
+        conn.commit()
+    conn.execute("BEGIN IMMEDIATE")
+    try:
+        row = conn.execute(
+            "SELECT k, ts FROM compactions WHERE session_id=? ORDER BY k DESC LIMIT 1",
+            (session_id,),
+        ).fetchone()
+        if row is not None and (now - row[1]) < 5.0:
+            conn.commit()
+            return row[0]
+        k = (row[0] + 1) if row is not None else 0
+        rid_at = conn.execute("SELECT COALESCE(MAX(id),0) FROM receipts").fetchone()[0]
+        conn.execute(
+            "INSERT INTO compactions(session_id,k,ts,rid_at,snapshot) VALUES(?,?,?,?,?)",
+            (session_id, k, now, rid_at, snapshot_path),
+        )
+        conn.commit()
+        return k
+    except BaseException:
+        conn.rollback()
+        raise
 
 
 def prev_compaction_rid(conn: sqlite3.Connection, session_id: str) -> Optional[int]:
@@ -591,16 +614,28 @@ def prev_compaction_rid(conn: sqlite3.Connection, session_id: str) -> Optional[i
 
 
 def mark_turn(conn: sqlite3.Connection, session_id: str) -> int:
-    """Record a new turn boundary for the session (1-indexed). Returns its n."""
-    row = conn.execute("SELECT MAX(n) FROM turns WHERE session_id=?", (session_id,)).fetchone()
-    n = (row[0] + 1) if row and row[0] is not None else 1
-    rid_at = conn.execute("SELECT COALESCE(MAX(id),0) FROM receipts").fetchone()[0]
-    conn.execute(
-        "INSERT INTO turns(session_id,n,ts,rid_at) VALUES(?,?,?,?)",
-        (session_id, n, time.time(), rid_at),
-    )
-    conn.commit()
-    return n
+    """Record a new turn boundary for the session (1-indexed). Returns its n.
+
+    Like `mark_compaction`, the SELECT MAX(n) + INSERT runs inside `BEGIN IMMEDIATE` so
+    two callers racing the same session (a Stop hook fired twice) serialize on the write
+    lock rather than both computing the same next `n` and colliding on the
+    UNIQUE(session_id, n) primary key."""
+    if conn.in_transaction:  # BEGIN inside an open implicit transaction would raise
+        conn.commit()
+    conn.execute("BEGIN IMMEDIATE")
+    try:
+        row = conn.execute("SELECT MAX(n) FROM turns WHERE session_id=?", (session_id,)).fetchone()
+        n = (row[0] + 1) if row and row[0] is not None else 1
+        rid_at = conn.execute("SELECT COALESCE(MAX(id),0) FROM receipts").fetchone()[0]
+        conn.execute(
+            "INSERT INTO turns(session_id,n,ts,rid_at) VALUES(?,?,?,?)",
+            (session_id, n, time.time(), rid_at),
+        )
+        conn.commit()
+        return n
+    except BaseException:
+        conn.rollback()
+        raise
 
 
 def receipts_per_turn(conn: sqlite3.Connection, session_id: str) -> float:
@@ -686,10 +721,19 @@ def record_reason(conn: sqlite3.Connection, rid: int, session_id: str, tool_use_
     if exists:
         return []
     reason = _reason_tail(text)
-    conn.execute(
-        "INSERT INTO reasons(rid,session_id,tool_use_id,text) VALUES(?,?,?,?)",
+    # `INSERT OR IGNORE`: the SELECT above is only a fast path -- two callers racing the
+    # same rid (a Stop hook fired twice) can both pass it and then both reach this
+    # INSERT. With a plain INSERT the second one raises IntegrityError on `reasons.rid`'s
+    # PRIMARY KEY; OR IGNORE instead makes it a no-op, and `cur.rowcount` tells us which
+    # of the two actually won, so only the winner draws the `because` edges (the loser
+    # returns [] exactly as the pre-existing-row fast path above does).
+    cur = conn.execute(
+        "INSERT OR IGNORE INTO reasons(rid,session_id,tool_use_id,text) VALUES(?,?,?,?)",
         (rid, session_id, tool_use_id, reason),
     )
+    if cur.rowcount == 0:
+        conn.commit()
+        return []
     boundary = rid if before_rid is None else min(rid, before_rid)
     linked = _link_because(conn, f"r{rid}", rid, reason, before_rid=boundary)
     conn.commit()
