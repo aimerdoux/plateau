@@ -271,3 +271,16 @@ def main(mode: str, argv: List[str]) -> None:
             payload["systemMessage"] = (f"Plateau: signal persisted to {out['signal_path']} "
                                         f"({n_adm} fact(s) admitted, {n_drop} dropped ungrounded).")
         print(json.dumps(payload))
+
+
+if __name__ == "__main__":
+    # `python3 -m plateau.hooks.signal <parent|pre|post> [--cc]`: the install-agnostic way to
+    # run these modes by hand. It needs only the installed package -- no plugin root, no
+    # checkout -- so the control-loop prompts (`orchestrate.md`, `reinstate.md`) call it and
+    # work under the plugin and `plateau init --global` alike. Without `--cc` it prints the
+    # raw dict, like `hook.py <mode>`.
+    if len(sys.argv) < 2 or sys.argv[1] not in MODES:
+        print("usage: python3 -m plateau.hooks.signal <{}> [--cc]".format("|".join(MODES)),
+              file=sys.stderr)
+        sys.exit(2)
+    main(sys.argv[1], sys.argv[2:])

@@ -6,6 +6,34 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- **The file-state control loop** (`RECON → PLAN → EXECUTE → VERIFY → {DONE | BLOCKED}`,
+  state on disk under `.plateau/control/`, DONE as a predicate: every parent-authored
+  `PLAN.md` gate re-verifies now). `plateau.agency.control` parses PLAN rows, runs each gate
+  as the validator and folds only passing tasks into the signal; `plateau.agency.adapt`
+  (forecast, gap analysis, recalibration) and `plateau.agency.autoloop` (the unattended
+  long-horizon runner) sit on top; `/plateau:orchestrate` runs it from Claude Code, and
+  `adapters/claude_code/control/` ships the protocol (`CONTROL_LOOP.md`), the reinstatement
+  prompt, `LAUNCH.md`, and `sentinel.sh`, an external supervisor that respawns `claude -p`
+  on any illegal exit. The Stop-hook controller is a new hook mode, **`gatekeeper`**
+  (`plateau.agency.gatekeeper`; registered in `hooks.json` and the `plateau init` table, so
+  `hook.py gatekeeper --cc` and `plateau hook gatekeeper` run the same code, and
+  `control/gatekeeper.sh` remains as a shim): armed only while `.plateau/control/PLAN.md`
+  exists, it blocks stopping until DONE or a `BLOCKED.md` with a `class:` line, and is
+  silent in every other session. It carries a stall cap: `GATEKEEPER_MAX_BLOCKS` (default 10,
+  `0` disables) releases a run whose `PLAN.md` and `JOURNAL.md` did not change across that
+  many consecutive blocks (`STATE.json` verdict `ALLOW_STALLED`). The duplicate-hook dedupe
+  below never holds a `gatekeeper` call back, because consecutive real Stops can carry
+  byte-identical payloads; a Stop that reaches a doubly registered gatekeeper twice is
+  blocked by both copies and counted once. `python3 -m
+  plateau.hooks.signal <parent|pre|post>` now runs the signal modes without the plugin
+  checkout, which is what the control-loop prompts call. Evidence, sealed under `demo/`:
+  `demo/demo7_readout.md` (UNSCORABLE: 3 of 8 tasks completed at sealing) and
+  `demo/demo8_readout.md` (the bounded arm's token slope was 6.9% of the full-history arm's
+  at 5/5 completion parity, n=1; it does not show the carried signal was necessary), with
+  raw records in `demo/raw7/`, `demo/raw8/`, `demo/raw8_void/` and `demo/raw8_confounded/`.
+
 ### Fixed
 
 - Hooks registered twice at once (the Claude Code plugin AND `plateau init --global`,

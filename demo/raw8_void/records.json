@@ -1,0 +1,136 @@
+{
+  "prereg_sha256": "sha256:5ba4832775ec8f989c726966ffba86850150fa19fdfe9df6dbdcf32fd27e9be5",
+  "tasks": [
+    "T1",
+    "T2",
+    "T3",
+    "T4",
+    "T5"
+  ],
+  "records": [
+    {
+      "arm": "arm_plateau",
+      "step": 1,
+      "task": "T1",
+      "prompt_tokens": 401,
+      "prompt_bytes": 1506,
+      "worker_exit": 1,
+      "worker_seconds": 1.0,
+      "gate_exit": 1,
+      "gate_passed": false,
+      "gate_output_tail": "Traceback (most recent call last):\n  File \"<string>\", line 1, in <module>\nImportError: cannot import name 'next_task' from 'plateau.agency.control' (/home/user/plateau/.plateau/demo8/arm_plateau/plateau/agency/control.py)\n"
+    },
+    {
+      "arm": "arm_plateau",
+      "step": 2,
+      "task": "T2",
+      "prompt_tokens": 444,
+      "prompt_bytes": 1627,
+      "worker_exit": 1,
+      "worker_seconds": 0.6,
+      "gate_exit": 1,
+      "gate_passed": false,
+      "gate_output_tail": "Traceback (most recent call last):\n  File \"<string>\", line 1, in <module>\nImportError: cannot import name 'resume_plan' from 'plateau.agency.control' (/home/user/plateau/.plateau/demo8/arm_plateau/plateau/agency/control.py)\n"
+    },
+    {
+      "arm": "arm_plateau",
+      "step": 3,
+      "task": "T3",
+      "prompt_tokens": 312,
+      "prompt_bytes": 1287,
+      "worker_exit": 1,
+      "worker_seconds": 0.6,
+      "gate_exit": 2,
+      "gate_passed": false,
+      "gate_output_tail": "usage: python -m plateau.agency.control [-h]\n                                        {init,status,verify,preflight} ...\npython -m plateau.agency.control: error: argument cmd: invalid choice: 'resume' (choose from 'init', 'status', 'verify', 'preflight')\n"
+    },
+    {
+      "arm": "arm_plateau",
+      "step": 4,
+      "task": "T4",
+      "prompt_tokens": 292,
+      "prompt_bytes": 1249,
+      "worker_exit": 1,
+      "worker_seconds": 0.6,
+      "gate_exit": 4,
+      "gate_passed": false,
+      "gate_output_tail": "\nno tests ran in 0.00s\nERROR: file or directory not found: tests/test_resume.py\n\n"
+    },
+    {
+      "arm": "arm_plateau",
+      "step": 5,
+      "task": "T5",
+      "prompt_tokens": 303,
+      "prompt_bytes": 1274,
+      "worker_exit": 1,
+      "worker_seconds": 0.6,
+      "gate_exit": 1,
+      "gate_passed": false,
+      "gate_output_tail": ""
+    },
+    {
+      "arm": "arm_fullhistory",
+      "step": 1,
+      "task": "T1",
+      "prompt_tokens": 332,
+      "prompt_bytes": 1228,
+      "worker_exit": 1,
+      "worker_seconds": 0.6,
+      "gate_exit": 1,
+      "gate_passed": false,
+      "gate_output_tail": "Traceback (most recent call last):\n  File \"<string>\", line 1, in <module>\nImportError: cannot import name 'next_task' from 'plateau.agency.control' (/home/user/plateau/.plateau/demo8/arm_fullhistory/plateau/agency/control.py)\n"
+    },
+    {
+      "arm": "arm_fullhistory",
+      "step": 2,
+      "task": "T2",
+      "prompt_tokens": 720,
+      "prompt_bytes": 2634,
+      "worker_exit": 1,
+      "worker_seconds": 0.5,
+      "gate_exit": 1,
+      "gate_passed": false,
+      "gate_output_tail": "Traceback (most recent call last):\n  File \"<string>\", line 1, in <module>\nImportError: cannot import name 'resume_plan' from 'plateau.agency.control' (/home/user/plateau/.plateau/demo8/arm_fullhistory/plateau/agency/control.py)\n"
+    },
+    {
+      "arm": "arm_fullhistory",
+      "step": 3,
+      "task": "T3",
+      "prompt_tokens": 983,
+      "prompt_bytes": 3725,
+      "worker_exit": 1,
+      "worker_seconds": 0.6,
+      "gate_exit": 2,
+      "gate_passed": false,
+      "gate_output_tail": "usage: python -m plateau.agency.control [-h]\n                                        {init,status,verify,preflight} ...\npython -m plateau.agency.control: error: argument cmd: invalid choice: 'resume' (choose from 'init', 'status', 'verify', 'preflight')\n"
+    },
+    {
+      "arm": "arm_fullhistory",
+      "step": 4,
+      "task": "T4",
+      "prompt_tokens": 1226,
+      "prompt_bytes": 4778,
+      "worker_exit": 1,
+      "worker_seconds": 1.1,
+      "gate_exit": 4,
+      "gate_passed": false,
+      "gate_output_tail": "\nno tests ran in 0.00s\nERROR: file or directory not found: tests/test_resume.py\n\n"
+    },
+    {
+      "arm": "arm_fullhistory",
+      "step": 5,
+      "task": "T5",
+      "prompt_tokens": 1480,
+      "prompt_bytes": 5856,
+      "worker_exit": 1,
+      "worker_seconds": 0.5,
+      "gate_exit": 1,
+      "gate_passed": false,
+      "gate_output_tail": ""
+    }
+  ],
+  "completion": {
+    "arm_plateau": 0,
+    "arm_fullhistory": 0
+  }
+}

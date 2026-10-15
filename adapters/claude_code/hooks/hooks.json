@@ -90,6 +90,11 @@
             "type": "command",
             "command": "python3 ${CLAUDE_PLUGIN_ROOT}/hook.py handoff --cc --print",
             "timeout": 10
+          },
+          {
+            "type": "command",
+            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/hook.py gatekeeper --cc",
+            "timeout": 150
           }
         ]
       }

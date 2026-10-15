@@ -1,0 +1,30 @@
+{
+  "actual_loop": [
+    447,
+    487,
+    529
+  ],
+  "actual_loop_slope": 41.0,
+  "completion_parity_done": false,
+  "full_history": [
+    1609,
+    3259,
+    5607
+  ],
+  "full_history_slope": 1999.0,
+  "n_completed": 3,
+  "plan_unchecked": [
+    "T2",
+    "T3",
+    "T5",
+    "T7",
+    "T8"
+  ],
+  "reason": "only 3 completed dispatch record(s) (< 5 required) and/or full-history series does not materially climb (first=1609, last=5607) -> run too short to test the efficiency axis, per the pre-registered guard",
+  "steps": [
+    "T4",
+    "T6",
+    "T1"
+  ],
+  "verdict": "UNSCORABLE"
+}

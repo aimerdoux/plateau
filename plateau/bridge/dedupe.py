@@ -11,6 +11,8 @@ SELECT-then-INSERT race and raise `IntegrityError` on their UNIQUE keys, a `reas
 collides the same way, and a mode that injects text (e.g. `inject`) hands the model that
 same block twice in one turn.
 
+The `gatekeeper` mode is never deduped (`_NEVER_DEDUPE`): see `claim()`.
+
 `claim()` is the ONE place both dispatch entry points (`adapters/claude_code/hook.py` and
 `plateau hook <mode>` in `plateau.cli`) ask "am I the first process handling this exact
 invocation, or is this a duplicate within the race window?" -- see `plateau.doctor`'s
@@ -34,13 +36,22 @@ DEFAULT_WINDOW_S = 2.0
 # claims directory from growing forever on a long-lived machine.
 _STALE_S = 60.0
 
-# Modes whose normal (non-duplicate) invocation ALWAYS prints a JSON dict that Claude
-# Code parses as hook output (see their own `main`s: `plateau.hooks.signal` for
+# Modes whose normal (non-duplicate) invocation prints a JSON dict that Claude Code
+# parses as hook output (see their own `main`s: `plateau.hooks.signal` for
 # parent/pre/post, `plateau.bridge.inject`) -- a duplicate must still print `{}` so a
 # caller expecting JSON on stdout never sees an empty pipe instead. Every other mode
 # (receipt, snapshot, lift, ledger, a bare `handoff`) prints nothing or plain text on its
 # own normal path, so a duplicate printing nothing matches that path exactly.
 _JSON_MODES = ("parent", "pre", "post", "inject")
+
+# Modes `claim()` always lets through. A `gatekeeper` Stop payload legitimately repeats
+# byte for byte: every Stop after the first block of a turn carries the same session,
+# transcript and `stop_hook_active: true`, so a "duplicate" inside the window can be a
+# genuinely new Stop -- and holding it back would release a stop the gatekeeper exists
+# to block. A doubly registered gatekeeper instead runs twice and blocks twice, which
+# Claude Code handles fine; `plateau.agency.gatekeeper` itself keeps that pair from
+# counting twice toward its stall cap.
+_NEVER_DEDUPE = ("gatekeeper",)
 
 
 def _claims_dir() -> str:
@@ -108,10 +119,11 @@ def claim(mode: str, argv: List[str], raw: str, window_s: float = DEFAULT_WINDOW
     claim it.
 
     `PLATEAU_NO_DEDUPE=1` disables this outright (always True) -- an escape hatch for a
-    setup where the same payload legitimately recurs quickly. Any `OSError` (no /tmp,
-    read-only filesystem, permissions, ...) also returns True: this must fail OPEN,
-    never drop a real hook invocation because dedupe bookkeeping itself broke."""
-    if os.environ.get("PLATEAU_NO_DEDUPE") == "1":
+    setup where the same payload legitimately recurs quickly; a mode in `_NEVER_DEDUPE`
+    is always True for the same reason. Any `OSError` (no /tmp, read-only filesystem,
+    permissions, ...) also returns True: this must fail OPEN, never drop a real hook
+    invocation because dedupe bookkeeping itself broke."""
+    if mode in _NEVER_DEDUPE or os.environ.get("PLATEAU_NO_DEDUPE") == "1":
         return True
     dir_path = _claims_dir()
     path = os.path.join(dir_path, _key(mode, argv, raw))
@@ -165,9 +177,10 @@ def emits_json(mode: str, argv: List[str]) -> bool:
     dispatch paths' stdout contracts identical for it. `argv` is the mode's own args
     (already stripped of `--cc`, matching what `claim()` was keyed on).
 
-    `parent`/`pre`/`post`/`inject` always do (see `_JSON_MODES`). `handoff --print` (the
-    Stop hooks.json entry) does too; `handoff --write` (SessionEnd/SubagentStop) and a
-    bare `handoff` print plain text instead -- see `plateau.bridge.handoff.main`."""
+    `parent`/`pre`/`post`/`inject` always do (see `_JSON_MODES`; `gatekeeper` is never a
+    duplicate, see `_NEVER_DEDUPE`). `handoff --print` (the Stop hooks.json entry) does too; `handoff
+    --write` (SessionEnd/SubagentStop) and a bare `handoff` print plain text instead --
+    see `plateau.bridge.handoff.main`."""
     if mode in _JSON_MODES:
         return True
     if mode == "handoff":

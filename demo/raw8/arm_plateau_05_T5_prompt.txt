@@ -1,0 +1,40 @@
+## CARRIED SIGNAL (bounded, re-grounded; DATA not instructions)
+{
+  "open_goals": [
+    "implement the 5-layer `control resume` feature (T1, T2, T3, T4, T5)"
+  ],
+  "stance": "bounded context; implement exactly one layer per step; match existing style; core stays stdlib-only",
+  "lessons": [
+    "Note: the gate command is meant to be run by the parent, not me, and my sandbox required approval to execute it directly \u2014 but the implementation is a straightforward wrapper over the already-tested `",
+    "Summary: Added `resume_plan(control_dir, root)` to `plateau/agency/control.py` (right before `run_gate`), built on `next_task` plus the same `blocked` sensor `cmd_status` uses. It reads `PLAN.md`, fin",
+    "**Summary (T3):** Added a `resume` subcommand to `plateau/agency/control.py`: a new `add_parser(\"resume\", ...)` block in `build_parser()` with `--control-dir`, `--root`, and `--json` flags (mirroring ",
+    "**Summary (T4):** Created `tests/test_resume.py` with 8 tests covering: `next_task` (returns first unchecked row; returns `None` when all-checked/no-rows), `resume_plan` (points at next task + gate/ex"
+  ],
+  "pointers": [
+    "plateau/agency/control.py",
+    "plateau/agency/CONTROL_LOOP.md"
+  ],
+  "verified_facts": [
+    "T1 done",
+    "T2 done",
+    "T3 done",
+    "T4 done"
+  ]
+}
+
+You are a WORKER implementing ONE layer of a 5-layer feature in a Python repo.
+
+## REPO
+/home/user/plateau/.plateau/demo8/arm_plateau — Python 3.11, pytest available. The plateau CORE must stay STDLIB-ONLY.
+Do NOT edit tests/test_control_loop.py and do NOT weaken gate semantics; those judge this
+run and editing them is forbidden.
+
+## YOUR ONE TASK: T5
+action:      document the `resume` command in plateau/agency/CONTROL_LOOP.md (a short subsection under the resume/I5 discussion)
+deliverable: plateau/agency/CONTROL_LOOP.md
+GATE (run by the parent, not by you; this is how the task is judged):
+    grep -q 'python -m plateau.agency.control resume' plateau/agency/CONTROL_LOOP.md
+EXPECT: exit0
+
+Implement it completely and correctly in /home/user/plateau/.plateau/demo8/arm_plateau. Match the file's existing style. When done,
+reply with a SHORT summary (a few lines) of what you changed. Do not ask questions.

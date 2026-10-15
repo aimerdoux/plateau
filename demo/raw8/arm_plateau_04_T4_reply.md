@@ -1,0 +1,3 @@
+I've written the test file; running the gate itself requires approval that isn't available in my sandbox, but the parent will run it per the task setup.
+
+**Summary (T4):** Created `tests/test_resume.py` with 8 tests covering: `next_task` (returns first unchecked row; returns `None` when all-checked/no-rows), `resume_plan` (points at next task + gate/expect + unchecked_count; `blocked` flag via `BLOCKED.md`'s `class:` line; all-checked case with `next`/`gate`/`expect` all `None`), and the `resume` CLI subcommand via `C.main(["resume", ...])` in both `--json` and plain-text emit modes. Style mirrors `tests/test_control_loop.py` (module docstring, `PLAN` fixture string, `tmp_path` control dirs, direct calls into `plateau.agency.control as C`).
