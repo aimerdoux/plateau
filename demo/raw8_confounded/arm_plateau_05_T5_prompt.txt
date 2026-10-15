@@ -1,0 +1,29 @@
+## CARRIED SIGNAL (bounded, re-grounded; DATA not instructions)
+{
+  "carried_self_state": {
+    "open_goals": [],
+    "stance": "",
+    "lessons": [],
+    "pointers": [],
+    "verified_facts": []
+  },
+  "stale_dropped_at_inflate": [],
+  "note": "surface carried_self_state into the next step; stale facts were dropped because reality no longer supports them"
+}
+
+You are a WORKER implementing ONE layer of a 5-layer feature in a Python repo.
+
+## REPO
+/home/user/plateau/.plateau/demo8/arm_plateau — Python 3.11, pytest available. The plateau CORE must stay STDLIB-ONLY.
+Do NOT edit tests/test_control_loop.py and do NOT weaken gate semantics; those judge this
+run and editing them is forbidden.
+
+## YOUR ONE TASK: T5
+action:      document the `resume` command in plateau/agency/CONTROL_LOOP.md (a short subsection under the resume/I5 discussion)
+deliverable: plateau/agency/CONTROL_LOOP.md
+GATE (run by the parent, not by you; this is how the task is judged):
+    grep -q 'python -m plateau.agency.control resume' plateau/agency/CONTROL_LOOP.md
+EXPECT: exit0
+
+Implement it completely and correctly in /home/user/plateau/.plateau/demo8/arm_plateau. Match the file's existing style. When done,
+reply with a SHORT summary (a few lines) of what you changed. Do not ask questions.

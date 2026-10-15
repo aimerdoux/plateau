@@ -8,8 +8,9 @@ strings differ) and runs both, so every hook event fires twice within a handful 
 milliseconds carrying the exact same stdin payload. Left alone this doubles every
 `snapshot`/`inject`/... side effect: `common.mark_compaction`/`common.mark_turn`'s
 SELECT-then-INSERT race and raise `IntegrityError` on their UNIQUE keys, a `reasons` row
-collides the same way, and a mode that injects text (e.g. `inject`) hands the model that
-same block twice in one turn.
+collides the same way, a mode that injects text (e.g. `inject`) hands the model that
+same block twice in one turn, and the gatekeeper counts one blocked Stop twice toward its
+stall cap.
 
 `claim()` is the ONE place both dispatch entry points (`adapters/claude_code/hook.py` and
 `plateau hook <mode>` in `plateau.cli`) ask "am I the first process handling this exact
@@ -34,13 +35,16 @@ DEFAULT_WINDOW_S = 2.0
 # claims directory from growing forever on a long-lived machine.
 _STALE_S = 60.0
 
-# Modes whose normal (non-duplicate) invocation ALWAYS prints a JSON dict that Claude
-# Code parses as hook output (see their own `main`s: `plateau.hooks.signal` for
+# Modes whose normal (non-duplicate) invocation prints a JSON dict that Claude Code
+# parses as hook output (see their own `main`s: `plateau.hooks.signal` for
 # parent/pre/post, `plateau.bridge.inject`) -- a duplicate must still print `{}` so a
-# caller expecting JSON on stdout never sees an empty pipe instead. Every other mode
-# (receipt, snapshot, lift, ledger, a bare `handoff`) prints nothing or plain text on its
-# own normal path, so a duplicate printing nothing matches that path exactly.
-_JSON_MODES = ("parent", "pre", "post", "inject")
+# caller expecting JSON on stdout never sees an empty pipe instead. `gatekeeper` prints
+# its JSON (`{"decision": "block", ...}`) only when it blocks and nothing when it
+# releases; a duplicate's `{}` is "no decision", and the first claimant is the one that
+# decides. Every other mode (receipt, snapshot, lift, ledger, a bare `handoff`) prints
+# nothing or plain text on its own normal path, so a duplicate printing nothing matches
+# that path exactly.
+_JSON_MODES = ("parent", "pre", "post", "inject", "gatekeeper")
 
 
 def _claims_dir() -> str:
@@ -165,9 +169,10 @@ def emits_json(mode: str, argv: List[str]) -> bool:
     dispatch paths' stdout contracts identical for it. `argv` is the mode's own args
     (already stripped of `--cc`, matching what `claim()` was keyed on).
 
-    `parent`/`pre`/`post`/`inject` always do (see `_JSON_MODES`). `handoff --print` (the
-    Stop hooks.json entry) does too; `handoff --write` (SessionEnd/SubagentStop) and a
-    bare `handoff` print plain text instead -- see `plateau.bridge.handoff.main`."""
+    `parent`/`pre`/`post`/`inject` always do, and `gatekeeper` does whenever it blocks (see
+    `_JSON_MODES`). `handoff --print` (the Stop hooks.json entry) does too; `handoff
+    --write` (SessionEnd/SubagentStop) and a bare `handoff` print plain text instead --
+    see `plateau.bridge.handoff.main`."""
     if mode in _JSON_MODES:
         return True
     if mode == "handoff":

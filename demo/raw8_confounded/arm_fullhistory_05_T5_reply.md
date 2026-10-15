@@ -1,0 +1,1 @@
+Added a short "`resume` CLI" subsection under the I5 invariant in `plateau/agency/CONTROL_LOOP.md`, explaining that `resume_plan` mechanizes I5 (next task, gate/expect, unchecked count, blocked flag) and giving the `python -m plateau.agency.control resume --control-dir ... --root . --json` invocation. Gate check (`grep`) passes.

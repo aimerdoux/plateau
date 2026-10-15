@@ -2,13 +2,14 @@
 only I/O + JSON plumbing at the step boundary.
 
 docs/harness-0.3/PLAN-step4.md "S4-A1 One install story": this file is now a thin shim
-for all nine hook modes -- it holds no hook logic of its own. It dispatches:
+for all ten hook modes -- it holds no hook logic of its own. It dispatches:
 
   parent, pre, post                          -> plateau.hooks.signal.main(mode, argv)
   receipt, snapshot, inject, handoff, lift    -> plateau.bridge.<mode>.main(argv)
   ledger                                      -> plateau.lab.ledger.main(argv)
+  gatekeeper                                  -> plateau.agency.gatekeeper.main(argv)
 
-`plateau hook <mode>` (see `plateau.cli`) dispatches the exact same nine modes to the
+`plateau hook <mode>` (see `plateau.cli`) dispatches the exact same ten modes to the
 exact same targets -- this file and that console-script command are two entry points
 sharing one implementation, never two.
 
@@ -16,7 +17,7 @@ Run directly for a dry run:
   python adapters/claude_code/hook.py parent
   python adapters/claude_code/hook.py pre
   python adapters/claude_code/hook.py post
-  python adapters/claude_code/hook.py receipt --cc   # (and snapshot/inject/handoff/lift/ledger)
+  python adapters/claude_code/hook.py receipt --cc   # (and snapshot/inject/handoff/lift/ledger/gatekeeper)
 """
 
 from __future__ import annotations
@@ -41,8 +42,8 @@ except ImportError:
     if _repo_root not in sys.path:
         sys.path.insert(0, _repo_root)
 
-# All nine modes' targets. `parent`/`pre`/`post` share one module (`plateau.hooks.signal`,
-# dispatched with the mode name as its first argument); the other six each own a module
+# All ten modes' targets. `parent`/`pre`/`post` share one module (`plateau.hooks.signal`,
+# dispatched with the mode name as its first argument); the other seven each own a module
 # whose `main(argv)` reads the hook payload from stdin and prints its own hook JSON (or
 # nothing) itself.
 SIGNAL_MODES = ("parent", "pre", "post")
@@ -53,6 +54,7 @@ MODULE_MODES = {
     "handoff": "plateau.bridge.handoff",
     "lift": "plateau.bridge.lift",
     "ledger": "plateau.lab.ledger",
+    "gatekeeper": "plateau.agency.gatekeeper",
 }
 ALL_MODES = SIGNAL_MODES + tuple(MODULE_MODES)
 
@@ -122,9 +124,9 @@ def _log_dup(mode: str, raw: str) -> None:
 
 
 def main() -> None:
-    """CLI + Claude Code hook entry, dispatching all nine modes into the package (see
+    """CLI + Claude Code hook entry, dispatching all ten modes into the package (see
     module docstring). `--cc` is stripped from argv up front (as the pre-step-4
-    `hook.py` did): the six module modes' own `main(argv)` never take `--cc` -- they
+    `hook.py` did): the seven module modes' own `main(argv)` never take `--cc` -- they
     always emit their own hook JSON regardless -- so it would otherwise reach their
     argparse as an unrecognized argument. `args[0]` (after stripping) is the mode
     (default `pre`, matching the pre-step-4 default); everything after it (`--print`,

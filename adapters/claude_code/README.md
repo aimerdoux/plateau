@@ -8,10 +8,11 @@ runtime. Keep that in mind when wiring paths.
 ## What the plugin does (hooks)
 
 `hook.py` holds no hook logic of its own — it is a thin shim over the `plateau` package for
-all nine modes (`docs/harness-0.3/PLAN-step4.md` "S4-A1 One install story"), whether
+all ten modes (`docs/harness-0.3/PLAN-step4.md` "S4-A1 One install story"), whether
 `plateau` is pip-installed alongside this plugin or run straight out of a dev checkout:
 `parent`/`pre`/`post` dispatch to `plateau.hooks.signal`, `receipt`/`snapshot`/`inject`/
-`handoff`/`lift` to their `plateau.bridge.*` twins, and `ledger` to `plateau.lab.ledger`.
+`handoff`/`lift` to their `plateau.bridge.*` twins, `ledger` to `plateau.lab.ledger`, and
+`gatekeeper` to `plateau.agency.gatekeeper`.
 `plateau hook <mode>` is the console-script twin of the same dispatch table, so a plugin
 install and a `pip install`-only checkout see byte-for-byte identical hook JSON. `hook.py`
 never raises: an unavailable target module degrades to a no-op with one line in
@@ -28,6 +29,7 @@ never raises: an unavailable target module degrades to a no-op with one line in
 | `Stop` | `hook.py post --cc` | Gates newly proposed facts against the repo, consumes the queue, and persists the bounded signal to `.plateau/signal.json`; says so only when it admitted, dropped, or carried something (0.4.1). |
 | `Stop` | `hook.py lift --cc` | Lifts `DECISION:`/`FACT:` lines from the last assistant message into the receipt graph and the reason stated before each tool call, as `because` arrows (0.4). |
 | `Stop` | `hook.py handoff --cc --print` | Emits the session's `<plateau_handoff v=1>` block as the turn's `systemMessage`. |
+| `Stop` | `hook.py gatekeeper --cc` | The control loop's gatekeeper: **armed only while `.plateau/control/PLAN.md` exists**, silent otherwise. While armed it blocks the stop until every gate is done or a `BLOCKED.md` with a `class:` line exists; see [Control loop](#control-loop-plateauorchestrate--done-made-mechanical). |
 | `SessionEnd` | `hook.py ledger --cc` | Writes one ledger row per (session, agent) -- receipts, compactions, injections, probes, re-derivations, cost -- to `.plateau/ledger.sqlite`. |
 | `SessionEnd` | `hook.py handoff --cc --write` | Writes the handoff block to `.plateau/handoff/<session_id>.json`. |
 | `SubagentStop` | `hook.py lift --cc --agent subagent` | The same lift over the subagent's OWN transcript (`agent_transcript_path`): its report's `DECISION:`/`FACT:` lines and the reason before each of its calls, attributed `subagent:<type>` (0.4.2). |
@@ -103,3 +105,31 @@ diff -q plateau/agency/PARENT_AGENT_MANUAL.md adapters/claude_code/PARENT_AGENT_
 
 Because the hook injects section 4 *verbatim* from whichever file it reads, the two never diverge in
 what the agent actually sees as long as the copy is kept in sync.
+
+## Control loop (`/plateau:orchestrate`) — DONE made mechanical
+
+`control/` ships the long-horizon control loop: `RECON → PLAN → EXECUTE → VERIFY → {DONE |
+BLOCKED}`, state on disk under `.plateau/control/`, and **DONE as a predicate** (done ⇔ every
+gate passes when re-run now). The parent agent does not do the work — it *monitors, controls,
+assigns, and verifies*, delegating each task to a fresh bounded sub-agent that sees only the
+carried signal + one task.
+
+| file | role |
+|---|---|
+| `control/CONTROL_LOOP.md` | the protocol (generated copy of `plateau/agency/CONTROL_LOOP.md`) |
+| the `gatekeeper` hook mode | `plateau.agency.gatekeeper` (`control/gatekeeper.sh` is only a shim around it). Stop hook, **armed only when `.plateau/control/PLAN.md` exists** — blocks stopping while unchecked gates remain; releases on DONE or a `BLOCKED.md` with `class:`. `RUN_GATES=1` re-runs every gate (V3 regression). A stall cap (`GATEKEEPER_MAX_BLOCKS`, default 10, `0` disables) releases it, with verdict `ALLOW_STALLED` in `STATE.json`, after that many consecutive blocks with no change to `PLAN.md` or `JOURNAL.md`. |
+| `control/sentinel.sh` | external supervisor — respawns `claude -p` on any illegal exit, resuming from the files (`control/reinstate.md`) |
+| `control/reinstate.md` | the warm-reinstatement prompt (inflate signal, resume at first unchecked gate) |
+| `control/LAUNCH.md` | how to scaffold, launch, monitor, finish and resume a run on your own project |
+
+A PLAN row is a Measurement: `plateau.agency.control` runs the parent-authored gate, records a
+result artifact, and folds passing tasks into the signal as `T<n> done` verified_facts — so the
+checked boxes *are* the carried facts. **Injection-safe:** only parent-authored gates are ever
+executed; a sub-agent's "done" is admitted solely by hash-binding its recorded, unchanged,
+successful artifact (`exit_code` Measurement), never by running its words.
+
+Keep the shipped protocol copy in sync after editing the canonical one:
+
+```bash
+cp plateau/agency/CONTROL_LOOP.md adapters/claude_code/control/CONTROL_LOOP.md
+```

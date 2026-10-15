@@ -20,8 +20,9 @@ order between concurrently-developed owners -- a not-yet-landed module degrades 
 "not available" message and exit 2, exactly like a hook mode degrades to a no-op.
 `hook <mode>` also grew three more modes in step 4 (S4-A1 "One install story"): `parent`,
 `pre`, `post` now dispatch to `plateau.hooks.signal.main(mode, argv)` alongside the six
-step-3 modes, so `plateau hook` and `adapters/claude_code/hook.py` cover the exact same
-nine modes from the exact same implementations.
+step-3 modes, and `gatekeeper` (the control loop's Stop hook, `plateau.agency.gatekeeper`)
+is a tenth, so `plateau hook` and `adapters/claude_code/hook.py` cover the exact same
+ten modes from the exact same implementations.
 """
 
 from __future__ import annotations
@@ -55,6 +56,7 @@ _HOOK_MODULES = {
     "handoff": "plateau.bridge.handoff",
     "lift": "plateau.bridge.lift",
     "ledger": "plateau.lab.ledger",
+    "gatekeeper": "plateau.agency.gatekeeper",
 }
 
 # S4-A4: every new subcommand beyond lookup/handoff/version/init/resume/hook is a thin
@@ -203,7 +205,7 @@ def _cmd_hook(rest: List[str]) -> int:
         # parent/pre/post -> plateau.hooks.signal.main(mode, argv) (S4-A1). `plateau
         # hook <mode>` is the console-script TWIN of `hook.py <mode> --cc` -- it always
         # runs as an installed hook, so `--cc` is implied here even if the caller did
-        # not type it (mirroring the six module modes below, which have no dry-run
+        # not type it (mirroring the seven module modes below, which have no dry-run
         # shape at all and likewise need no `--cc`). `plateau init` therefore never
         # writes a literal `--cc` for these three modes either.
         try:
@@ -272,7 +274,7 @@ def _cmd_init(rest: List[str]) -> int:
         if dest:
             print("bridge.toml -> {}".format(dest))
         # `plateau init --global` and the Claude Code plugin can both end up
-        # registering the same nine hooks (see `plateau.bridge.dedupe`'s module
+        # registering the same ten hooks (see `plateau.bridge.dedupe`'s module
         # docstring) -- if the plugin is installed and enabled, this install just made
         # that true, so warn about it right here rather than only at the next `plateau
         # doctor` run. Reuses `plateau.doctor`'s own detection (`hook_registration_places`)

@@ -89,6 +89,7 @@ def test_cc_post_consumes_the_queue_and_is_quiet_when_idle(tmp_path):
 KNOWN_HOOK_PY_MODES = {
     "parent", "pre", "post",                       # legacy (0.1) modes
     "receipt", "snapshot", "inject", "handoff", "lift", "ledger",  # step-3 modes
+    "gatekeeper",                                  # control loop's Stop hook
 }
 
 
@@ -111,7 +112,8 @@ def test_every_hooks_json_command_names_a_known_hook_py_mode():
         assert mode in KNOWN_HOOK_PY_MODES, "{}: unknown hook.py mode {!r}".format(event, mode)
         seen_modes.add(mode)
     # every mode PLAN-step3.md's hooks.json table lists actually appears somewhere
-    for expected in ("parent", "inject", "pre", "receipt", "snapshot", "post", "lift", "handoff", "ledger"):
+    for expected in ("parent", "inject", "pre", "receipt", "snapshot", "post", "lift", "handoff", "ledger",
+                     "gatekeeper"):
         assert expected in seen_modes, "hooks.json is missing a {!r} entry".format(expected)
 
 

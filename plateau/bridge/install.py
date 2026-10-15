@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """plateau.bridge.install — Claude Code `settings.json` hook-table merge.
 
-`plateau init` (see `plateau.cli`) writes the full hook table -- all nine modes
+`plateau init` (see `plateau.cli`) writes the full hook table -- all ten modes
 `plateau hook` dispatches (docs/harness-0.3/PLAN-step4.md "S4-A1 One install story"):
-`parent`, `pre`, `post`, `receipt`, `snapshot`, `inject`, `lift`, `handoff`, `ledger` --
-with the same events, matchers, order and timeouts as the plugin's own
+`parent`, `pre`, `post`, `receipt`, `snapshot`, `inject`, `lift`, `handoff`, `ledger`,
+`gatekeeper` -- with the same events, matchers, order and timeouts as the plugin's own
 `adapters/claude_code/hooks/hooks.json` (the reference; `tests/test_install.py`'s
 identity test asserts the two agree) into a Claude Code `settings.json`: the project's
 `<root>/.claude/settings.json`, or `~/.claude/settings.json` for `--global`.
@@ -56,7 +56,7 @@ def _group(event: str, matcher: Optional[str], mode: str, args: Optional[List[st
 
 
 def hook_table() -> Dict[str, List[Dict[str, Any]]]:
-    """`event -> [{matcher?, hooks:[{type,command,timeout}]}, ...]` — all nine modes,
+    """`event -> [{matcher?, hooks:[{type,command,timeout}]}, ...]` — all ten modes,
     matching `adapters/claude_code/hooks/hooks.json` event-for-event, matcher-for-matcher,
     order-for-order and timeout-for-timeout (S4-A1; `tests/test_install.py`'s identity
     test checks this). One group per hooks.json line, in hooks.json's own order;
@@ -80,6 +80,10 @@ def hook_table() -> Dict[str, List[Dict[str, Any]]]:
         _group("Stop", None, "post", None, 15),
         _group("Stop", None, "lift", None, 10),
         _group("Stop", None, "handoff", ["--print"], 10),
+        # The control loop's Stop-hook controller (`plateau.agency.gatekeeper`): armed only
+        # by `.plateau/control/PLAN.md`, silent otherwise. Last, and with room for strict
+        # mode's gate re-runs.
+        _group("Stop", None, "gatekeeper", None, 150),
         _group("SessionEnd", None, "ledger", None, 20),
         _group("SessionEnd", None, "handoff", ["--write"], 10),
         # 0.4.2: the subagent's own Stop lifts its decisions and reasons from ITS

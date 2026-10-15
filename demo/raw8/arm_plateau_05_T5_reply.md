@@ -1,0 +1,1 @@
+Added a "Resume tooling (I5, mechanized)" paragraph in `plateau/agency/CONTROL_LOOP.md`, right after B4 in the BLOCKED section, documenting `python -m plateau.agency.control resume` — what it reads (`PLAN.md`'s first unchecked task + `BLOCKED.md`'s `class:` sensor), what it returns, and its flags (`--control-dir`, `--root`, `--json`). Gate check passes locally.

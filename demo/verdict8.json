@@ -1,0 +1,46 @@
+{
+  "arms": [
+    "arm_fullhistory",
+    "arm_plateau"
+  ],
+  "climbed": true,
+  "completion": {
+    "arm_fullhistory": 5,
+    "arm_plateau": 5
+  },
+  "integrity": {
+    "chain_ok": true,
+    "files_ok": true,
+    "token_rederivation_mismatches": []
+  },
+  "parity": true,
+  "prereg_sha256": "sha256:5ba4832775ec8f989c726966ffba86850150fa19fdfe9df6dbdcf32fd27e9be5",
+  "rule": {
+    "climb_min": 50.0,
+    "min_completed": 5,
+    "slope_bar": 0.25
+  },
+  "sealed_prereg_sha256": "sha256:5ba4832775ec8f989c726966ffba86850150fa19fdfe9df6dbdcf32fd27e9be5",
+  "series": {
+    "arm_fullhistory": [
+      332,
+      828,
+      1205,
+      1600,
+      2178
+    ],
+    "arm_plateau": [
+      425,
+      515,
+      446,
+      507,
+      583
+    ]
+  },
+  "slopes": {
+    "arm_fullhistory": 446.4,
+    "arm_plateau": 30.8
+  },
+  "verdict": "WIN",
+  "why": "bounded slope 30.8 <= 25% of control 446.4, at completion parity"
+}

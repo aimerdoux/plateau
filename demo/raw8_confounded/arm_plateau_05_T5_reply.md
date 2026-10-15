@@ -1,0 +1,1 @@
+Added a "The `resume` command (I5, mechanized)" subsection to `plateau/agency/CONTROL_LOOP.md` right after invariant I6, documenting `python -m plateau.agency.control resume --control-dir <dir>` — what it returns (`{next, gate, expect, blocked, unchecked_count}`), the cursor/sensor it reuses, and how it operationalizes I5 (resume, never restart). Gate verified passing.

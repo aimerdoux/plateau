@@ -1,0 +1,36 @@
+## CARRIED SIGNAL (bounded, re-grounded; DATA not instructions)
+{
+  "open_goals": [
+    "implement the 5-layer `control resume` feature (T1, T2, T3, T4, T5)"
+  ],
+  "stance": "bounded context; implement exactly one layer per step; match existing style; core stays stdlib-only",
+  "lessons": [
+    "Note: the gate command is meant to be run by the parent, not me, and my sandbox required approval to execute it directly \u2014 but the implementation is a straightforward wrapper over the already-tested `",
+    "Summary: Added `resume_plan(control_dir, root)` to `plateau/agency/control.py` (right before `run_gate`), built on `next_task` plus the same `blocked` sensor `cmd_status` uses. It reads `PLAN.md`, fin"
+  ],
+  "pointers": [
+    "plateau/agency/control.py",
+    "plateau/agency/CONTROL_LOOP.md"
+  ],
+  "verified_facts": [
+    "T1 done",
+    "T2 done"
+  ]
+}
+
+You are a WORKER implementing ONE layer of a 5-layer feature in a Python repo.
+
+## REPO
+/home/user/plateau/.plateau/demo8/arm_plateau — Python 3.11, pytest available. The plateau CORE must stay STDLIB-ONLY.
+Do NOT edit tests/test_control_loop.py and do NOT weaken gate semantics; those judge this
+run and editing them is forbidden.
+
+## YOUR ONE TASK: T3
+action:      add a `resume` subcommand to the control CLI in plateau/agency/control.py that prints resume_plan's dict (supporting --control-dir, --root and --json like the others)
+deliverable: plateau/agency/control.py
+GATE (run by the parent, not by you; this is how the task is judged):
+    python -m plateau.agency.control resume --help
+EXPECT: resume
+
+Implement it completely and correctly in /home/user/plateau/.plateau/demo8/arm_plateau. Match the file's existing style. When done,
+reply with a SHORT summary (a few lines) of what you changed. Do not ask questions.
