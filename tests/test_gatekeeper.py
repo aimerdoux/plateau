@@ -70,7 +70,11 @@ def elsewhere(tmp_path):
 def call(monkeypatch, capsys):
     """One in-process `gatekeeper.main()` call: `call(cwd, payload, **env)` returns
     `(rc, out, err)`. An env value of None unsets the variable; the rest are set (and undone
-    when the test ends). Cheap enough to loop fifteen times."""
+    when the test ends). Cheap enough to loop fifteen times. Each call is its own Stop: the
+    twin window (one Stop reaching a doubly registered hook) is closed here and exercised by
+    the subprocess tests at the end of the stall-cap section."""
+    monkeypatch.setattr(G, "_TWIN_S", 0.0)
+
     def _call(cwd, payload="{}", **env):
         monkeypatch.chdir(cwd)
         for key, value in env.items():
@@ -86,16 +90,22 @@ def call(monkeypatch, capsys):
     return _call
 
 
-def _spawn(entry, cwd, payload="{}", dedupe_off=True, **env):
-    """Run one real entry point as a subprocess, exactly as Claude Code would."""
+def _spawn(entry, cwd, payload="{}", **env):
+    """Run one real entry point as a subprocess, exactly as Claude Code would -- dedupe on
+    (`_no_ambient_knobs` unsets PLATEAU_NO_DEDUPE), since it must never hold a Stop back."""
     full = dict(os.environ, **env)
     full["PYTHONPATH"] = os.pathsep.join(p for p in (ROOT, os.environ.get("PYTHONPATH")) if p)
-    if dedupe_off:
-        # Several tests fire the same literal payload back to back; a real Stop never repeats
-        # one inside the dedupe window, so these tests opt out of plateau.bridge.dedupe.
-        full["PLATEAU_NO_DEDUPE"] = "1"
     return subprocess.run(ENTRY_POINTS[entry], cwd=str(cwd), input=payload, capture_output=True,
                           text=True, env=full, timeout=60)
+
+
+def _age(cdir, seconds=60.0):
+    """Move the last Stop's `started` into the past: the next spawn is then a new Stop, not
+    that one's twin (back-to-back subprocesses start well inside `_TWIN_S`)."""
+    path = cdir / "STATE.json"
+    state = json.loads(path.read_text(encoding="utf-8"))
+    state["started"] -= seconds
+    path.write_text(json.dumps(state), encoding="utf-8")
 
 
 def _arm(project, plan=PLAN_ONE_OPEN):
@@ -248,6 +258,8 @@ def test_stall_cap_releases_after_the_cap_and_a_journal_line_starts_over(entry, 
     cdir = _arm(project)
 
     def stop():
+        if (cdir / "STATE.json").exists():
+            _age(cdir)
         return _spawn(entry, project, GATEKEEPER_MAX_BLOCKS="3")
 
     for n in (1, 2, 3):                                          # calls 1-3 block ...
@@ -508,22 +520,65 @@ def test_task_row_pattern_is_pinned_to_the_control_parser():
     assert G._TASK_ROW.pattern == C._ID_GREP
 
 
-def test_dedupe_treats_gatekeeper_as_a_json_mode():
-    assert dedupe.emits_json("gatekeeper", []) is True
-    assert dedupe.emits_json("lift", []) is False                # the list is not "everything"
+def test_dedupe_never_holds_a_gatekeeper_stop_back(tmp_path, monkeypatch):
+    """Every Stop after a turn's first block carries the same session and
+    `stop_hook_active: true`, so identical payloads inside the window are real Stops."""
+    monkeypatch.setattr(dedupe, "_claims_dir", lambda: str(tmp_path / "claims"))
+    raw = json.dumps({"session_id": "s", "stop_hook_active": True})
+    assert [dedupe.claim("gatekeeper", [], raw) for _ in range(3)] == [True, True, True]
+    assert not os.path.exists(str(tmp_path / "claims"))          # not even bookkept
+    assert [dedupe.claim("lift", [], raw) for _ in range(2)] == [True, False]  # others still are
+    assert dedupe.emits_json("gatekeeper", []) is False          # so never a `{}` duplicate
 
 
-def test_a_duplicate_stop_is_collapsed_and_counts_once(project, tmp_path):
-    """Plugin + `plateau init --global` both registered: the same Stop reaches the gatekeeper
-    twice. The second one prints `{}` ("no decision") and must not count toward the cap."""
+@both_entry_points
+def test_back_to_back_identical_stops_are_both_blocked(entry, project):
+    """The regression: with dedupe keyed on the payload, the second of two identical Stops
+    printed `{}` and the session stopped with T1 still open."""
     cdir = _arm(project)
-    claims = tmp_path / "claims-tmp"
-    claims.mkdir()
-    first = _spawn("hook.py", project, dedupe_off=False, TMPDIR=str(claims))
-    second = _spawn("plateau-hook", project, dedupe_off=False, TMPDIR=str(claims))
-    assert json.loads(first.stdout)["decision"] == "block"
-    assert json.loads(second.stdout) == {}
-    assert _state(cdir)["blocks"] == 1
+    payload = json.dumps({"session_id": "s", "stop_hook_active": True, "cwd": str(project)})
+    for _ in range(2):
+        r = _spawn(entry, project, payload)
+        assert json.loads(r.stdout)["decision"] == "block", r.stdout
+    assert _state(cdir)["blocks"] == 1                           # inside _TWIN_S: not counted
+
+
+def test_a_doubly_registered_stop_blocks_twice_and_counts_once(project):
+    """Plugin + `plateau init --global` both registered: the same Stop reaches the gatekeeper
+    twice, both copies block, and the stall cap counts it once."""
+    cdir = _arm(project)
+    for n in (1, 2):
+        if n == 2:
+            _age(cdir)                                           # the next Stop event
+        for entry in ("hook.py", "plateau-hook"):
+            r = _spawn(entry, project, GATEKEEPER_MAX_BLOCKS="5")
+            assert json.loads(r.stdout)["decision"] == "block", (n, entry)
+        assert _state(cdir)["blocks"] == n
+
+
+def test_a_doubly_registered_stall_release_releases_both_copies(project):
+    """The copy that runs second must not re-block the Stop the first one released, or
+    the cap could never release a doubly registered hook."""
+    cdir = _arm(project)
+    for entry in ("hook.py", "plateau-hook"):
+        assert json.loads(_spawn(entry, project, GATEKEEPER_MAX_BLOCKS="1").stdout)
+    _age(cdir)
+    first = _spawn("hook.py", project, GATEKEEPER_MAX_BLOCKS="1")
+    second = _spawn("plateau-hook", project, GATEKEEPER_MAX_BLOCKS="1")
+    assert (first.stdout, second.stdout) == ("", "")
+    assert "GATEKEEPER_MAX_BLOCKS=1" in first.stderr
+    assert (_state(cdir)["verdict"], _state(cdir)["blocks"]) == ("ALLOW_STALLED", 0)
+
+
+def test_a_twin_needs_the_same_files(call, project, monkeypatch):
+    """Progress between two quick Stops is a new Stop, never a twin of the last one."""
+    cdir = _arm(project)
+    assert _blocks(call(project, GATEKEEPER_MAX_BLOCKS=1))
+    assert not _blocks(call(project, GATEKEEPER_MAX_BLOCKS=1))     # stalled: released
+    monkeypatch.setattr(G, "_TWIN_S", 3600.0)                      # every Stop is "quick" now
+    (cdir / "JOURNAL.md").write_text("progress\n")
+    assert _blocks(call(project, GATEKEEPER_MAX_BLOCKS=1))         # new files: blocked again
+    assert (_state(cdir)["verdict"], _state(cdir)["blocks"]) == ("BLOCK", 1)
 
 
 def _stop_hooks(events):

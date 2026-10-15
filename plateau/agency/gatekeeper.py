@@ -17,10 +17,12 @@ also re-runs every checked row's GATE with `bash -c` under `GATE_TIMEOUT` (secon
 120): a gate passes iff it exits 0 AND (EXPECT is `exit0` OR EXPECT occurs in its output).
 
 STATE.json in the control dir is the cheap disk meter (`ts`, `unchecked`, `verdict`, `strict`,
-`blocks`, `fingerprint`; `plateau.agency.control.read_status` reads it). Stall cap: a run whose
-PLAN.md and JOURNAL.md have not changed across `GATEKEEPER_MAX_BLOCKS` consecutive blocks
-(default 10, `0` disables) is released with verdict `ALLOW_STALLED` and a stderr note, so a
-stuck agent can never be trapped by its own hook forever.
+`blocks`, `fingerprint`, `started`; `plateau.agency.control.read_status` reads it). Stall cap: a
+run whose PLAN.md and JOURNAL.md have not changed across `GATEKEEPER_MAX_BLOCKS` consecutive
+blocks (default 10, `0` disables) is released with verdict `ALLOW_STALLED` and a stderr note, so
+a stuck agent can never be trapped by its own hook forever. A block that starts within
+`_TWIN_S` of the previous one over the same files is taken as the same Stop reaching a doubly
+registered hook: it repeats that decision and is not counted again.
 
 Env: CONTROL_DIR, RUN_GATES, GATE_TIMEOUT, GATEKEEPER_MAX_BLOCKS. Stdlib only. Like every
 Plateau hook it never raises and always exits 0 -- a hook must not be why a session breaks.
@@ -42,6 +44,9 @@ from typing import Any, Dict, List, Optional, Tuple
 DEFAULT_CONTROL_DIR = ".plateau/control"
 DEFAULT_GATE_TIMEOUT_S = 120.0
 DEFAULT_MAX_BLOCKS = 10
+# Two copies of one Stop (plugin + `plateau init --global`) start milliseconds apart; a real
+# next Stop needs a model turn in between, so it starts seconds later.
+_TWIN_S = 1.0
 
 # One PLAN task row. Identical to `plateau.agency.control._ID_GREP` (tests/test_gatekeeper.py
 # pins the two together); duplicated, not imported, so a hook never fails on a heavier import.
@@ -285,7 +290,18 @@ def _decide(control_dir: str, root: str, plan: str, strict: bool) -> Tuple[str, 
 
 # --- the hook ----------------------------------------------------------------------------
 
+def _twin(prev: Dict[str, Any], fingerprint: str, started: float) -> bool:
+    """Whether `prev` was written for this same Stop by the other copy of a doubly
+    registered gatekeeper (plugin + `plateau init --global`; `plateau.bridge.dedupe` never
+    holds a gatekeeper back): same fingerprint, started within `_TWIN_S` of this one. A
+    genuinely new Stop that fast is still decided normally -- it just is not counted."""
+    t = prev.get("started")
+    return (prev.get("fingerprint") == fingerprint and isinstance(t, (int, float))
+            and not isinstance(t, bool) and abs(started - t) < _TWIN_S)
+
+
 def _run(payload: Dict[str, Any]) -> None:
+    started = time.time()
     found = _resolve(payload)
     if found is None:
         return                                        # NOT ARMED: never interfere
@@ -303,19 +319,25 @@ def _run(payload: Dict[str, Any]) -> None:
         prev = _read_state(control_dir)
         before = prev.get("blocks")
         before = before if isinstance(before, int) and not isinstance(before, bool) else 0
-        same = prev.get("verdict") == "BLOCK" and prev.get("fingerprint") == fingerprint
-        blocks = before + 1 if same else 1
-        cap = _max_blocks()
-        if cap and blocks > cap:
-            verdict, blocks = "ALLOW_STALLED", 0
-            print(f"gatekeeper: released after {cap} consecutive blocks with no change to "
-                  f"PLAN.md or JOURNAL.md (GATEKEEPER_MAX_BLOCKS={cap}; 0 disables the cap). "
-                  f"Nothing was verified -- finish the plan or write BLOCKED.md.",
-                  file=sys.stderr)
+        twin = _twin(prev, fingerprint, started)
+        if twin and prev.get("verdict") == "ALLOW_STALLED":
+            verdict = "ALLOW_STALLED"                 # the first copy released this Stop
+        elif twin and prev.get("verdict") == "BLOCK":
+            blocks = max(before, 1)                   # the first copy counted this Stop
+        else:
+            same = prev.get("verdict") == "BLOCK" and prev.get("fingerprint") == fingerprint
+            blocks = before + 1 if same else 1
+            cap = _max_blocks()
+            if cap and blocks > cap:
+                verdict, blocks = "ALLOW_STALLED", 0
+                print(f"gatekeeper: released after {cap} consecutive blocks with no change to "
+                      f"PLAN.md or JOURNAL.md (GATEKEEPER_MAX_BLOCKS={cap}; 0 disables the "
+                      f"cap). Nothing was verified -- finish the plan or write BLOCKED.md.",
+                      file=sys.stderr)
 
     _write_state(control_dir, {"ts": ts, "unchecked": unchecked, "verdict": verdict,
                                "strict": 1 if strict else 0, "blocks": blocks,
-                               "fingerprint": fingerprint})
+                               "fingerprint": fingerprint, "started": started})
     if verdict == "BLOCK":
         # One short line: newlines -> spaces, `"` -> `'`, cut to 400 characters.
         reason = reason.replace("\n", " ").replace('"', "'")[:400]

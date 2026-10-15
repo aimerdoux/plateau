@@ -23,7 +23,10 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   exists, it blocks stopping until DONE or a `BLOCKED.md` with a `class:` line, and is
   silent in every other session. It carries a stall cap: `GATEKEEPER_MAX_BLOCKS` (default 10,
   `0` disables) releases a run whose `PLAN.md` and `JOURNAL.md` did not change across that
-  many consecutive blocks (`STATE.json` verdict `ALLOW_STALLED`). `python3 -m
+  many consecutive blocks (`STATE.json` verdict `ALLOW_STALLED`). The duplicate-hook dedupe
+  below never holds a `gatekeeper` call back, because consecutive real Stops can carry
+  byte-identical payloads; a Stop that reaches a doubly registered gatekeeper twice is
+  blocked by both copies and counted once. `python3 -m
   plateau.hooks.signal <parent|pre|post>` now runs the signal modes without the plugin
   checkout, which is what the control-loop prompts call. Evidence, sealed under `demo/`:
   `demo/demo7_readout.md` (UNSCORABLE: 3 of 8 tasks completed at sealing) and
